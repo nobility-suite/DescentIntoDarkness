@@ -417,6 +417,67 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
+	public static Location generateShelfRoom(Location loc, int r, Vector direction) {
+	  Random rand = new Random();
+	  int coinflip = rand.nextInt(1);
+	  
+	  if(coinflip == 0) {
+	    return generateShelfFromBottom(loc,r,direction);
+	  }else return generateShelfFromTop(loc,r,direction);
+	}
+	
+	public static Location generateShelfFromBottom(Location loc, int r, Vector direction) {
+      Location next = generateLargeRoom(loc,r);
+      next = generateSmallRoom(next,r);
+      
+      Random rand = new Random();
+      int coinflip = rand.nextInt(1);
+      if(coinflip == 0) { coinflip = -1; }
+      
+      Location shelf = loc.clone().add(new Vector(0,rand.nextInt(5)+6,0));
+      Vector adjust = direction.clone();
+      adjust.rotateAroundY(90+rand.nextInt(10) * coinflip);
+      shelf.add(adjust);
+      
+      Vector dir = direction.clone();
+      int size = Math.max(r-2,5);
+      
+      for(int i = 0; i < 3; i++) {
+        generateSmallRoom(shelf,size);
+        vary(shelf);
+        shelf = shelf.add(dir.clone().multiply(size));
+      }
+      
+      return next;
+	}
+	
+	   public static Location generateShelfFromTop(Location loc, int r, Vector direction) {
+
+	      
+	      Random rand = new Random();
+	      int coinflip = rand.nextInt(1);
+	      if(coinflip == 0) { coinflip = -1; }
+	      
+	      Location shelf = loc.clone().add(new Vector(0,-1*rand.nextInt(5)+6,0));
+	      Vector adjust = direction.clone();
+	      adjust.rotateAroundY(90+rand.nextInt(10) * coinflip);
+	      shelf.add(adjust);
+	      
+	      Vector dir = direction.clone();
+	      int size = Math.max(r-2,5);
+	      Location next = loc.clone();
+	      for(int i = 0; i < 3; i++) {
+	        generateSmallRoom(next,size);
+	        vary(next);
+	        next = shelf.add(dir.clone().multiply(size));
+	      }
+	      
+	       shelf = generateLargeRoom(loc,r);
+	       shelf = generateSmallRoom(shelf,r);
+	      
+	      return next;
+	    }
+	
 	
 	public static Location rampUp(Location loc, int r, Vector direction) {
 		Location next = loc;
