@@ -26,6 +26,7 @@ public class TerrainGenerator {
     chanceReplace(loc,r,Material.DIORITE,Material.POLISHED_DIORITE,0.2);
   }
   
+  
   public static void paintMagma(Location loc, int r) {
     //Material.OBSIDIAN
     //Material.BLACK_CONCRETE_POWDER;
@@ -36,6 +37,47 @@ public class TerrainGenerator {
     
   }
   
+  public static void generateBlob(Location loc, int r, int rx, Material old, Material m) {
+    
+    Random rand = new Random();
+    int tx = rand.nextInt(r*2)-r;
+    int tz = rand.nextInt(r*2)-r;
+    int ty = rand.nextInt(r*2)-r;
+    
+    
+    Location next = loc.clone().add(new Vector(tx,ty,tz));
+    radiusReplace(next,rx,old,m);
+  }
+  
+  public static void generateBlobs(Location loc, int r, int rx, int amt, Material old, Material m) {
+    for(int i = 0; i < amt; i++) {
+      generateBlob(loc,r,rx,old,m);
+    }
+  }
+  
+  public static boolean isFloor(Location loc) {
+    Block b = loc.getBlock();
+    
+    if(isSolid(b) && isSolid(b.getRelative(BlockFace.DOWN)) && !isSolid(b.getRelative(BlockFace.UP))) {
+      return true;
+    }else return false;
+  }
+  
+  public static boolean isRoof(Location loc) {
+    Block b = loc.getBlock();
+    
+    if(isSolid(b) && !isSolid(b.getRelative(BlockFace.DOWN)) && isSolid(b.getRelative(BlockFace.UP))) {
+      return true;
+    }else return false;
+  }
+  
+  public static boolean isSolid(Block b) {
+    Material m = b.getType();
+    if(m == Material.AIR || m == Material.GLOWSTONE || m == Material.WATER || m == Material.LAVA) {
+      return false;
+    }else return true;
+  }
+
   public static void replaceFloor(Location loc, int r, Material old, Material m) {
     int depth = 1;
     if(r <= 5) {
