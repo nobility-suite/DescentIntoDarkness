@@ -4,7 +4,7 @@ Descent is an experimental procedural cave generation system made for Minecraft 
 
 Descent is inteded for use as an instanced system. Cave systems are generated individually, and do not care if they intersect.
 
-*Descent is an experimental concept mod for CivEx: reddit.com/r/civex *
+*Descent is an experimental concept plugin for CivEx: reddit.com/r/civex *
 
 ---
 
