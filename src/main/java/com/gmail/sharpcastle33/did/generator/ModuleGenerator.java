@@ -35,6 +35,7 @@ public class ModuleGenerator {
 
 		for(Location l : centroids) {
 			smooth(l,size+2);
+			l.getBlock().setType(Material.GLOWSTONE);
 		}
 	}
 	
@@ -168,6 +169,8 @@ public class ModuleGenerator {
 				int sizeMod = rand.nextInt(2);
 				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(90*coinflip));
 				return getNext(c,loc,size,dir);
+			case 'x':
+				return generateSmallBranch(loc,size,dir);
 			case 'O':
 				Random rand2 = new Random();
 				int lengthMod = rand2.nextInt(4);
@@ -180,9 +183,11 @@ public class ModuleGenerator {
 			case 'L':
 				return generateLargeRoom(loc,size);
 			case 'R':
-				return generateLargeRoom(loc,size);
+				return generateSmallRoom(loc,size);
 			case 'P':
 				return generatePoolRoom(loc,size);
+			case 'H':
+				return generateShelfRoom(loc,size,dir);
 			case 'C':
 				if(size>7) {
 					return generateChasm(loc,size,dir);
@@ -201,6 +206,28 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
+	private static Location generateSmallBranch(Location loc, int size, Vector dir) {
+		Vector clone = dir.clone();
+		Random rand = new Random();
+		
+		clone.rotateAroundY(rand.nextInt(270)+45);
+		
+		if(size < 7) {
+			size = 6;
+		}else if(size < 11) {
+			size = 7;
+		}else {
+			size = size/2 + 2;
+		}
+		
+		generateSmallRoom(loc,size);
+		
+		int newSize = rand.nextInt(20);
+		int sizeMod = rand.nextInt(1);
+		CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
+		return getNext('X',loc,size,dir);
+	}
+
 	private static Location findFloor(Location loc) {
 		while(loc.getY() > 1 && loc.getBlock().getType() == Material.AIR) {
 			loc = loc.add(new Vector(0,-1,0));
@@ -268,6 +295,8 @@ public class ModuleGenerator {
 		Random rand = new Random();
 		int amount = rand.nextInt(4)+4;
 		r -= 1;
+		
+		r = Math.max(r, 4);
 		
 		for(int i = 0; i < amount; i++) {
 			Location clone = loc.clone();

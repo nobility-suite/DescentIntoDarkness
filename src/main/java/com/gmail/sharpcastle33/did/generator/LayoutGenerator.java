@@ -130,7 +130,7 @@ public class LayoutGenerator {
 	  
 	  public static char generateNextPassage() {
 		    Random rand = new Random();
-		    int n = rand.nextInt(100);
+		    int n = rand.nextInt(104);
 		    
 		    if(n < 60) {
 		      return 'W';
@@ -144,13 +144,15 @@ public class LayoutGenerator {
 		      return 'O';
 		    }else if(n < 101) {
 		      return 'R';
-		    }
+		    }else if(n < 103) {
+			  return 'x';
+			}
 		    return 'W';
 	  }
 	  
 	  public static char generateNextCavern() {
 	    Random rand = new Random();
-	    int n = rand.nextInt(167);
+	    int n = rand.nextInt(186);
 	    
 	    if(n < 80) {
 	      return 'W';
@@ -164,12 +166,12 @@ public class LayoutGenerator {
 	      return 'O';
 	    }else if(n < 129) {
 	      return 'C';
-	    }else if(n < 150) {
+	    }else if(n < 148) {
 	      return 'R';
 	    }else if(n < 177) {
 	      return 'L';
-	    }else if(n < 167) {
-		      return 'W';
+	    }else if(n < 185) {
+		      return 'H';
 		}
 	    
 	    return 'F';
