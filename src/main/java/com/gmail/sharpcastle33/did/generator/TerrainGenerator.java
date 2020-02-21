@@ -21,10 +21,30 @@ public class TerrainGenerator {
     chanceReplace(loc,r,Material.PRISMARINE,Material.PRISMARINE_BRICKS, 0.1);
   }
   
+  public static void paintCoral(Location loc, int r) {
+	  radiusReplace(loc,r,Material.STONE, Material.BRAIN_CORAL_BLOCK);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.BUBBLE_CORAL_BLOCK,0.1);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.TUBE_CORAL_BLOCK,0.1);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.HORN_CORAL_BLOCK,0.1);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.FIRE_CORAL_BLOCK,0.1);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.DEAD_HORN_CORAL_BLOCK,0.1);
+	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.WET_SPONGE,0.05);
+
+  }
+  
   public static void paintMarble(Location loc, int r) {
     radiusReplace(loc,r,Material.STONE, Material.DIORITE);
     chanceReplace(loc,r,Material.DIORITE,Material.POLISHED_DIORITE,0.2);
+    chanceReplace(loc,r,Material.DIORITE,Material.QUARTZ_BLOCK,0.1);
   }
+  
+  public static void paintGlacial(Location loc, int r) {
+	    radiusReplace(loc,r,Material.STONE, Material.BLUE_ICE);
+	    
+	    replaceFloor(loc,r,Material.BLUE_ICE,Material.SNOW_BLOCK);
+
+	    chanceReplace(loc,r,Material.BLUE_ICE,Material.PACKED_ICE,0.2);
+	  }
   
   
   public static void paintMagma(Location loc, int r) {
@@ -81,11 +101,11 @@ public class TerrainGenerator {
   public static void replaceFloor(Location loc, int r, Material old, Material m) {
     int depth = 1;
     if(r <= 5) {
-      depth = 2;
-    }else if(r <= 9) {
-      depth = 3;
-    }else if(r >= 13) {
       depth = 4;
+    }else if(r <= 9) {
+      depth = 7;
+    }else if(r >= 13) {
+      depth = 11;
     }
     int x = loc.getBlockX();
     int y = loc.getBlockY();
@@ -94,7 +114,7 @@ public class TerrainGenerator {
     World w = loc.getWorld();
     
     for(int tx=-r; tx< r+1; tx++){
-      for(int ty=-r; ty< -r+depth; ty++){
+      for(int ty=-r; ty< r-(depth); ty++){
           for(int tz=-r; tz< r+1; tz++){
               if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
                   if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
@@ -102,6 +122,7 @@ public class TerrainGenerator {
                   }
                   if(ty+y > 0) {
                     Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
+                    if(isFloor(b.getLocation()))
                     if(b.getType() == old) {
                       b.setType(m);
                     }
@@ -133,7 +154,7 @@ public class TerrainGenerator {
       return;
     }
     
-    int rng = (int) chance*1000;
+    int rng = (int) (chance*1000);
     
     for(int tx=-r; tx< r+1; tx++){
         for(int ty=-r; ty< r+1; ty++){

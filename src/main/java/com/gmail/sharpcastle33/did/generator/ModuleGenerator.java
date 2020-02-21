@@ -37,12 +37,12 @@ public class ModuleGenerator {
 
 		for(Location l : centroids) {
 			smooth(l,size+2);
-			l.getBlock().setType(Material.GLOWSTONE);
+			//l.getBlock().setType(Material.GLOWSTONE);
 		}
 		
 		for(Location l : centroids) {
-			TerrainGenerator.paintOcean(l, size+2);
-			l.getBlock().setType(Material.OBSIDIAN);
+			TerrainGenerator.paintGlacial(l, size+2);
+			//l.getBlock().setType(Material.OBSIDIAN);
 		}
 	}
 	
