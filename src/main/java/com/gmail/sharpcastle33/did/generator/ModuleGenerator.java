@@ -13,12 +13,14 @@ import org.bukkit.util.Vector;
 
 public class ModuleGenerator {
 	
-	public static void read(String cave, Location start, int size, Vector dir) {
+	ArrayList<Location> centroids = new ArrayList<Location>();
+
+	
+	public  void read(String cave, Location start, int size, Vector dir) {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
 		Location loc = start;
 		
-		ArrayList<Location> centroids = new ArrayList<Location>();
 		
 		char[] ch = cave.toCharArray();
 		for(int i = 0; i < ch.length; i++) {
@@ -44,7 +46,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static void smooth(Location loc, int r) {
+	public  void smooth(Location loc, int r) {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
@@ -73,7 +75,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static int countAir(Block b) {
+	public  int countAir(Block b) {
 		int r = 1;
 		int ret = 0;
 		Location loc = b.getLocation();
@@ -93,7 +95,7 @@ public class ModuleGenerator {
 		return ret;
 	}
 	
-	public static Location vary(Location loc) {
+	public  Location vary(Location loc) {
 		Random rand = new Random();
 		int x = rand.nextInt(2)-1;
 		int y = rand.nextInt(2)-1;
@@ -101,7 +103,7 @@ public class ModuleGenerator {
 		return loc.add(new Vector(x,y,z));
 	}
 	
-	public static Vector randomRedirect(Vector current) {
+	public  Vector randomRedirect(Vector current) {
 		Random rand = new Random();
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
@@ -118,7 +120,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static Vector redirectRight(Vector current) {
+	public  Vector redirectRight(Vector current) {
 		Random rand = new Random();
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
@@ -133,7 +135,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static Vector redirectLeft(Vector current) {
+	public  Vector redirectLeft(Vector current) {
 		Random rand = new Random();
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
@@ -148,7 +150,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static Location apply(char c, Location loc, int size, int realSize, Vector dir) {
+	public  Location apply(char c, Location loc, int size, int realSize, Vector dir) {
 		switch(c) {
 			case 'W':
 				deleteSphere(loc,size);
@@ -211,7 +213,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	private static Location generateSmallBranch(Location loc, int size, Vector dir) {
+	private  Location generateSmallBranch(Location loc, int size, Vector dir) {
 		Vector clone = dir.clone();
 		Random rand = new Random();
 		
@@ -233,14 +235,14 @@ public class ModuleGenerator {
 		return getNext('X',loc,size,dir);
 	}
 
-	private static Location findFloor(Location loc) {
+	private  Location findFloor(Location loc) {
 		while(loc.getY() > 1 && loc.getBlock().getType() == Material.AIR) {
 			loc = loc.add(new Vector(0,-1,0));
 		}
 		return loc;
 	}
 	
-	private static void floodFill(Material fill, Location loc) {
+	private  void floodFill(Material fill, Location loc) {
 		if(loc.getBlock().getType() == Material.AIR) {
 			loc.getBlock().setType(fill);
 			floodFill(fill,loc.clone().add(1,0,0));
@@ -250,9 +252,9 @@ public class ModuleGenerator {
 		}
 	}
 	
-	private static Location generateChasm(Location loc, int size, Vector caveDir) {
+	private  Location generateChasm(Location loc, int size, Vector caveDir) {
 		
-		ArrayList<Location> centroids = new ArrayList<Location>();
+		ArrayList<Location> centers = new ArrayList<Location>();
 		
 		size = size-1;
 		Random rand = new Random();
@@ -277,7 +279,7 @@ public class ModuleGenerator {
 		for(int i = 0; i < 3; i++) {
 			Location set = start.clone();
 			vary(set);
-			centroids.add(set);
+			centers.add(set);
 			for(int j = 0; j < chasmSize; j++) {
 				deleteSphere(set,size);
 				set.add(dir.clone().multiply(size));
@@ -285,8 +287,8 @@ public class ModuleGenerator {
 			start.add(new Vector(0,vert,0));
 		}
 		
-		for(Location l : centroids) {
-			
+		for(Location l : centers) {
+			centroids.add(l.clone());
 			smooth(l,size+2);
 		}
 		
@@ -296,7 +298,7 @@ public class ModuleGenerator {
 		return ret.add(retVec);
 	}
 	
-	public static Location generateSmallRoom(Location loc, int r) {
+	public  Location generateSmallRoom(Location loc, int r) {
 		Random rand = new Random();
 		int amount = rand.nextInt(4)+4;
 		r -= 1;
@@ -319,8 +321,9 @@ public class ModuleGenerator {
 			coinflip = rand.nextInt(1);
 			if(coinflip == 0) {sizeMod*=-1; }
 			
-			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
 			
+			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
+			centroids.add(clone.clone());
 			
 		}
 		
@@ -339,7 +342,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	public static Location generatePoolRoom(Location loc, int r) {
+	public  Location generatePoolRoom(Location loc, int r) {
 		Random rand = new Random();
 		int amount = rand.nextInt(4)+3;
 		r -= 1;
@@ -406,7 +409,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 
-	public static Location generateLargeRoom(Location loc, int r) {
+	public  Location generateLargeRoom(Location loc, int r) {
 		Random rand = new Random();
 		int amount = rand.nextInt(5)+3;
 		
@@ -432,6 +435,7 @@ public class ModuleGenerator {
 			if(coinflip == 0) {sizeMod*=-1; }
 			
 			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
+			centroids.add(clone.clone());
 			
 			
 		}
@@ -451,7 +455,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	public static Location generateShelfRoom(Location loc, int r, Vector direction) {
+	public  Location generateShelfRoom(Location loc, int r, Vector direction) {
 	  Random rand = new Random();
 	  int coinflip = rand.nextInt(1);
 	  
@@ -460,7 +464,7 @@ public class ModuleGenerator {
 	  }else return generateShelfFromTop(loc,r,direction);
 	}
 	
-	public static Location generateShelfFromBottom(Location loc, int r, Vector direction) {
+	public  Location generateShelfFromBottom(Location loc, int r, Vector direction) {
       Location next = generateLargeRoom(loc,r);
       next = generateSmallRoom(next,r);
       
@@ -485,7 +489,7 @@ public class ModuleGenerator {
       return next;
 	}
 	
-	   public static Location generateShelfFromTop(Location loc, int r, Vector direction) {
+	   public  Location generateShelfFromTop(Location loc, int r, Vector direction) {
 
 	      
 	      Random rand = new Random();
@@ -508,12 +512,13 @@ public class ModuleGenerator {
 	      
 	       shelf = generateLargeRoom(loc,r);
 	       shelf = generateSmallRoom(shelf,r);
+	       
 	      
 	      return next;
 	    }
 	
 	
-	public static Location rampUp(Location loc, int r, Vector direction) {
+	public  Location rampUp(Location loc, int r, Vector direction) {
 		Location next = loc;
 		for(int i = 0; i < r; i++) {
 			next = loc.add(direction);
@@ -522,7 +527,7 @@ public class ModuleGenerator {
 		return vary(next);
 	}
 	
-	public static void deleteSphere(Location loc, int r) {
+	public  void deleteSphere(Location loc, int r) {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
@@ -545,7 +550,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static void createDropshaft(Location loc, int r, int length) {
+	public  void createDropshaft(Location loc, int r, int length) {
 		int i = 0;
 		if(r >= 6) {
 			r=r-1;
@@ -562,7 +567,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static Location getNext(char c, Location loc, int r, Vector dir) {
+	public  Location getNext(char c, Location loc, int r, Vector dir) {
 		r = r-2;
 		loc = vary(loc);
 		Vector apply = dir.clone();
@@ -585,7 +590,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public static int getSizeMod() {
+	public  int getSizeMod() {
 		Random rand = new Random();
 		return rand.nextInt(3)-2;
 	}

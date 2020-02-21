@@ -48,7 +48,9 @@ public class CaveGenerator {
 		}
 		
 		Location start = world.getBlockAt(x,y,z).getLocation();
-		ModuleGenerator.read(s, start, size,dir);
+		
+		ModuleGenerator gen = new ModuleGenerator();
+		gen.read(s, start, size,dir);
 		return s;
 	}
 	
