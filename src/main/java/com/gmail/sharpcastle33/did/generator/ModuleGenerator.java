@@ -37,6 +37,11 @@ public class ModuleGenerator {
 			smooth(l,size+2);
 			l.getBlock().setType(Material.GLOWSTONE);
 		}
+		
+		for(Location l : centroids) {
+			TerrainGenerator.paintOcean(l, size+2);
+			l.getBlock().setType(Material.OBSIDIAN);
+		}
 	}
 	
 	public static void smooth(Location loc, int r) {
