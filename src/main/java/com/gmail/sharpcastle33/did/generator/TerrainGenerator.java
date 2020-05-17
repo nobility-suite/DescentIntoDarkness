@@ -46,6 +46,12 @@ public class TerrainGenerator {
 	    chanceReplace(loc,r,Material.BLUE_ICE,Material.PACKED_ICE,0.2);
 	  }
   
+  public static void paintTest(Location loc, int r) {
+	  replaceFloor(loc,r,Material.STONE,Material.SNOW_BLOCK);
+	  replaceCeiling(loc,r,Material.STONE,Material.OBSIDIAN);
+	  radiusReplace(loc,r,Material.STONE,Material.RED_WOOL);
+  }
+  
   
   public static void paintMagma(Location loc, int r) {
     //Material.OBSIDIAN
@@ -54,6 +60,9 @@ public class TerrainGenerator {
     //Material.MAGMA_BLOCK;
     //Material.
     replaceFloor(loc,r,Material.STONE,Material.BLACK_CONCRETE_POWDER);
+    replaceCeiling(loc,r,Material.STONE,Material.DEAD_TUBE_CORAL_BLOCK);
+    radiusReplace(loc,r,Material.STONE,Material.GRAY_CONCRETE);
+    chanceReplace(loc,r,Material.DEAD_TUBE_CORAL_BLOCK,Material.DEAD_FIRE_CORAL_BLOCK,0.5);
     
   }
   
@@ -99,14 +108,7 @@ public class TerrainGenerator {
   }
 
   public static void replaceFloor(Location loc, int r, Material old, Material m) {
-    int depth = 1;
-    if(r <= 5) {
-      depth = 4;
-    }else if(r <= 9) {
-      depth = 7;
-    }else if(r >= 13) {
-      depth = 11;
-    }
+
     int x = loc.getBlockX();
     int y = loc.getBlockY();
     int z = loc.getBlockZ();
@@ -114,7 +116,7 @@ public class TerrainGenerator {
     World w = loc.getWorld();
     
     for(int tx=-r; tx< r+1; tx++){
-      for(int ty=-r; ty< r-(depth); ty++){
+      for(int ty=-r; ty< -2; ty++){
           for(int tz=-r; tz< r+1; tz++){
               if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
                   if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
@@ -134,6 +136,36 @@ public class TerrainGenerator {
   }
     
   }
+  
+  public static void replaceCeiling(Location loc, int r, Material old, Material m) {
+
+	    int x = loc.getBlockX();
+	    int y = loc.getBlockY();
+	    int z = loc.getBlockZ();
+	    
+	    World w = loc.getWorld();
+	    
+	    for(int tx=-r; tx< r+1; tx++){
+	      for(int ty=r; ty >2; ty--){
+	          for(int tz=-r; tz< r+1; tz++){
+	              if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+	                  if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+	                      continue;
+	                  }
+	                  if(ty+y > 0) {
+	                    Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
+	                    if(isRoof(b.getLocation()))
+	                    if(b.getType() == old) {
+	                      b.setType(m);
+	                    }
+	                    
+	                  }
+	              }
+	          }
+	      }
+	  }
+	    
+	  }
   
   public static void chanceReplace(Location loc, int r, Material old, Material m, double chance) {
     int x = loc.getBlockX();

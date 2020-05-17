@@ -41,7 +41,7 @@ public class ModuleGenerator {
 		}
 		
 		for(Location l : centroids) {
-			TerrainGenerator.paintGlacial(l, size+2);
+			TerrainGenerator.paintMagma(l, size+2);
 			//l.getBlock().setType(Material.OBSIDIAN);
 		}
 	}
@@ -563,6 +563,7 @@ public class ModuleGenerator {
 			int n = rand.nextInt(2)+2;
 			loc.add(0,-n,0);
 			i+=n;
+			centroids.add(loc.clone());
 			deleteSphere(loc,r);
 		}
 	}
