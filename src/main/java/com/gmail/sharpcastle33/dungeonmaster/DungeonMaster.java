@@ -4,6 +4,11 @@ import java.util.Random;
 
 public class DungeonMaster {
 	
+	
+	// '.' = pause
+	// 'x' = encounter
+	// 'X' = large encounter
+	// '!" = special encounter (2% base)
 	public String tempo(int len) {
 		String ret = "";
 		
