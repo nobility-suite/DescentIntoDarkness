@@ -251,6 +251,21 @@ public class TerrainGenerator {
       return ret;
   }
   
+  public static Location getFloor(Location loc, int r) {
+      Location ret = loc.clone();
+      for(int i = 0; i < r+2; r++) {
+        ret.add(0,-1,0);
+        if(ret.getBlock().getRelative(BlockFace.DOWN).getType() != Material.AIR) {
+          Block up = ret.getBlock().getRelative(BlockFace.DOWN);
+          if(up.getType() != Material.WATER && up.getType() != Material.LAVA) {
+            if(up.getType() != Material.GLOWSTONE)
+            return up.getLocation();
+          }
+        }
+      }
+      return ret;
+  }
+  
   public static void genStalagmites(Location loc, int r, int amount) {
     Random rand = new Random();
     

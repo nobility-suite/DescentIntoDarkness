@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.util.Vector;
 
 public class ModuleGenerator {
@@ -44,6 +45,10 @@ public class ModuleGenerator {
 			TerrainGenerator.paintMagma(l, size+2);
 			//l.getBlock().setType(Material.OBSIDIAN);
 		}
+		
+		//	public void generateOres(Material ore, int cap, int size, int radius, int caveRadius) {
+
+		generateOres(Material.DIAMOND_ORE, 100, 2, 4, size);
 	}
 	
 	public  void smooth(Location loc, int r) {
@@ -595,5 +600,116 @@ public class ModuleGenerator {
 		Random rand = new Random();
 		return rand.nextInt(3)-2;
 	}
+	
+	public void generateOres(Material ore, int cap, int size, int radius, int caveRadius) {
+		Random rand = new Random();
+		
+		for(Location loc : centroids) {
+			int chance = rand.nextInt(5);
+			if(chance == 1) {
+				placeOreCluster(loc,caveRadius,size,radius,ore);
+			}
+		}
+	}
+	
+	public int placeOreCluster(Location loc, int caveRadius, int size, int radius, Material ore) {
+		Random dir = new Random();
+		Location toPlace = loc.clone();
+		Boolean wall = false;
+		switch(dir.nextInt(6)) {
+		case 1:
+			toPlace = loc.clone().add(new Vector(caveRadius,0,0));
+			wall = true;
+			break;
+		case 2:
+			toPlace = loc.clone().add(new Vector(-caveRadius,0,0));
+			wall = true;
+			break;
+		case 3:
+			toPlace = loc.clone().add(new Vector(0,0,caveRadius));
+			wall = true;
+			break;
+		case 4:
+			toPlace = loc.clone().add(new Vector(0,0,-caveRadius));
+			wall = true;
+			break;
+		case 5:
+			toPlace = TerrainGenerator.getCeiling(loc, caveRadius);
+			break;
+		default:
+			toPlace = TerrainGenerator.getFloor(loc, caveRadius);
+			break;
+			
+		}
+		return generateOreCluster(toPlace,size,radius,ore,wall);
+		
+	}
+	
+	public int generateOreCluster(Location loc, int size, int radius, Material ore, boolean wall) {
+		loc.getBlock().setType(ore);
+		int count = 1;
+		Random rand = new Random();
+		
+		int randx;
+		int randy;
+		int randz;
+		int flipx;
+		int flipy;
+		int flipz;
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+		
+		for(int i = 0; i < size; i++) {
+			if(wall) {
+				randx = rand.nextInt(radius/2);
+				randy = rand.nextInt(radius);
+				randz = rand.nextInt(radius/2);
+			}else {
+				randx = rand.nextInt(radius);
+				randy = rand.nextInt(radius/2);
+				randz = rand.nextInt(radius);
+			}
+			
+			flipy = rand.nextInt(1);
+			flipx = rand.nextInt(1);
+			flipz = rand.nextInt(1);
+			
+			if(flipy == 0) { flipy = -1; }
+			if(flipx == 0) { flipx = -1; }
+			if(flipz == 0) { flipz = -1; }
+			
+			randx*=flipx;
+			randy*=flipy;
+			randz*=flipz;
+			x+=randx;
+			y+=randy;
+			z+=randz;
+			
+			int r = 1;
+			
+		    for(int tx=-r; tx< r+1; tx++){
+		        for(int ty=-r; ty< r+1; ty++){
+		            for(int tz=-r; tz< r+1; tz++){
+		                if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+		                    if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+		                        continue;
+		                    }
+		                    if(ty+y > 0) {
+		                      Block b =  loc.getWorld().getBlockAt(tx+x, ty+y, tz+z);
+		                      if(b.getType() != Material.AIR) {     
+		                        b.setType(ore);
+		                        count++;
+		                      }
+		                    }
+		                }
+		            }
+		        }
+		    }
+		}
+		
+		return count;
+	}
+	
 
 }
