@@ -44,6 +44,7 @@ public class CaveGenerator {
 		
 		if(branches == false) {
 			s.replaceAll("X", "W");
+			s.replaceAll("x", "W");
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
 		}
 		

@@ -140,7 +140,7 @@ public class LayoutGenerator {
 		      return 'D';
 		    }else if(n < 92) {
 		      return 'X';
-		    }else if(n < 95) {
+		    }else if(n < 94) {
 		      return 'O';
 		    }else if(n < 101) {
 		      return 'R';

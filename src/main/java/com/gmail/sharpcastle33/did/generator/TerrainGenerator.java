@@ -236,6 +236,22 @@ public class TerrainGenerator {
     }
   }
 
+  public static Location getWall(Location loc, int r, Vector direction) {
+	  r= (int) ((int) r*1.8);
+      Location ret = loc.clone();
+      for(int i = 0; i < r; r++) {
+        ret.add(direction);
+        if(ret.getBlock().getType() != Material.AIR) {
+          Block up = ret.getBlock();
+          if(up.getType() != Material.WATER && up.getType() != Material.LAVA) {
+            if(up.getType() != Material.GLOWSTONE)
+            return up.getLocation();
+          }
+        }
+      }
+      return ret;
+  }
+  
   public static Location getCeiling(Location loc, int r) {
       Location ret = loc.clone();
       for(int i = 0; i < r+2; r++) {
