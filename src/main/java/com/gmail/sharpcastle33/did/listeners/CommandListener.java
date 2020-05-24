@@ -5,7 +5,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import com.gmail.sharpcastle33.did.main;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
+import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -21,6 +23,11 @@ public class CommandListener implements CommandExecutor{
 				CaveGenerator.generateBlank(p.getWorld());
 				p.sendMessage(ChatColor.GREEN + "Done!");
 
+			}
+			
+			if(args[0].equals("start")) {
+				DungeonMaster dungeonMaster = main.plugin.getDungeonMaster();
+				dungeonMaster.start(p);
 			}
 		}else if(args.length == 2) {
 			if(args[0].equals("generate")) {

@@ -32,6 +32,13 @@ public class TerrainGenerator {
 
   }
   
+  public static void paintGeneric(Location loc, int r) {
+	  replaceFloor(loc,r,Material.STONE,Material.GRAVEL);
+	  chanceReplace(loc,r,Material.STONE,Material.ANDESITE,0.2);
+	  chanceReplace(loc,r,Material.STONE,Material.COBBLESTONE,0.2);
+	  chanceReplace(loc,r,Material.STONE,Material.MOSSY_COBBLESTONE,0.05);
+  }
+  
   public static void paintMarble(Location loc, int r) {
     radiusReplace(loc,r,Material.STONE, Material.DIORITE);
     chanceReplace(loc,r,Material.DIORITE,Material.POLISHED_DIORITE,0.2);
@@ -50,6 +57,21 @@ public class TerrainGenerator {
 	  replaceFloor(loc,r,Material.STONE,Material.SNOW_BLOCK);
 	  replaceCeiling(loc,r,Material.STONE,Material.OBSIDIAN);
 	  radiusReplace(loc,r,Material.STONE,Material.RED_WOOL);
+  }
+  
+  public static void paintMesa(Location loc, int r) {
+	  radiusReplace(loc,r,Material.STONE,Material.GRANITE);
+	  replaceFloor(loc,r,Material.GRANITE,Material.RED_SAND);
+	  replaceCeiling(loc,r,Material.GRANITE,Material.RED_TERRACOTTA);
+	  chanceReplace(loc,r,Material.GRANITE,Material.POLISHED_GRANITE,0.2);
+  }
+  
+  public static void paintDesert(Location loc, int r) {
+	  radiusReplace(loc,r,Material.STONE,Material.SANDSTONE);
+	  replaceFloor(loc,r,Material.SANDSTONE, Material.SAND);
+	  chanceReplace(loc,r,Material.SANDSTONE,Material.CHISELED_SANDSTONE,0.2);
+	  chanceReplace(loc,r,Material.SANDSTONE,Material.GRANITE,0.2);
+	  chanceReplace(loc,r,Material.SANDSTONE,Material.POLISHED_GRANITE,0.1);
   }
   
   

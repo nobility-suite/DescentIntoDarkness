@@ -38,12 +38,10 @@ public class ModuleGenerator {
 
 		for(Location l : centroids) {
 			smooth(l,size+2);
-			//l.getBlock().setType(Material.GLOWSTONE);
 		}
 		
 		for(Location l : centroids) {
-			TerrainGenerator.paintMagma(l, size+2);
-			//l.getBlock().setType(Material.OBSIDIAN);
+			TerrainGenerator.paintGeneric(l, size+2);
 		}
 		
 		//	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
@@ -615,6 +613,25 @@ public class ModuleGenerator {
 				placeOreCluster(loc,caveRadius,size,radius,ore);
 			}
 		}
+	}
+	
+	
+	public void generateWaterfalls(Location loc, int caveRadius, int amount, int rarity, int placeRadius) {
+		Random random = new Random();
+		for(Location l : centroids) {
+			if(random.nextInt(rarity) == 1) {
+				placeWaterfalls(loc,caveRadius,amount,placeRadius);
+			}
+		}
+	}
+	
+	public int placeWaterfalls(Location loc, int caveRadius, int amount, int placeRadius) {
+		for(int i = 0; i < amount; i++) {
+			//TODO
+		}
+		
+		return 0;
+
 	}
 	
 	public int placeOreCluster(Location loc, int caveRadius, int size, int radius, Material ore) {

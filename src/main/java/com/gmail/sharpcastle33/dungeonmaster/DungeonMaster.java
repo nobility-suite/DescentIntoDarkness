@@ -1,6 +1,14 @@
 package com.gmail.sharpcastle33.dungeonmaster;
 
+import java.util.ArrayList;
 import java.util.Random;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import com.gmail.sharpcastle33.did.main;
+
+import net.md_5.bungee.api.ChatColor;
 
 public class DungeonMaster {
 	
@@ -45,5 +53,22 @@ public class DungeonMaster {
 		}
 		return ret;
 	}
+
+	public void start(Player p) {
+
+		String tempo = tempo(40);
+		p.sendMessage(ChatColor.GREEN + "Tempo: " + tempo);
+		long period = 20 * 7; //15 seconds timer
+		
+		ArrayList<Player> temp = new ArrayList<Player>();
+		
+		for(Player pl : Bukkit.getServer().getOnlinePlayers()) {
+			temp.add(pl);
+		}
+		
+	    new CaveTickTask(temp,tempo).runTaskTimer(main.plugin, 20, period);
+	}
+	
+
 
 }
