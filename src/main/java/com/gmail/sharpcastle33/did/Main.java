@@ -7,10 +7,10 @@ import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 
-public class main extends JavaPlugin{
+public class Main extends JavaPlugin{
 
 	public DungeonMaster dungeonMaster;
-	public static main plugin;
+	public static Main plugin;
 	
 	@Override
 	public void onEnable() {

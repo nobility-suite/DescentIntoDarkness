@@ -5,7 +5,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
-import com.gmail.sharpcastle33.did.main;
+import com.gmail.sharpcastle33.did.Main;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 
@@ -26,7 +26,7 @@ public class CommandListener implements CommandExecutor{
 			}
 			
 			if(args[0].equals("start")) {
-				DungeonMaster dungeonMaster = main.plugin.getDungeonMaster();
+				DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
 				dungeonMaster.start(p);
 			}
 		}else if(args.length == 2) {
