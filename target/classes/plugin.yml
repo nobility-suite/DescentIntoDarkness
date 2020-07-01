@@ -1,9 +1,0 @@
-name: DescentIntoDarkness
-main: com.gmail.sharpcastle33.did.main
-version: 0.0.1-SNAPSHOT
-api-version: 1.13
-commands:
-   did:
-      description: Descent Into Darkness main command
-      usage: /did <argument> [other stuff]
-      aliases: [ descent ]

@@ -51,7 +51,7 @@ public class TerrainGenerator {
 	    replaceFloor(loc,r,Material.BLUE_ICE,Material.SNOW_BLOCK);
 
 	    chanceReplace(loc,r,Material.BLUE_ICE,Material.PACKED_ICE,0.2);
-	  }
+  }
   
   public static void paintTest(Location loc, int r) {
 	  replaceFloor(loc,r,Material.STONE,Material.SNOW_BLOCK);
@@ -140,7 +140,7 @@ public class TerrainGenerator {
     for(int tx=-r; tx< r+1; tx++){
       for(int ty=-r; ty< -2; ty++){
           for(int tz=-r; tz< r+1; tz++){
-              if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+              if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
                   if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
                       continue;
                   }
@@ -170,7 +170,7 @@ public class TerrainGenerator {
 	    for(int tx=-r; tx< r+1; tx++){
 	      for(int ty=r; ty >2; ty--){
 	          for(int tz=-r; tz< r+1; tz++){
-	              if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+	              if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
 	                  if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
 	                      continue;
 	                  }
@@ -187,7 +187,7 @@ public class TerrainGenerator {
 	      }
 	  }
 	    
-	  }
+  }
   
   public static void chanceReplace(Location loc, int r, Material old, Material m, double chance) {
     int x = loc.getBlockX();
@@ -197,30 +197,23 @@ public class TerrainGenerator {
     World w = loc.getWorld();
     
     Random rand = new Random();
-    int bound = 1000;
-    
+
     if(chance >= 1) {
       radiusReplace(loc,r,old,m);
       return;
     }
     
-    if(chance < 0.001) {
-      return;
-    }
-    
-    int rng = (int) (chance*1000);
-    
     for(int tx=-r; tx< r+1; tx++){
         for(int ty=-r; ty< r+1; ty++){
             for(int tz=-r; tz< r+1; tz++){
-                if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+                if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
                     if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
                         continue;
                     }
                     if(ty+y > 0) {
                       Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
                       if(b.getType() == old) {
-                        if(rand.nextInt(bound) < rng)
+                        if(rand.nextDouble() < chance)
                         b.setType(m);
                       }
                       
@@ -241,7 +234,7 @@ public class TerrainGenerator {
     for(int tx=-r; tx< r+1; tx++){
         for(int ty=-r; ty< r+1; ty++){
             for(int tz=-r; tz< r+1; tz++){
-                if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+                if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
                     if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
                         continue;
                     }

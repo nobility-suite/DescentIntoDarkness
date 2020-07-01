@@ -63,7 +63,7 @@ public class ModuleGenerator {
 		for(int tx=-r; tx< r+1; tx++){
 		    for(int ty=-r; ty< r+1; ty++){
 		        for(int tz=-r; tz< r+1; tz++){
-		            if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+		            if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
 		                //delete(tx+x, ty+y, tz+z);
 		            	Block b = w.getBlockAt(tx+x, ty+y, tz+z);
 		            	
@@ -117,13 +117,13 @@ public class ModuleGenerator {
 		if(choice <= 50) {
 			return clone;
 		}else if(choice <= 70) {
-			return clone.rotateAroundY(15);
+			return clone.rotateAroundY(Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(-15);
+			return clone.rotateAroundY(-Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(30);
+			return clone.rotateAroundY(Math.PI/6);
 		}else {
-			return clone.rotateAroundY(-30);
+			return clone.rotateAroundY(-Math.PI/6);
 		}
 	}
 	
@@ -132,13 +132,13 @@ public class ModuleGenerator {
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
         if(choice <= 45) {
-			return clone.rotateAroundY(-15);
+			return clone.rotateAroundY(-Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(-15);
+			return clone.rotateAroundY(-Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(-30);
+			return clone.rotateAroundY(-Math.PI/6);
 		}else {
-			return clone.rotateAroundY(-30);
+			return clone.rotateAroundY(-Math.PI/6);
 		}
 	}
 	
@@ -147,13 +147,13 @@ public class ModuleGenerator {
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
         if(choice <= 45) {
-			return clone.rotateAroundY(15);
+			return clone.rotateAroundY(Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(15);
+			return clone.rotateAroundY(Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(30);
+			return clone.rotateAroundY(Math.PI/6);
 		}else {
-			return clone.rotateAroundY(30);
+			return clone.rotateAroundY(Math.PI/6);
 		}
 	}
 	
@@ -176,12 +176,11 @@ public class ModuleGenerator {
 			case 'X':
 				Vector clone = dir.clone();
 				Random rand = new Random();
-				int coinflip = rand.nextInt(1);
-				if(coinflip == 0) { coinflip = -1; }
-				
+				int coinflip = rand.nextBoolean() ? 1 : -1;
+
 				int newSize = rand.nextInt(20);
 				int sizeMod = rand.nextInt(2);
-				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(90*coinflip));
+				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
 				return getNext(c,loc,size,dir);
 			case 'x':
 				return generateSmallBranch(loc,size,dir);
@@ -224,8 +223,8 @@ public class ModuleGenerator {
 	private  Location generateSmallBranch(Location loc, int size, Vector dir) {
 		Vector clone = dir.clone();
 		Random rand = new Random();
-		
-		clone.rotateAroundY(rand.nextInt(270)+45);
+
+		clone.rotateAroundY(2 * Math.PI * (rand.nextDouble() * 3/4 + 1.0/8));
 		
 		if(size < 7) {
 			size = 6;
@@ -271,10 +270,9 @@ public class ModuleGenerator {
 		retVec.multiply(size);
 		int chasmSize = rand.nextInt(2)+3;
 		int chasmSizeBackward = rand.nextInt(3)+2;
-		int coinflip = rand.nextInt(1);
-		if(coinflip == 0) { coinflip = -1; }
+		int coinflip = rand.nextBoolean() ? 1 : -1;
 		Vector dir = caveDir.clone();
-		dir.rotateAroundY(90*coinflip);
+		dir.rotateAroundY(Math.PI / 2 * coinflip);
 		
 		int vert = size/2 + 1;
 		Location start = loc.clone();
@@ -477,12 +475,11 @@ public class ModuleGenerator {
       next = generateSmallRoom(next,r);
       
       Random rand = new Random();
-      int coinflip = rand.nextInt(1);
-      if(coinflip == 0) { coinflip = -1; }
-      
+      int coinflip = rand.nextBoolean() ? 1 : -1;
+
       Location shelf = loc.clone().add(new Vector(0,rand.nextInt(5)+6,0));
       Vector adjust = direction.clone();
-      adjust.rotateAroundY(90+rand.nextInt(10) * coinflip);
+      adjust.rotateAroundY(Math.PI / 2 + rand.nextDouble() * Math.PI / 18 * coinflip);
       shelf.add(adjust);
       
       Vector dir = direction.clone();
@@ -496,17 +493,16 @@ public class ModuleGenerator {
       
       return next;
 	}
-	
-	   public  Location generateShelfFromTop(Location loc, int r, Vector direction) {
+
+	public  Location generateShelfFromTop(Location loc, int r, Vector direction) {
 
 	      
 	      Random rand = new Random();
-	      int coinflip = rand.nextInt(1);
-	      if(coinflip == 0) { coinflip = -1; }
-	      
+	      int coinflip = rand.nextBoolean() ? 1 : -1;
+
 	      Location shelf = loc.clone().add(new Vector(0,-1*rand.nextInt(5)+6,0));
 	      Vector adjust = direction.clone();
-	      adjust.rotateAroundY(90+rand.nextInt(10) * coinflip);
+	      adjust.rotateAroundY(Math.PI / 2 +rand.nextDouble() * Math.PI / 18 * coinflip);
 	      shelf.add(adjust);
 	      
 	      Vector dir = direction.clone();
@@ -523,7 +519,7 @@ public class ModuleGenerator {
 	       
 	      
 	      return next;
-	    }
+	}
 	
 	
 	public  Location rampUp(Location loc, int r, Vector direction) {
@@ -694,7 +690,7 @@ public class ModuleGenerator {
 	                      if(b.getType() != Material.AIR) {
 	                    	  if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
 	                    		  if(rand.nextBoolean())
-	                    		  continue;
+	                    		  	continue;
 	                          }
 	                        b.setType(ore);
 	                        count++;

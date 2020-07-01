@@ -6,7 +6,7 @@ import java.util.Random;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import com.gmail.sharpcastle33.did.main;
+import com.gmail.sharpcastle33.did.Main;
 
 import net.md_5.bungee.api.ChatColor;
 
@@ -66,7 +66,7 @@ public class DungeonMaster {
 			temp.add(pl);
 		}
 		
-	    new CaveTickTask(temp,tempo).runTaskTimer(main.plugin, 20, period);
+	    new CaveTickTask(temp,tempo).runTaskTimer(Main.plugin, 20, period);
 	}
 	
 
