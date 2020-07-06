@@ -6,7 +6,9 @@ import com.gmail.sharpcastle33.did.generator.PainterStep;
 import com.google.common.collect.Lists;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -43,16 +45,17 @@ public class Main extends JavaPlugin {
 		setupConfig();
 
 		dungeonMaster = new DungeonMaster();
-		findCommand("did").setExecutor(new CommandListener());
+		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
 	}
 
-	private PluginCommand findCommand(String name) {
+	private <T extends CommandExecutor & TabCompleter> void registerCommand(String name, T executor) {
 		PluginCommand command = getCommand(name);
 		if (command == null) {
 			throw new IllegalStateException("Cannot find command: \"" + name + "\"");
 		}
-		return command;
+		command.setExecutor(executor);
+		command.setTabCompleter(executor);
 	}
 
 	private void setupConfig() {
