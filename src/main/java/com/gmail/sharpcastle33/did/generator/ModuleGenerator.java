@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.logging.Level;
 
+import com.gmail.sharpcastle33.did.config.CaveStyle;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,7 +18,7 @@ public class ModuleGenerator {
 	ArrayList<Location> centroids = new ArrayList<Location>();
 
 	
-	public  void read(String cave, Location start, int size, Vector dir) {
+	public  void read(String cave, Location start, int size, CaveStyle style, Vector dir) {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
 		Location loc = start;
@@ -30,7 +31,7 @@ public class ModuleGenerator {
 			if(ch[i] == 'A') { dir = redirectLeft(dir); }
 			if(ch[i] == 'D') { dir = redirectRight(dir);}
 			//Bukkit.getLogger().log(Level.WARNING, "New Vector: " + ch[i] + ", " + dir);
-			loc = apply(ch[i],loc,tempSize,size,dir);
+			loc = apply(ch[i],loc,tempSize,style,size,dir);
 			centroids.add(loc.clone());
 		}
 		
@@ -41,7 +42,9 @@ public class ModuleGenerator {
 		}
 		
 		for(Location l : centroids) {
-			TerrainGenerator.paintGeneric(l, size+2);
+			for (PainterStep painterStep : style.getPainterSteps()) {
+				painterStep.apply(l, size+2);
+			}
 		}
 		
 		//	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
@@ -157,7 +160,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  Location apply(char c, Location loc, int size, int realSize, Vector dir) {
+	public  Location apply(char c, Location loc, int size, CaveStyle style, int realSize, Vector dir) {
 		switch(c) {
 			case 'W':
 				deleteSphere(loc,size);
@@ -180,10 +183,10 @@ public class ModuleGenerator {
 
 				int newSize = rand.nextInt(20);
 				int sizeMod = rand.nextInt(2);
-				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
+				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
 				return getNext(c,loc,size,dir);
 			case 'x':
-				return generateSmallBranch(loc,size,dir);
+				return generateSmallBranch(loc,size,style,dir);
 			case 'O':
 				Random rand2 = new Random();
 				int lengthMod = rand2.nextInt(4);
@@ -220,7 +223,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	private  Location generateSmallBranch(Location loc, int size, Vector dir) {
+	private  Location generateSmallBranch(Location loc, int size, CaveStyle style, Vector dir) {
 		Vector clone = dir.clone();
 		Random rand = new Random();
 
@@ -238,7 +241,7 @@ public class ModuleGenerator {
 		
 		int newSize = rand.nextInt(20);
 		int sizeMod = rand.nextInt(1);
-		CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
+		CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
 		return getNext('X',loc,size,dir);
 	}
 

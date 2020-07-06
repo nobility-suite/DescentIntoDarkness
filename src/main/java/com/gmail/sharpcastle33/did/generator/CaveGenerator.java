@@ -2,6 +2,7 @@ package com.gmail.sharpcastle33.did.generator;
 
 import java.util.logging.Level;
 
+import com.gmail.sharpcastle33.did.config.CaveStyle;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -27,17 +28,17 @@ public class CaveGenerator {
 		}
 	}
 	
-	public static String generateCave(World world) {
-		return generateCave(world,5);
+	public static String generateCave(World world, CaveStyle style) {
+		return generateCave(world,5, style);
 		
 	}
 	
-	public static String generateCave(World world, int size) {
+	public static String generateCave(World world, int size, CaveStyle style) {
 		Vector dir = new Vector(1,0,0);
-		return generateCave(world,size,0,210,0,90,true,dir);
+		return generateCave(world,size,style,0,210,0,90,true,dir);
 	}
 	
-	public static String generateCave(World world, int size, int x, int y, int z, int length, boolean branches, Vector dir) {
+	public static String generateCave(World world, int size, CaveStyle style, int x, int y, int z, int length, boolean branches, Vector dir) {
 		
 		int len = 100;
 		String s = LayoutGenerator.generateCave(length, 0);
@@ -51,7 +52,7 @@ public class CaveGenerator {
 		Location start = world.getBlockAt(x,y,z).getLocation();
 		
 		ModuleGenerator gen = new ModuleGenerator();
-		gen.read(s, start, size,dir);
+		gen.read(s, start, size, style,dir);
 		return s;
 	}
 	

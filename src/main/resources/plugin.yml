@@ -1,5 +1,5 @@
 name: DescentIntoDarkness
-main: com.gmail.sharpcastle33.did.main
+main: com.gmail.sharpcastle33.did.Main
 version: ${project.version}
 api-version: 1.13
 commands:

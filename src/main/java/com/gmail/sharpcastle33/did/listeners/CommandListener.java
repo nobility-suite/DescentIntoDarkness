@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.listeners;
 
+import com.gmail.sharpcastle33.did.config.CaveStyle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -16,38 +17,42 @@ public class CommandListener implements CommandExecutor{
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		
 		Player p = (Player) sender;
-		
-		if(args.length == 1) {
-			if(args[0].equals("generate")) {
-				p.sendMessage(ChatColor.DARK_RED + "Generating...");
-				CaveGenerator.generateBlank(p.getWorld());
-				p.sendMessage(ChatColor.GREEN + "Done!");
 
-			}
-			
-			if(args[0].equals("start")) {
-				DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
-				dungeonMaster.start(p);
-			}
-		}else if(args.length == 2) {
-			if(args[0].equals("generate")) {
-				if(args[1].equals("cave")) {
-					p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
-					String s = CaveGenerator.generateCave(p.getWorld(), 9);
-					p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
-				}
-			}
-		}else if(args.length == 3) {
-			if(args[0].equals("generate")) {
-				if(args[1].equals("cave")) {
-					p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
-					int size = Integer.parseInt(args[2]);
-					String s = CaveGenerator.generateCave(p.getWorld(), size);
-					p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
-				}
-			}
+		if (args[0].equals("generate")) {
+			generate(p, args);
+		} else if (args[0].equals("start")) {
+			DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
+			dungeonMaster.start(p);
+		} else if (args[0].equals("reload")) {
+			Main.plugin.reload();
+			p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
 		}
 		
 		return true;
+	}
+
+	private void generate(Player p, String[] args) {
+		if (args.length == 1) {
+			p.sendMessage(ChatColor.DARK_RED + "Generating...");
+			CaveGenerator.generateBlank(p.getWorld());
+			p.sendMessage(ChatColor.GREEN + "Done!");
+		} else if (args[1].equals("cave")) {
+			generateCave(p, args);
+		}
+	}
+
+	private void generateCave(Player p, String[] args) {
+		String styleName = args.length <= 2 ? "default" : args[2];
+		int size = args.length <= 3 ? 9 : Integer.parseInt(args[3]);
+
+		CaveStyle style = Main.plugin.getCaveStyles().get(styleName);
+		if (style == null) {
+			p.sendMessage(ChatColor.DARK_RED + "No such cave style " + styleName);
+			return;
+		}
+
+		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
+		String s = CaveGenerator.generateCave(p.getWorld(), size, style);
+		p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
 	}
 }
