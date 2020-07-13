@@ -7,6 +7,7 @@ import org.bukkit.Material;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public abstract class PainterStep {
     private final Type type;
@@ -77,7 +78,7 @@ public abstract class PainterStep {
         throw new InvalidConfigException("Invalid painter step type: " + value.getClass());
     }
 
-    public abstract void apply(Location loc, int r);
+    public abstract void apply(Random rand, Location loc, int r);
 
     public static class ChanceReplace extends PainterStep {
         private final Material old;
@@ -97,8 +98,8 @@ public abstract class PainterStep {
         }
 
         @Override
-        public void apply(Location loc, int r) {
-            TerrainGenerator.chanceReplace(loc, r, old, _new, chance);
+        public void apply(Random rand, Location loc, int r) {
+            TerrainGenerator.chanceReplace(rand, loc, r, old, _new, chance);
         }
     }
 
@@ -118,7 +119,7 @@ public abstract class PainterStep {
         }
 
         @Override
-        public void apply(Location loc, int r) {
+        public void apply(Random rand, Location loc, int r) {
             TerrainGenerator.radiusReplace(loc, r, old, _new);
         }
     }
@@ -139,7 +140,7 @@ public abstract class PainterStep {
         }
 
         @Override
-        public void apply(Location loc, int r) {
+        public void apply(Random rand, Location loc, int r) {
             TerrainGenerator.replaceCeiling(loc, r, old, _new);
         }
     }
@@ -160,7 +161,7 @@ public abstract class PainterStep {
         }
 
         @Override
-        public void apply(Location loc, int r) {
+        public void apply(Random rand, Location loc, int r) {
             TerrainGenerator.replaceFloor(loc, r, old, _new);
         }
     }

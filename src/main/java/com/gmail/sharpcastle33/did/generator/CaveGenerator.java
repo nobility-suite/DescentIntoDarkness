@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import java.util.Random;
 import java.util.logging.Level;
 
 import com.gmail.sharpcastle33.did.config.CaveStyle;
@@ -28,31 +29,31 @@ public class CaveGenerator {
 		}
 	}
 	
-	public static String generateCave(World world, CaveStyle style) {
-		return generateCave(world,5, style);
+	public static String generateCave(Location origin, Random rand, CaveStyle style) {
+		return generateCave(origin, rand,5, style);
 		
 	}
 	
-	public static String generateCave(World world, int size, CaveStyle style) {
+	public static String generateCave(Location origin, Random rand, int size, CaveStyle style) {
 		Vector dir = new Vector(1,0,0);
-		return generateCave(world,size,style,0,210,0,90,true,dir);
+		return generateCave(origin.getWorld(),rand,size,style,origin.getBlockX(),origin.getBlockY(),origin.getBlockZ(),90,true,dir);
 	}
 	
-	public static String generateCave(World world, int size, CaveStyle style, int x, int y, int z, int length, boolean branches, Vector dir) {
+	public static String generateCave(World world, Random rand, int size, CaveStyle style, int x, int y, int z, int length, boolean branches, Vector dir) {
 		
 		int len = 100;
-		String s = LayoutGenerator.generateCave(length, 0);
+		String s = LayoutGenerator.generateCave(rand, length, 0);
 		
-		if(branches == false) {
-			s.replaceAll("X", "W");
-			s.replaceAll("x", "W");
+		if(!branches) {
+			s = s.replace("X", "W");
+			s = s.replace("x", "W");
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
 		}
 		
 		Location start = world.getBlockAt(x,y,z).getLocation();
 		
 		ModuleGenerator gen = new ModuleGenerator();
-		gen.read(s, start, size, style,dir);
+		gen.read(rand, s, start, size, style,dir);
 		return s;
 	}
 	
