@@ -66,10 +66,10 @@ public class Main extends JavaPlugin {
 		caveStylesConfig = reloadConfig("caveStyles");
 		CaveStyle defaultStyle = new CaveStyle();
 		defaultStyle.setPainterSteps(Lists.newArrayList(
-				new PainterStep.ReplaceFloor(Material.STONE, Material.GRAVEL),
-				new PainterStep.ChanceReplace(Material.STONE, Material.ANDESITE, 0.2),
-				new PainterStep.ChanceReplace(Material.STONE, Material.COBBLESTONE, 0.2),
-				new PainterStep.ChanceReplace(Material.STONE, Material.MOSSY_COBBLESTONE, 0.05)
+				new PainterStep.ReplaceFloor(Material.STONE.createBlockData(), Material.GRAVEL.createBlockData()),
+				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.ANDESITE.createBlockData(), 0.2),
+				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.COBBLESTONE.createBlockData(), 0.2),
+				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.MOSSY_COBBLESTONE.createBlockData(), 0.05)
 		));
 		ConfigurationSection defaultConfig = new MemoryConfiguration();
 		defaultStyle.serialize(defaultConfig);
