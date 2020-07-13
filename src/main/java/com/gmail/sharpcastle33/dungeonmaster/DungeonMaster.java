@@ -17,10 +17,9 @@ public class DungeonMaster {
 	// 'x' = encounter
 	// 'X' = large encounter
 	// '!" = special encounter (2% base)
-	public String tempo(int len) {
+	public String tempo(Random rand, int len) {
 		String ret = "";
 		
-		Random rand = new Random();
 		int lucky = 0; //Tempers randomness
 		
 		for(int i = 0; i < len; i++) {
@@ -54,9 +53,9 @@ public class DungeonMaster {
 		return ret;
 	}
 
-	public void start(Player p) {
+	public void start(Random rand, Player p) {
 
-		String tempo = tempo(40);
+		String tempo = tempo(rand, 40);
 		p.sendMessage(ChatColor.GREEN + "Tempo: " + tempo);
 		long period = 20 * 7; //15 seconds timer
 		

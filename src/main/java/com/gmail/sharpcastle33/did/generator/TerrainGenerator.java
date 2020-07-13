@@ -10,72 +10,72 @@ import org.bukkit.util.Vector;
 
 public class TerrainGenerator {
 
-  public static void paintOcean(Location loc, int r) {
+  public static void paintOcean(Random rand, Location loc, int r) {
     r = r+1;
     //Material.PRISMARINE;
     //Material.PRISMARINE_BRICKS;
     //Material.DARK_PRISMARINE;
     
     radiusReplace(loc,r,Material.STONE,Material.PRISMARINE);
-    chanceReplace(loc,r,Material.PRISMARINE,Material.DARK_PRISMARINE,0.1);
-    chanceReplace(loc,r,Material.PRISMARINE,Material.PRISMARINE_BRICKS, 0.1);
+    chanceReplace(rand,loc,r,Material.PRISMARINE,Material.DARK_PRISMARINE,0.1);
+    chanceReplace(rand,loc,r,Material.PRISMARINE,Material.PRISMARINE_BRICKS, 0.1);
   }
   
-  public static void paintCoral(Location loc, int r) {
+  public static void paintCoral(Random rand, Location loc, int r) {
 	  radiusReplace(loc,r,Material.STONE, Material.BRAIN_CORAL_BLOCK);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.BUBBLE_CORAL_BLOCK,0.1);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.TUBE_CORAL_BLOCK,0.1);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.HORN_CORAL_BLOCK,0.1);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.FIRE_CORAL_BLOCK,0.1);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.DEAD_HORN_CORAL_BLOCK,0.1);
-	  chanceReplace(loc,r,Material.BRAIN_CORAL_BLOCK,Material.WET_SPONGE,0.05);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.BUBBLE_CORAL_BLOCK,0.1);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.TUBE_CORAL_BLOCK,0.1);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.HORN_CORAL_BLOCK,0.1);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.FIRE_CORAL_BLOCK,0.1);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.DEAD_HORN_CORAL_BLOCK,0.1);
+	  chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK,Material.WET_SPONGE,0.05);
 
   }
   
-  public static void paintGeneric(Location loc, int r) {
+  public static void paintGeneric(Random rand, Location loc, int r) {
 	  replaceFloor(loc,r,Material.STONE,Material.GRAVEL);
-	  chanceReplace(loc,r,Material.STONE,Material.ANDESITE,0.2);
-	  chanceReplace(loc,r,Material.STONE,Material.COBBLESTONE,0.2);
-	  chanceReplace(loc,r,Material.STONE,Material.MOSSY_COBBLESTONE,0.05);
+	  chanceReplace(rand,loc,r,Material.STONE,Material.ANDESITE,0.2);
+	  chanceReplace(rand,loc,r,Material.STONE,Material.COBBLESTONE,0.2);
+	  chanceReplace(rand,loc,r,Material.STONE,Material.MOSSY_COBBLESTONE,0.05);
   }
   
-  public static void paintMarble(Location loc, int r) {
+  public static void paintMarble(Random rand, Location loc, int r) {
     radiusReplace(loc,r,Material.STONE, Material.DIORITE);
-    chanceReplace(loc,r,Material.DIORITE,Material.POLISHED_DIORITE,0.2);
-    chanceReplace(loc,r,Material.DIORITE,Material.QUARTZ_BLOCK,0.1);
+    chanceReplace(rand,loc,r,Material.DIORITE,Material.POLISHED_DIORITE,0.2);
+    chanceReplace(rand,loc,r,Material.DIORITE,Material.QUARTZ_BLOCK,0.1);
   }
   
-  public static void paintGlacial(Location loc, int r) {
+  public static void paintGlacial(Random rand, Location loc, int r) {
 	    radiusReplace(loc,r,Material.STONE, Material.BLUE_ICE);
 	    
 	    replaceFloor(loc,r,Material.BLUE_ICE,Material.SNOW_BLOCK);
 
-	    chanceReplace(loc,r,Material.BLUE_ICE,Material.PACKED_ICE,0.2);
+	    chanceReplace(rand,loc,r,Material.BLUE_ICE,Material.PACKED_ICE,0.2);
   }
   
-  public static void paintTest(Location loc, int r) {
+  public static void paintTest(Random rand, Location loc, int r) {
 	  replaceFloor(loc,r,Material.STONE,Material.SNOW_BLOCK);
 	  replaceCeiling(loc,r,Material.STONE,Material.OBSIDIAN);
 	  radiusReplace(loc,r,Material.STONE,Material.RED_WOOL);
   }
   
-  public static void paintMesa(Location loc, int r) {
+  public static void paintMesa(Random rand, Location loc, int r) {
 	  radiusReplace(loc,r,Material.STONE,Material.GRANITE);
 	  replaceFloor(loc,r,Material.GRANITE,Material.RED_SAND);
 	  replaceCeiling(loc,r,Material.GRANITE,Material.RED_TERRACOTTA);
-	  chanceReplace(loc,r,Material.GRANITE,Material.POLISHED_GRANITE,0.2);
+	  chanceReplace(rand,loc,r,Material.GRANITE,Material.POLISHED_GRANITE,0.2);
   }
   
-  public static void paintDesert(Location loc, int r) {
+  public static void paintDesert(Random rand, Location loc, int r) {
 	  radiusReplace(loc,r,Material.STONE,Material.SANDSTONE);
 	  replaceFloor(loc,r,Material.SANDSTONE, Material.SAND);
-	  chanceReplace(loc,r,Material.SANDSTONE,Material.CHISELED_SANDSTONE,0.2);
-	  chanceReplace(loc,r,Material.SANDSTONE,Material.GRANITE,0.2);
-	  chanceReplace(loc,r,Material.SANDSTONE,Material.POLISHED_GRANITE,0.1);
+	  chanceReplace(rand,loc,r,Material.SANDSTONE,Material.CHISELED_SANDSTONE,0.2);
+	  chanceReplace(rand,loc,r,Material.SANDSTONE,Material.GRANITE,0.2);
+	  chanceReplace(rand,loc,r,Material.SANDSTONE,Material.POLISHED_GRANITE,0.1);
   }
   
   
-  public static void paintMagma(Location loc, int r) {
+  public static void paintMagma(Random rand, Location loc, int r) {
     //Material.OBSIDIAN
     //Material.BLACK_CONCRETE_POWDER;
     //Material.BLACK_CONCRETE;
@@ -84,13 +84,12 @@ public class TerrainGenerator {
     replaceFloor(loc,r,Material.STONE,Material.BLACK_CONCRETE_POWDER);
     replaceCeiling(loc,r,Material.STONE,Material.DEAD_TUBE_CORAL_BLOCK);
     radiusReplace(loc,r,Material.STONE,Material.GRAY_CONCRETE);
-    chanceReplace(loc,r,Material.DEAD_TUBE_CORAL_BLOCK,Material.DEAD_FIRE_CORAL_BLOCK,0.5);
+    chanceReplace(rand,loc,r,Material.DEAD_TUBE_CORAL_BLOCK,Material.DEAD_FIRE_CORAL_BLOCK,0.5);
     
   }
   
-  public static void generateBlob(Location loc, int r, int rx, Material old, Material m) {
+  public static void generateBlob(Random rand, Location loc, int r, int rx, Material old, Material m) {
     
-    Random rand = new Random();
     int tx = rand.nextInt(r*2)-r;
     int tz = rand.nextInt(r*2)-r;
     int ty = rand.nextInt(r*2)-r;
@@ -100,9 +99,9 @@ public class TerrainGenerator {
     radiusReplace(next,rx,old,m);
   }
   
-  public static void generateBlobs(Location loc, int r, int rx, int amt, Material old, Material m) {
+  public static void generateBlobs(Random rand, Location loc, int r, int rx, int amt, Material old, Material m) {
     for(int i = 0; i < amt; i++) {
-      generateBlob(loc,r,rx,old,m);
+      generateBlob(rand,loc,r,rx,old,m);
     }
   }
   
@@ -189,15 +188,13 @@ public class TerrainGenerator {
 	    
   }
   
-  public static void chanceReplace(Location loc, int r, Material old, Material m, double chance) {
+  public static void chanceReplace(Random rand, Location loc, int r, Material old, Material m, double chance) {
     int x = loc.getBlockX();
     int y = loc.getBlockY();
     int z = loc.getBlockZ();
     
     World w = loc.getWorld();
     
-    Random rand = new Random();
-
     if(chance >= 1) {
       radiusReplace(loc,r,old,m);
       return;
@@ -254,7 +251,7 @@ public class TerrainGenerator {
   public static Location getWall(Location loc, int r, Vector direction) {
 	  r= (int) ((int) r*1.8);
       Location ret = loc.clone();
-      for(int i = 0; i < r; r++) {
+      for(int i = 0; i < r; i++) {
         ret.add(direction);
         if(ret.getBlock().getType() != Material.AIR) {
           Block up = ret.getBlock();
@@ -269,7 +266,7 @@ public class TerrainGenerator {
   
   public static Location getCeiling(Location loc, int r) {
       Location ret = loc.clone();
-      for(int i = 0; i < r+2; r++) {
+      for(int i = 0; i < r+2; i++) {
         ret.add(0,1,0);
         if(ret.getBlock().getRelative(BlockFace.UP).getType() != Material.AIR) {
           Block up = ret.getBlock().getRelative(BlockFace.UP);
@@ -284,7 +281,7 @@ public class TerrainGenerator {
   
   public static Location getFloor(Location loc, int r) {
       Location ret = loc.clone();
-      for(int i = 0; i < r+2; r++) {
+      for(int i = 0; i < r+2; i++) {
         ret.add(0,-1,0);
         if(ret.getBlock().getRelative(BlockFace.DOWN).getType() != Material.AIR) {
           Block up = ret.getBlock().getRelative(BlockFace.DOWN);
@@ -297,9 +294,7 @@ public class TerrainGenerator {
       return ret;
   }
   
-  public static void genStalagmites(Location loc, int r, int amount) {
-    Random rand = new Random();
-    
+  public static void genStalagmites(Random rand, Location loc, int r, int amount) {
     for(int i = 0; i < amount; i++) {
       int hozMod = Math.min(3, r);
       int tx = rand.nextInt(hozMod)+1;

@@ -10,7 +10,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.util.Vector;
 
 public class ModuleGenerator {
@@ -18,7 +17,7 @@ public class ModuleGenerator {
 	ArrayList<Location> centroids = new ArrayList<Location>();
 
 	
-	public  void read(String cave, Location start, int size, CaveStyle style, Vector dir) {
+	public  void read(Random rand, String cave, Location start, int size, CaveStyle style, Vector dir) {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
 		Location loc = start;
@@ -26,43 +25,42 @@ public class ModuleGenerator {
 		
 		char[] ch = cave.toCharArray();
 		for(int i = 0; i < ch.length; i++) {
-			int tempSize = size + getSizeMod();
+			int tempSize = size + getSizeMod(rand);
 			//Bukkit.getLogger().log(Level.WARNING, "Applying... " + ch[i]);
-			if(ch[i] == 'A') { dir = redirectLeft(dir); }
-			if(ch[i] == 'D') { dir = redirectRight(dir);}
+			if(ch[i] == 'A') { dir = redirectLeft(rand, dir); }
+			if(ch[i] == 'D') { dir = redirectRight(rand, dir);}
 			//Bukkit.getLogger().log(Level.WARNING, "New Vector: " + ch[i] + ", " + dir);
-			loc = apply(ch[i],loc,tempSize,style,size,dir);
+			loc = apply(rand,ch[i],loc,tempSize,style,size,dir);
 			centroids.add(loc.clone());
 		}
 		
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
 		for(Location l : centroids) {
-			smooth(l,size+2);
+			smooth(rand, l,size+2);
 		}
 		
 		for(Location l : centroids) {
 			for (PainterStep painterStep : style.getPainterSteps()) {
-				painterStep.apply(l, size+2);
+				painterStep.apply(rand, l, size+2);
 			}
 		}
 		
 		//	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
 
-		generateOres(Material.COAL_ORE, 100, 7, 4, size);
-		generateOres(Material.DIAMOND_ORE, 100, 11, 4, size);
-		generateOres(Material.EMERALD_ORE, 100, 12, 3, size);
+		generateOres(rand,Material.COAL_ORE, 100, 7, 4, size);
+		generateOres(rand,Material.DIAMOND_ORE, 100, 11, 4, size);
+		generateOres(rand,Material.EMERALD_ORE, 100, 12, 3, size);
 
 
 	}
 	
-	public  void smooth(Location loc, int r) {
+	public  void smooth(Random rand, Location loc, int r) {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
 		World w = loc.getWorld();
-		Random rand = new Random();
-		
+
 		for(int tx=-r; tx< r+1; tx++){
 		    for(int ty=-r; ty< r+1; ty++){
 		        for(int tz=-r; tz< r+1; tz++){
@@ -105,16 +103,14 @@ public class ModuleGenerator {
 		return ret;
 	}
 	
-	public  Location vary(Location loc) {
-		Random rand = new Random();
+	public  Location vary(Random rand, Location loc) {
 		int x = rand.nextInt(2)-1;
 		int y = rand.nextInt(2)-1;
 		int z = rand.nextInt(2)-1;
 		return loc.add(new Vector(x,y,z));
 	}
 	
-	public  Vector randomRedirect(Vector current) {
-		Random rand = new Random();
+	public  Vector randomRedirect(Random rand, Vector current) {
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
 		if(choice <= 50) {
@@ -130,8 +126,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  Vector redirectRight(Vector current) {
-		Random rand = new Random();
+	public  Vector redirectRight(Random rand, Vector current) {
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
         if(choice <= 45) {
@@ -145,8 +140,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  Vector redirectLeft(Vector current) {
-		Random rand = new Random();
+	public  Vector redirectLeft(Random rand, Vector current) {
 		int choice = rand.nextInt(100);
 		Vector clone = current.clone();
         if(choice <= 45) {
@@ -160,55 +154,53 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  Location apply(char c, Location loc, int size, CaveStyle style, int realSize, Vector dir) {
+	public  Location apply(Random rand, char c, Location loc, int size, CaveStyle style, int realSize, Vector dir) {
 		switch(c) {
 			case 'W':
 				deleteSphere(loc,size);
-				return getNext(c,loc,size,dir);
+				return getNext(rand,c,loc,size,dir);
 			case 'A':
 				//dir = redirectLeft(dir);
 				deleteSphere(loc,size);
-				return getNext(c,loc,size,dir);
+				return getNext(rand,c,loc,size,dir);
 			case 'S':
 				deleteSphere(loc,size);
-				return getNext(c,loc,size,dir);
+				return getNext(rand,c,loc,size,dir);
 			case 'D':
 				//dir = redirectRight(dir);
 				deleteSphere(loc,size);
-				return getNext(c,loc,size,dir);
+				return getNext(rand,c,loc,size,dir);
 			case 'X':
 				Vector clone = dir.clone();
-				Random rand = new Random();
 				int coinflip = rand.nextBoolean() ? 1 : -1;
 
 				int newSize = rand.nextInt(20);
 				int sizeMod = rand.nextInt(2);
-				CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
-				return getNext(c,loc,size,dir);
+				CaveGenerator.generateCave(loc.getWorld(),rand,size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
+				return getNext(rand,c,loc,size,dir);
 			case 'x':
-				return generateSmallBranch(loc,size,style,dir);
+				return generateSmallBranch(rand,loc,size,style,dir);
 			case 'O':
-				Random rand2 = new Random();
-				int lengthMod = rand2.nextInt(4);
+				int lengthMod = rand.nextInt(4);
 				int length = 8+lengthMod;
-				createDropshaft(loc,size,length);
+				createDropshaft(rand,loc,size,length);
 				if(size <=7) {
 					return loc.add(0,-(length-4),0);
 				}
 				return loc.add(0,-(length-2),0);
 			case 'L':
-				return generateLargeRoom(loc,size);
+				return generateLargeRoom(rand,loc,size);
 			case 'R':
-				return generateSmallRoom(loc,size);
+				return generateSmallRoom(rand,loc,size);
 			case 'P':
-				return generatePoolRoom(loc,size);
+				return generatePoolRoom(rand,loc,size);
 			case 'H':
-				return generateShelfRoom(loc,size,dir);
+				return generateShelfRoom(rand,loc,size,dir);
 			case 'C':
 //				if(size>7) {
 //					return generateChasm(loc,size,dir);
 //				}else return generateLargeRoom(loc,size);
-				return generateLargeRoom(loc,size);
+				return generateLargeRoom(rand,loc,size);
 				
 			/*case 'Q':
 				return rampUp(loc, size, new Vector(1,1,0));
@@ -223,9 +215,8 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	private  Location generateSmallBranch(Location loc, int size, CaveStyle style, Vector dir) {
+	private  Location generateSmallBranch(Random rand, Location loc, int size, CaveStyle style, Vector dir) {
 		Vector clone = dir.clone();
-		Random rand = new Random();
 
 		clone.rotateAroundY(2 * Math.PI * (rand.nextDouble() * 3/4 + 1.0/8));
 		
@@ -237,12 +228,12 @@ public class ModuleGenerator {
 			size = size/2 + 2;
 		}
 		
-		generateSmallRoom(loc,size);
+		generateSmallRoom(rand,loc,size);
 		
 		int newSize = rand.nextInt(20);
 		int sizeMod = rand.nextInt(1);
-		CaveGenerator.generateCave(loc.getWorld(),size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
-		return getNext('X',loc,size,dir);
+		CaveGenerator.generateCave(loc.getWorld(),rand,size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
+		return getNext(rand,'X',loc,size,dir);
 	}
 
 	private  Location findFloor(Location loc) {
@@ -262,12 +253,11 @@ public class ModuleGenerator {
 		}
 	}
 	
-	private  Location generateChasm(Location loc, int size, Vector caveDir) {
+	private  Location generateChasm(Random rand, Location loc, int size, Vector caveDir) {
 		
 		ArrayList<Location> centers = new ArrayList<Location>();
 		
 		size = size-1;
-		Random rand = new Random();
 		Location ret = loc.clone();
 		Vector retVec = caveDir.clone();
 		retVec.multiply(size);
@@ -287,7 +277,7 @@ public class ModuleGenerator {
 		chasmSize = chasmSize+chasmSizeBackward;
 		for(int i = 0; i < 3; i++) {
 			Location set = start.clone();
-			vary(set);
+			vary(rand, set);
 			centers.add(set);
 			for(int j = 0; j < chasmSize; j++) {
 				deleteSphere(set,size);
@@ -298,7 +288,7 @@ public class ModuleGenerator {
 		
 		for(Location l : centers) {
 			centroids.add(l.clone());
-			smooth(l,size+2);
+			smooth(rand, l,size+2);
 		}
 		
 		Location lava = findFloor(og).add(new Vector(0,2,0));
@@ -307,8 +297,7 @@ public class ModuleGenerator {
 		return ret.add(retVec);
 	}
 	
-	public  Location generateSmallRoom(Location loc, int r) {
-		Random rand = new Random();
+	public  Location generateSmallRoom(Random rand, Location loc, int r) {
 		int amount = rand.nextInt(4)+4;
 		r -= 1;
 		
@@ -351,8 +340,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	public  Location generatePoolRoom(Location loc, int r) {
-		Random rand = new Random();
+	public  Location generatePoolRoom(Random rand, Location loc, int r) {
 		int amount = rand.nextInt(4)+3;
 		r -= 1;
 		
@@ -418,8 +406,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 
-	public  Location generateLargeRoom(Location loc, int r) {
-		Random rand = new Random();
+	public  Location generateLargeRoom(Random rand, Location loc, int r) {
 		int amount = rand.nextInt(5)+3;
 		
 		
@@ -464,20 +451,18 @@ public class ModuleGenerator {
 		return loc;
 	}
 	
-	public  Location generateShelfRoom(Location loc, int r, Vector direction) {
-	  Random rand = new Random();
+	public  Location generateShelfRoom(Random rand, Location loc, int r, Vector direction) {
 	  int coinflip = rand.nextInt(1);
 	  
 	  if(coinflip == 0) {
-	    return generateShelfFromBottom(loc,r,direction);
-	  }else return generateShelfFromTop(loc,r,direction);
+	    return generateShelfFromBottom(rand,loc,r,direction);
+	  }else return generateShelfFromTop(rand,loc,r,direction);
 	}
 	
-	public  Location generateShelfFromBottom(Location loc, int r, Vector direction) {
-      Location next = generateLargeRoom(loc,r);
-      next = generateSmallRoom(next,r);
+	public  Location generateShelfFromBottom(Random rand, Location loc, int r, Vector direction) {
+      Location next = generateLargeRoom(rand,loc,r);
+      next = generateSmallRoom(rand,next,r);
       
-      Random rand = new Random();
       int coinflip = rand.nextBoolean() ? 1 : -1;
 
       Location shelf = loc.clone().add(new Vector(0,rand.nextInt(5)+6,0));
@@ -489,18 +474,17 @@ public class ModuleGenerator {
       int size = Math.max(r-2,5);
       
       for(int i = 0; i < 3; i++) {
-        generateSmallRoom(shelf,size);
-        vary(shelf);
+        generateSmallRoom(rand,shelf,size);
+        vary(rand, shelf);
         shelf = shelf.add(dir.clone().multiply(size));
       }
       
       return next;
 	}
 
-	public  Location generateShelfFromTop(Location loc, int r, Vector direction) {
+	public  Location generateShelfFromTop(Random rand, Location loc, int r, Vector direction) {
 
 	      
-	      Random rand = new Random();
 	      int coinflip = rand.nextBoolean() ? 1 : -1;
 
 	      Location shelf = loc.clone().add(new Vector(0,-1*rand.nextInt(5)+6,0));
@@ -512,26 +496,26 @@ public class ModuleGenerator {
 	      int size = Math.max(r-2,5);
 	      Location next = loc.clone();
 	      for(int i = 0; i < 3; i++) {
-	        generateSmallRoom(next,size);
-	        vary(next);
+	        generateSmallRoom(rand,next,size);
+	        vary(rand, next);
 	        next = shelf.add(dir.clone().multiply(size));
 	      }
 	      
-	       shelf = generateLargeRoom(loc,r);
-	       shelf = generateSmallRoom(shelf,r);
+	       shelf = generateLargeRoom(rand,loc,r);
+	       shelf = generateSmallRoom(rand,shelf,r);
 	       
 	      
 	      return next;
 	}
 	
 	
-	public  Location rampUp(Location loc, int r, Vector direction) {
+	public  Location rampUp(Random rand, Location loc, int r, Vector direction) {
 		Location next = loc;
 		for(int i = 0; i < r; i++) {
 			next = loc.add(direction);
-			deleteSphere(next,r+getSizeMod());
+			deleteSphere(next,r+getSizeMod(rand));
 		}
-		return vary(next);
+		return vary(rand, next);
 	}
 	
 	public  void deleteSphere(Location loc, int r) {
@@ -557,7 +541,7 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  void createDropshaft(Location loc, int r, int length) {
+	public  void createDropshaft(Random rand, Location loc, int r, int length) {
 		int i = 0;
 		if(r >= 6) {
 			r=r-1;
@@ -565,8 +549,7 @@ public class ModuleGenerator {
 		
 
 		while(i < length) {
-			loc = vary(loc);
-			Random rand = new Random();
+			loc = vary(rand, loc);
 			int n = rand.nextInt(2)+2;
 			loc.add(0,-n,0);
 			i+=n;
@@ -575,9 +558,9 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  Location getNext(char c, Location loc, int r, Vector dir) {
+	public  Location getNext(Random rand, char c, Location loc, int r, Vector dir) {
 		r = r-2;
-		loc = vary(loc);
+		loc = vary(rand, loc);
 		Vector apply = dir.clone();
 		apply.multiply(r); //dir.multiply(r);
 		switch(c) {
@@ -598,27 +581,23 @@ public class ModuleGenerator {
 		}
 	}
 	
-	public  int getSizeMod() {
-		Random rand = new Random();
+	public  int getSizeMod(Random rand) {
 		return rand.nextInt(3)-2;
 	}
 	
-	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
-		Random rand = new Random();
-		
+	public void generateOres(Random rand, Material ore, int rarity, int size, int radius, int caveRadius) {
 		for(Location loc : centroids) {
 			int chance = rand.nextInt(rarity);
 			if(chance == 1) {
-				placeOreCluster(loc,caveRadius,size,radius,ore);
+				placeOreCluster(rand,loc,caveRadius,size,radius,ore);
 			}
 		}
 	}
 	
 	
-	public void generateWaterfalls(Location loc, int caveRadius, int amount, int rarity, int placeRadius) {
-		Random random = new Random();
+	public void generateWaterfalls(Random rand, Location loc, int caveRadius, int amount, int rarity, int placeRadius) {
 		for(Location l : centroids) {
-			if(random.nextInt(rarity) == 1) {
+			if(rand.nextInt(rarity) == 1) {
 				placeWaterfalls(loc,caveRadius,amount,placeRadius);
 			}
 		}
@@ -633,12 +612,11 @@ public class ModuleGenerator {
 
 	}
 	
-	public int placeOreCluster(Location loc, int caveRadius, int size, int radius, Material ore) {
-		Random dir = new Random();
+	public int placeOreCluster(Random rand, Location loc, int caveRadius, int size, int radius, Material ore) {
 		Location toPlace = loc.clone();
-		Boolean wall = false;
+		boolean wall = false;
 		Block b = loc.getBlock();
-		switch(dir.nextInt(6)) {
+		switch(rand.nextInt(6)) {
 		case 1:
 			toPlace = TerrainGenerator.getWall(loc, size, new Vector(caveRadius,0,0));
 			wall = true;
@@ -669,13 +647,11 @@ public class ModuleGenerator {
 			break;
 			
 		}
-		return generateOreCluster(toPlace,size,radius,ore,wall);
+		return generateOreCluster(rand,toPlace,size,radius,ore,wall);
 		
 	}
 	
-	public int generateOreCluster(Location loc, int size, int radius, Material ore, boolean wall) {
-		
-		Random rand = new Random();
+	public int generateOreCluster(Random rand, Location loc, int size, int radius, Material ore, boolean wall) {
 	    int x = loc.getBlockX();
 	    int y = loc.getBlockY();
 	    int z = loc.getBlockZ();

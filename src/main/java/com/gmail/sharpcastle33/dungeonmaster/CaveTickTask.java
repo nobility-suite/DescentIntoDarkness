@@ -8,14 +8,14 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import com.gmail.sharpcastle33.did.generator.TerrainGenerator;
 
 public class CaveTickTask extends BukkitRunnable{
-	
+
+	private Random rand;
 	private String tempo;
 	ArrayList<Player> members;
 	int index;
@@ -25,10 +25,10 @@ public class CaveTickTask extends BukkitRunnable{
 		this.tempo = tempo;
 		this.members = members;
 		index = 0;
+		rand = new Random();
 	}
 	
 	public Player randomPlayer() {
-		Random rand = new Random();
 		int index = rand.nextInt(this.members.size());
 		return this.members.get(index);
 	}
@@ -41,7 +41,6 @@ public class CaveTickTask extends BukkitRunnable{
 	
 	public void spawn(EntityType mob, int attempts, int minRad, int maxRad) {
 		Player p = randomPlayer();
-		Random rand = new Random();
 		int diff = maxRad - minRad;
 		assert diff >= 0;
 		
@@ -50,11 +49,9 @@ public class CaveTickTask extends BukkitRunnable{
 			int ty = rand.nextInt(diff/2) + minRad/2;
 			int tz = rand.nextInt(diff) + minRad;
 			
-			int flip = rand.nextInt(1);
-			int flip2 = rand.nextInt(1);
-			if(flip == 0) { flip = -1; }
-			if (flip2 == 0) {flip2 = -1; }
-			
+			int flip = rand.nextBoolean() ? -1 : 1;
+			int flip2 = rand.nextBoolean() ? -1 : 1;
+
 			tx = tx*flip;
 			tz = tz*flip;
 			
@@ -80,7 +77,6 @@ public class CaveTickTask extends BukkitRunnable{
 		char current = tempo.charAt(index);
 		index++;
 		if(current == '.') {
-			Random rand = new Random();
 			float f = rand.nextFloat();
 			f = f/2;
 			
@@ -95,7 +91,6 @@ public class CaveTickTask extends BukkitRunnable{
 		}
 		
 		if(current == 'x' || current == 'X') {
-			Random rand = new Random();
 			float f = rand.nextFloat();
 			f = f/2;
 			for(Player p : this.members) {
@@ -106,7 +101,6 @@ public class CaveTickTask extends BukkitRunnable{
 		}
 		
 		if(current == '!') {
-			Random rand = new Random();
 			float f = rand.nextFloat();
 			f = f/2;
 			for(Player p : this.members) {

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public class CommandListener implements TabExecutor {
 
@@ -28,7 +29,7 @@ public class CommandListener implements TabExecutor {
 			generate(p, args);
 		} else if (args[0].equals("start")) {
 			DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
-			dungeonMaster.start(p);
+			dungeonMaster.start(new Random(), p);
 		} else if (args[0].equals("reload")) {
 			Main.plugin.reload();
 			p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
@@ -50,6 +51,7 @@ public class CommandListener implements TabExecutor {
 	private void generateCave(Player p, String[] args) {
 		String styleName = args.length <= 2 ? "default" : args[2];
 		int size = args.length <= 3 ? 9 : Integer.parseInt(args[3]);
+		long seed = args.length <= 4 ? new Random().nextLong() : Long.parseLong(args[4]);
 
 		CaveStyle style = Main.plugin.getCaveStyles().get(styleName);
 		if (style == null) {
@@ -58,7 +60,7 @@ public class CommandListener implements TabExecutor {
 		}
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
-		String s = CaveGenerator.generateCave(p.getWorld(), size, style);
+		String s = CaveGenerator.generateCave(p.getLocation(), new Random(seed), size, style);
 		p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
 	}
 

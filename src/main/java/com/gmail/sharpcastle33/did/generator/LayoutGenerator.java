@@ -43,13 +43,13 @@ public class LayoutGenerator {
 	   * 
 	   */
 	  
-	  public static ArrayList<String> generateCaveStrings(int maxLength, int maxBranches){
+	  public static ArrayList<String> generateCaveStrings(Random rand, int maxLength, int maxBranches){
 	    ArrayList<String> ret = new ArrayList<String>();
 	    
 	    int totalLength = 0;
 	    int totalBranches = 0;
 	    
-	    String start = generateCave(maxLength, maxBranches);
+	    String start = generateCave(rand, maxLength, maxBranches);
 	    
 	    ret.add(start);
 	    
@@ -57,7 +57,7 @@ public class LayoutGenerator {
 	    totalBranches += newBranches;
 	    
 	    for(int i = 0; i < newBranches; i++) {
-	      ret.add(generateCave(maxLength, maxBranches-totalBranches));
+	      ret.add(generateCave(rand, maxLength, maxBranches-totalBranches));
 	    }
 	    
 	    return ret;
@@ -78,23 +78,22 @@ public class LayoutGenerator {
 	    return count;
 	  }
 	  
-	  public static String generateCave(int maxLength, int maxBranches) {
+	  public static String generateCave(Random rand, int maxLength, int maxBranches) {
 	    String cave = "";
 	    
-	    Random rand = new Random();
 	    int caverns = rand.nextInt(4)+3;
 	  
 	    for(int i = 0; i < caverns; i++) {
 	    	int length = rand.nextInt(7)+4;
-	    	cave+=generateCavern(length);
+	    	cave+=generateCavern(rand, length);
 	    	length = rand.nextInt(5)+5;
-	    	cave+=generatePassage(length);
+	    	cave+=generatePassage(rand, length);
 	    }
 	    
 	    if(cave.length() < maxLength) {
 	    	int length = maxLength-cave.length();
 	    	for(int i = 0; i < length; i++) {
-	  	      cave += generateNextCavern();
+	  	      cave += generateNextCavern(rand);
 	  	    }
 	    }
 	    
@@ -112,24 +111,23 @@ public class LayoutGenerator {
 	    }return cave;*/
 	  }
 	  
-	  public static String generateCavern(int len) {
+	  public static String generateCavern(Random rand, int len) {
 		  String ret = "";
 		  for(int i = 0; i < len; i++) {
-			  ret = ret + generateNextCavern();
+			  ret = ret + generateNextCavern(rand);
 		  }
 		  return ret;
 	  }
 	  
-	  public static String generatePassage(int len) {
+	  public static String generatePassage(Random rand, int len) {
 		  String ret = "";
 		  for(int i = 0; i < len; i++) {
-			  ret = ret + generateNextPassage();
+			  ret = ret + generateNextPassage(rand);
 		  }
 		  return ret;
 	  }
 	  
-	  public static char generateNextPassage() {
-		    Random rand = new Random();
+	  public static char generateNextPassage(Random rand) {
 		    int n = rand.nextInt(104);
 		    
 		    if(n < 60) {
@@ -150,8 +148,7 @@ public class LayoutGenerator {
 		    return 'W';
 	  }
 	  
-	  public static char generateNextCavern() {
-	    Random rand = new Random();
+	  public static char generateNextCavern(Random rand) {
 	    int n = rand.nextInt(186);
 	    
 	    if(n < 80) {
