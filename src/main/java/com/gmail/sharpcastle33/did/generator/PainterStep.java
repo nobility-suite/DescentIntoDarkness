@@ -10,186 +10,186 @@ import java.util.Map;
 import java.util.Random;
 
 public abstract class PainterStep {
-    private final Type type;
+	private final Type type;
 
-    public PainterStep(Type type) {
-        this.type = type;
-    }
+	public PainterStep(Type type) {
+		this.type = type;
+	}
 
-    public final Type getType() {
-        return type;
-    }
+	public final Type getType() {
+		return type;
+	}
 
-    public abstract Object serialize();
+	public abstract Object serialize();
 
-    public static PainterStep deserialize(Object value) {
-        if (value instanceof String) {
-            String[] args = ((String) value).split("\\s+");
-            Type type = Type.byName(args[0]);
-            if (type == null) {
-                throw new InvalidConfigException((String) value);
-            }
-            switch (type) {
-                case CHANCE_REPLACE: {
-                    if (args.length < 4) {
-                        throw new InvalidConfigException((String) value);
-                    }
-                    Material old = ConfigUtil.getMaterialByKey(args[1]);
-                    Material _new = ConfigUtil.getMaterialByKey(args[2]);
-                    double chance = ConfigUtil.parseDouble(args[3]);
-                    if (chance < 0) {
-                        chance = 0;
-                    } else if (chance > 1) {
-                        chance = 1;
-                    }
-                    return new ChanceReplace(old, _new, chance);
+	public static PainterStep deserialize(Object value) {
+		if (value instanceof String) {
+			String[] args = ((String) value).split("\\s+");
+			Type type = Type.byName(args[0]);
+			if (type == null) {
+				throw new InvalidConfigException((String) value);
+			}
+			switch (type) {
+				case CHANCE_REPLACE: {
+					if (args.length < 4) {
+						throw new InvalidConfigException((String) value);
+					}
+					Material old = ConfigUtil.getMaterialByKey(args[1]);
+					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					double chance = ConfigUtil.parseDouble(args[3]);
+					if (chance < 0) {
+						chance = 0;
+					} else if (chance > 1) {
+						chance = 1;
+					}
+					return new ChanceReplace(old, _new, chance);
 
-                }
-                case RADIUS_REPLACE: {
-                    if (args.length < 3) {
-                        throw new InvalidConfigException((String) value);
-                    }
-                    Material old = ConfigUtil.getMaterialByKey(args[1]);
-                    Material _new = ConfigUtil.getMaterialByKey(args[2]);
-                    return new RadiusReplace(old, _new);
-                }
-                case REPLACE_CEILING: {
-                    if (args.length < 3) {
-                        throw new InvalidConfigException((String) value);
-                    }
-                    Material old = ConfigUtil.getMaterialByKey(args[1]);
-                    Material _new = ConfigUtil.getMaterialByKey(args[2]);
-                    return new ReplaceCeiling(old, _new);
-                }
-                case REPLACE_FLOOR: {
-                    if (args.length < 3) {
-                        throw new InvalidConfigException((String) value);
-                    }
-                    Material old = ConfigUtil.getMaterialByKey(args[1]);
-                    Material _new = ConfigUtil.getMaterialByKey(args[2]);
-                    return new ReplaceFloor(old, _new);
-                }
-                default: {
-                    throw new InvalidConfigException((String) value);
-                }
-            }
-        }
+				}
+				case RADIUS_REPLACE: {
+					if (args.length < 3) {
+						throw new InvalidConfigException((String) value);
+					}
+					Material old = ConfigUtil.getMaterialByKey(args[1]);
+					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					return new RadiusReplace(old, _new);
+				}
+				case REPLACE_CEILING: {
+					if (args.length < 3) {
+						throw new InvalidConfigException((String) value);
+					}
+					Material old = ConfigUtil.getMaterialByKey(args[1]);
+					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					return new ReplaceCeiling(old, _new);
+				}
+				case REPLACE_FLOOR: {
+					if (args.length < 3) {
+						throw new InvalidConfigException((String) value);
+					}
+					Material old = ConfigUtil.getMaterialByKey(args[1]);
+					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					return new ReplaceFloor(old, _new);
+				}
+				default: {
+					throw new InvalidConfigException((String) value);
+				}
+			}
+		}
 
-        throw new InvalidConfigException("Invalid painter step type: " + value.getClass());
-    }
+		throw new InvalidConfigException("Invalid painter step type: " + value.getClass());
+	}
 
-    public abstract void apply(Random rand, Location loc, int r);
+	public abstract void apply(Random rand, Location loc, int r);
 
-    public static class ChanceReplace extends PainterStep {
-        private final Material old;
-        private final Material _new;
-        private final double chance;
+	public static class ChanceReplace extends PainterStep {
+		private final Material old;
+		private final Material _new;
+		private final double chance;
 
-        public ChanceReplace(Material old, Material _new, double chance) {
-            super(Type.CHANCE_REPLACE);
-            this.old = old;
-            this._new = _new;
-            this.chance = chance;
-        }
+		public ChanceReplace(Material old, Material _new, double chance) {
+			super(Type.CHANCE_REPLACE);
+			this.old = old;
+			this._new = _new;
+			this.chance = chance;
+		}
 
-        @Override
-        public Object serialize() {
-            return getType().getName() + " " + old.getKey() + " " + _new.getKey() + " " + chance;
-        }
+		@Override
+		public Object serialize() {
+			return getType().getName() + " " + old.getKey() + " " + _new.getKey() + " " + chance;
+		}
 
-        @Override
-        public void apply(Random rand, Location loc, int r) {
-            TerrainGenerator.chanceReplace(rand, loc, r, old, _new, chance);
-        }
-    }
+		@Override
+		public void apply(Random rand, Location loc, int r) {
+			TerrainGenerator.chanceReplace(rand, loc, r, old, _new, chance);
+		}
+	}
 
-    public static class RadiusReplace extends PainterStep {
-        private final Material old;
-        private final Material _new;
+	public static class RadiusReplace extends PainterStep {
+		private final Material old;
+		private final Material _new;
 
-        public RadiusReplace(Material old, Material _new) {
-            super(Type.RADIUS_REPLACE);
-            this.old = old;
-            this._new = _new;
-        }
+		public RadiusReplace(Material old, Material _new) {
+			super(Type.RADIUS_REPLACE);
+			this.old = old;
+			this._new = _new;
+		}
 
-        @Override
-        public Object serialize() {
-            return getType().getName() + " " + old.getKey() + " " + _new.getKey();
-        }
+		@Override
+		public Object serialize() {
+			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+		}
 
-        @Override
-        public void apply(Random rand, Location loc, int r) {
-            TerrainGenerator.radiusReplace(loc, r, old, _new);
-        }
-    }
+		@Override
+		public void apply(Random rand, Location loc, int r) {
+			TerrainGenerator.radiusReplace(loc, r, old, _new);
+		}
+	}
 
-    public static class ReplaceCeiling extends PainterStep {
-        private final Material old;
-        private final Material _new;
+	public static class ReplaceCeiling extends PainterStep {
+		private final Material old;
+		private final Material _new;
 
-        public ReplaceCeiling(Material old, Material _new) {
-            super(Type.REPLACE_CEILING);
-            this.old = old;
-            this._new = _new;
-        }
+		public ReplaceCeiling(Material old, Material _new) {
+			super(Type.REPLACE_CEILING);
+			this.old = old;
+			this._new = _new;
+		}
 
-        @Override
-        public Object serialize() {
-            return getType().getName() + " " + old.getKey() + " " + _new.getKey();
-        }
+		@Override
+		public Object serialize() {
+			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+		}
 
-        @Override
-        public void apply(Random rand, Location loc, int r) {
-            TerrainGenerator.replaceCeiling(loc, r, old, _new);
-        }
-    }
+		@Override
+		public void apply(Random rand, Location loc, int r) {
+			TerrainGenerator.replaceCeiling(loc, r, old, _new);
+		}
+	}
 
-    public static class ReplaceFloor extends PainterStep {
-        private final Material old;
-        private final Material _new;
+	public static class ReplaceFloor extends PainterStep {
+		private final Material old;
+		private final Material _new;
 
-        public ReplaceFloor(Material old, Material _new) {
-            super(Type.REPLACE_FLOOR);
-            this.old = old;
-            this._new = _new;
-        }
+		public ReplaceFloor(Material old, Material _new) {
+			super(Type.REPLACE_FLOOR);
+			this.old = old;
+			this._new = _new;
+		}
 
-        @Override
-        public Object serialize() {
-            return getType().getName() + " " + old.getKey() + " " + _new.getKey();
-        }
+		@Override
+		public Object serialize() {
+			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+		}
 
-        @Override
-        public void apply(Random rand, Location loc, int r) {
-            TerrainGenerator.replaceFloor(loc, r, old, _new);
-        }
-    }
+		@Override
+		public void apply(Random rand, Location loc, int r) {
+			TerrainGenerator.replaceFloor(loc, r, old, _new);
+		}
+	}
 
-    public enum Type {
-        CHANCE_REPLACE("chance_replace"),
-        RADIUS_REPLACE("radius_replace"),
-        REPLACE_CEILING("replace_ceiling"),
-        REPLACE_FLOOR("replace_floor"),
-        ;
-        private final String name;
-        Type(String name) {
-            this.name = name;
-        }
+	public enum Type {
+		CHANCE_REPLACE("chance_replace"),
+		RADIUS_REPLACE("radius_replace"),
+		REPLACE_CEILING("replace_ceiling"),
+		REPLACE_FLOOR("replace_floor"),
+		;
+		private final String name;
+		Type(String name) {
+			this.name = name;
+		}
 
-        public String getName() {
-            return name;
-        }
+		public String getName() {
+			return name;
+		}
 
-        public static Type byName(String name) {
-            return BY_NAME.get(name);
-        }
+		public static Type byName(String name) {
+			return BY_NAME.get(name);
+		}
 
-        private static final Map<String, Type> BY_NAME = new HashMap<>();
-        static {
-            for (Type type : values()) {
-                BY_NAME.put(type.getName(), type);
-            }
-        }
-    }
+		private static final Map<String, Type> BY_NAME = new HashMap<>();
+		static {
+			for (Type type : values()) {
+				BY_NAME.put(type.getName(), type);
+			}
+		}
+	}
 }
