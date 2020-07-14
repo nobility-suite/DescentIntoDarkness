@@ -11,46 +11,46 @@ import com.gmail.sharpcastle33.did.Main;
 import net.md_5.bungee.api.ChatColor;
 
 public class DungeonMaster {
-	
-	
+
+
 	// '.' = pause
 	// 'x' = encounter
 	// 'X' = large encounter
 	// '!" = special encounter (2% base)
 	public String tempo(Random rand, int len) {
-		String ret = "";
-		
+		StringBuilder ret = new StringBuilder();
+
 		int lucky = 0; //Tempers randomness
-		
+
 		for(int i = 0; i < len; i++) {
 			int rng = rand.nextInt(100-lucky)+lucky;
-			
+
 			if(rng <= 5) {
-				ret += "...";
+				ret.append("...");
 				lucky +=10;
 			}else if(rng <= 10) {
-				ret += "..";
+				ret.append("..");
 				lucky+=5;
 			}else if(rng <= 30) {
-				ret += ".";
+				ret.append(".");
 				lucky+=3;
 			}else if(rng <= 70) {
-				ret += ".";
+				ret.append(".");
 				lucky+=1;
 			}else if(rng <= 80) {
-				ret+="x";
+				ret.append("x");
 				lucky-=2;
 			}else if(rng <= 92) {
-				ret+="X";
+				ret.append("X");
 				lucky-=10;
 			}else if(rng <= 98) {
-				ret+="!";
+				ret.append("!");
 				lucky-=25;
 			}else {
-				ret+="x";
-			}		
+				ret.append("x");
+			}
 		}
-		return ret;
+		return ret.toString();
 	}
 
 	public void start(Random rand, Player p) {
@@ -58,16 +58,12 @@ public class DungeonMaster {
 		String tempo = tempo(rand, 40);
 		p.sendMessage(ChatColor.GREEN + "Tempo: " + tempo);
 		long period = 20 * 7; //15 seconds timer
-		
-		ArrayList<Player> temp = new ArrayList<Player>();
-		
-		for(Player pl : Bukkit.getServer().getOnlinePlayers()) {
-			temp.add(pl);
-		}
-		
-	    new CaveTickTask(temp,tempo).runTaskTimer(Main.plugin, 20, period);
+
+		ArrayList<Player> temp = new ArrayList<>(Bukkit.getServer().getOnlinePlayers());
+
+		new CaveTickTask(temp,tempo).runTaskTimer(Main.plugin, 20, period);
 	}
-	
+
 
 
 }

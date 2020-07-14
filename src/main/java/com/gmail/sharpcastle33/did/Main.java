@@ -37,7 +37,7 @@ public class Main extends JavaPlugin {
 	private Map<String, CaveStyle> caveStyles = null;
 
 	public static Main plugin;
-	
+
 	@Override
 	public void onEnable() {
 		plugin = this;
@@ -71,11 +71,11 @@ public class Main extends JavaPlugin {
 				new PainterStep.ChanceReplace(Material.STONE, Material.COBBLESTONE, 0.2),
 				new PainterStep.ChanceReplace(Material.STONE, Material.MOSSY_COBBLESTONE, 0.05)
 		));
-        ConfigurationSection defaultConfig = new MemoryConfiguration();
+		ConfigurationSection defaultConfig = new MemoryConfiguration();
 		defaultStyle.serialize(defaultConfig);
 		caveStylesConfig.addDefaults(defaultConfig.getValues(false).entrySet().stream()
-                .map(entry -> new AbstractMap.SimpleEntry<>("default." + entry.getKey(), entry.getValue()))
-                .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (a, b) -> a, (Supplier<HashMap<String, Object>>)HashMap::new)));
+				.map(entry -> new AbstractMap.SimpleEntry<>("default." + entry.getKey(), entry.getValue()))
+				.collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (a, b) -> a, (Supplier<HashMap<String, Object>>)HashMap::new)));
 		caveStylesConfig.options().copyDefaults(true);
 		saveConfig("caveStyles", caveStylesConfig);
 		getCaveStyles(); // for error messages TODO: load this lazily?
@@ -107,10 +107,10 @@ public class Main extends JavaPlugin {
 			caveStyles = new HashMap<>();
 			for (String styleName : caveStylesConfig.getKeys(false)) {
 				try {
-                    ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
-                    if (value == null) {
-                        throw new InvalidConfigException("Cave style \"" + styleName + "\" has invalid type");
-                    }
+					ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
+					if (value == null) {
+						throw new InvalidConfigException("Cave style \"" + styleName + "\" has invalid type");
+					}
 					caveStyles.put(styleName, CaveStyle.deserialize(value));
 				} catch (InvalidConfigException e) {
 					getLogger().log(Level.SEVERE, "Failed to load cave style " + styleName, e);
@@ -119,7 +119,7 @@ public class Main extends JavaPlugin {
 		}
 		return caveStyles;
 	}
-	
+
 	public DungeonMaster getDungeonMaster() {
 		return this.dungeonMaster;
 	}

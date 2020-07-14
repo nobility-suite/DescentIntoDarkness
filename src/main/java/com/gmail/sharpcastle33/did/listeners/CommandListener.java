@@ -22,19 +22,23 @@ import java.util.Random;
 public class CommandListener implements TabExecutor {
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		
+
 		Player p = (Player) sender;
 
-		if (args[0].equals("generate")) {
-			generate(p, args);
-		} else if (args[0].equals("start")) {
-			DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
-			dungeonMaster.start(new Random(), p);
-		} else if (args[0].equals("reload")) {
-			Main.plugin.reload();
-			p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
+		switch (args[0]) {
+			case "generate":
+				generate(p, args);
+				break;
+			case "start":
+				DungeonMaster dungeonMaster = Main.plugin.getDungeonMaster();
+				dungeonMaster.start(new Random(), p);
+				break;
+			case "reload":
+				Main.plugin.reload();
+				p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
+				break;
 		}
-		
+
 		return true;
 	}
 
