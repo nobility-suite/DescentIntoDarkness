@@ -1,20 +1,15 @@
 package com.gmail.sharpcastle33.did.config;
 
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-
-import java.util.Locale;
+import org.bukkit.Bukkit;
+import org.bukkit.block.data.BlockData;
 
 public class ConfigUtil {
-	public static Material getMaterialByKey(String key) {
-		if (key.startsWith(NamespacedKey.MINECRAFT + ":")) {
-			key = key.substring(NamespacedKey.MINECRAFT.length() + 1);
+	public static BlockData parseBlockData(String val) {
+		try {
+			return Bukkit.getServer().createBlockData(val);
+		} catch (IllegalArgumentException e) {
+			throw new InvalidConfigException("Invalid block state: " + val);
 		}
-		Material mat = Material.getMaterial(key.toUpperCase(Locale.ROOT));
-		if (mat == null) {
-			throw new InvalidConfigException(NamespacedKey.MINECRAFT + ":" + key);
-		}
-		return mat;
 	}
 
 	public static double parseDouble(String val) {

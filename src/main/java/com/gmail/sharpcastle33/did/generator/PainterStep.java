@@ -4,6 +4,7 @@ import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +35,8 @@ public abstract class PainterStep {
 					if (args.length < 4) {
 						throw new InvalidConfigException((String) value);
 					}
-					Material old = ConfigUtil.getMaterialByKey(args[1]);
-					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					BlockData old = ConfigUtil.parseBlockData(args[1]);
+					BlockData _new = ConfigUtil.parseBlockData(args[2]);
 					double chance = ConfigUtil.parseDouble(args[3]);
 					if (chance < 0) {
 						chance = 0;
@@ -49,24 +50,24 @@ public abstract class PainterStep {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					Material old = ConfigUtil.getMaterialByKey(args[1]);
-					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					BlockData old = ConfigUtil.parseBlockData(args[1]);
+					BlockData _new = ConfigUtil.parseBlockData(args[2]);
 					return new RadiusReplace(old, _new);
 				}
 				case REPLACE_CEILING: {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					Material old = ConfigUtil.getMaterialByKey(args[1]);
-					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					BlockData old = ConfigUtil.parseBlockData(args[1]);
+					BlockData _new = ConfigUtil.parseBlockData(args[2]);
 					return new ReplaceCeiling(old, _new);
 				}
 				case REPLACE_FLOOR: {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					Material old = ConfigUtil.getMaterialByKey(args[1]);
-					Material _new = ConfigUtil.getMaterialByKey(args[2]);
+					BlockData old = ConfigUtil.parseBlockData(args[1]);
+					BlockData _new = ConfigUtil.parseBlockData(args[2]);
 					return new ReplaceFloor(old, _new);
 				}
 				default: {
@@ -81,11 +82,11 @@ public abstract class PainterStep {
 	public abstract void apply(Random rand, Location loc, int r);
 
 	public static class ChanceReplace extends PainterStep {
-		private final Material old;
-		private final Material _new;
+		private final BlockData old;
+		private final BlockData _new;
 		private final double chance;
 
-		public ChanceReplace(Material old, Material _new, double chance) {
+		public ChanceReplace(BlockData old, BlockData _new, double chance) {
 			super(Type.CHANCE_REPLACE);
 			this.old = old;
 			this._new = _new;
@@ -94,7 +95,7 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getKey() + " " + _new.getKey() + " " + chance;
+			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString() + " " + chance;
 		}
 
 		@Override
@@ -104,10 +105,10 @@ public abstract class PainterStep {
 	}
 
 	public static class RadiusReplace extends PainterStep {
-		private final Material old;
-		private final Material _new;
+		private final BlockData old;
+		private final BlockData _new;
 
-		public RadiusReplace(Material old, Material _new) {
+		public RadiusReplace(BlockData old, BlockData _new) {
 			super(Type.RADIUS_REPLACE);
 			this.old = old;
 			this._new = _new;
@@ -115,7 +116,7 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
@@ -125,10 +126,10 @@ public abstract class PainterStep {
 	}
 
 	public static class ReplaceCeiling extends PainterStep {
-		private final Material old;
-		private final Material _new;
+		private final BlockData old;
+		private final BlockData _new;
 
-		public ReplaceCeiling(Material old, Material _new) {
+		public ReplaceCeiling(BlockData old, BlockData _new) {
 			super(Type.REPLACE_CEILING);
 			this.old = old;
 			this._new = _new;
@@ -136,7 +137,7 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
@@ -146,10 +147,10 @@ public abstract class PainterStep {
 	}
 
 	public static class ReplaceFloor extends PainterStep {
-		private final Material old;
-		private final Material _new;
+		private final BlockData old;
+		private final BlockData _new;
 
-		public ReplaceFloor(Material old, Material _new) {
+		public ReplaceFloor(BlockData old, BlockData _new) {
 			super(Type.REPLACE_FLOOR);
 			this.old = old;
 			this._new = _new;
@@ -157,7 +158,7 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getKey() + " " + _new.getKey();
+			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
