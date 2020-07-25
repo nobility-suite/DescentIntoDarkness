@@ -2,13 +2,12 @@ package com.gmail.sharpcastle33.did.generator;
 
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 public abstract class PainterStep {
 	private final Type type;
@@ -35,8 +34,8 @@ public abstract class PainterStep {
 					if (args.length < 4) {
 						throw new InvalidConfigException((String) value);
 					}
-					BlockData old = ConfigUtil.parseBlockData(args[1]);
-					BlockData _new = ConfigUtil.parseBlockData(args[2]);
+                    BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
+                    BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
 					double chance = ConfigUtil.parseDouble(args[3]);
 					if (chance < 0) {
 						chance = 0;
@@ -50,24 +49,24 @@ public abstract class PainterStep {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					BlockData old = ConfigUtil.parseBlockData(args[1]);
-					BlockData _new = ConfigUtil.parseBlockData(args[2]);
+                    BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
+                    BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
 					return new RadiusReplace(old, _new);
 				}
 				case REPLACE_CEILING: {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					BlockData old = ConfigUtil.parseBlockData(args[1]);
-					BlockData _new = ConfigUtil.parseBlockData(args[2]);
+                    BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
+                    BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
 					return new ReplaceCeiling(old, _new);
 				}
 				case REPLACE_FLOOR: {
 					if (args.length < 3) {
 						throw new InvalidConfigException((String) value);
 					}
-					BlockData old = ConfigUtil.parseBlockData(args[1]);
-					BlockData _new = ConfigUtil.parseBlockData(args[2]);
+                    BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
+                    BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
 					return new ReplaceFloor(old, _new);
 				}
 				default: {
@@ -79,14 +78,14 @@ public abstract class PainterStep {
 		throw new InvalidConfigException("Invalid painter step type: " + value.getClass());
 	}
 
-	public abstract void apply(Random rand, Location loc, int r);
+	public abstract void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException;
 
 	public static class ChanceReplace extends PainterStep {
-		private final BlockData old;
-		private final BlockData _new;
+		private final BlockStateHolder<?> old;
+		private final BlockStateHolder<?> _new;
 		private final double chance;
 
-		public ChanceReplace(BlockData old, BlockData _new, double chance) {
+		public ChanceReplace(BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
 			super(Type.CHANCE_REPLACE);
 			this.old = old;
 			this._new = _new;
@@ -99,16 +98,16 @@ public abstract class PainterStep {
 		}
 
 		@Override
-		public void apply(Random rand, Location loc, int r) {
-			TerrainGenerator.chanceReplace(rand, loc, r, old, _new, chance);
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			TerrainGenerator.chanceReplace(ctx, loc, r, old, _new, chance);
 		}
 	}
 
 	public static class RadiusReplace extends PainterStep {
-		private final BlockData old;
-		private final BlockData _new;
+		private final BlockStateHolder<?> old;
+		private final BlockStateHolder<?> _new;
 
-		public RadiusReplace(BlockData old, BlockData _new) {
+		public RadiusReplace(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
 			super(Type.RADIUS_REPLACE);
 			this.old = old;
 			this._new = _new;
@@ -120,16 +119,16 @@ public abstract class PainterStep {
 		}
 
 		@Override
-		public void apply(Random rand, Location loc, int r) {
-			TerrainGenerator.radiusReplace(loc, r, old, _new);
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			TerrainGenerator.radiusReplace(ctx, loc, r, old, _new);
 		}
 	}
 
 	public static class ReplaceCeiling extends PainterStep {
-		private final BlockData old;
-		private final BlockData _new;
+		private final BlockStateHolder<?> old;
+		private final BlockStateHolder<?> _new;
 
-		public ReplaceCeiling(BlockData old, BlockData _new) {
+		public ReplaceCeiling(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
 			super(Type.REPLACE_CEILING);
 			this.old = old;
 			this._new = _new;
@@ -141,16 +140,16 @@ public abstract class PainterStep {
 		}
 
 		@Override
-		public void apply(Random rand, Location loc, int r) {
-			TerrainGenerator.replaceCeiling(loc, r, old, _new);
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			TerrainGenerator.replaceCeiling(ctx, loc, r, old, _new);
 		}
 	}
 
 	public static class ReplaceFloor extends PainterStep {
-		private final BlockData old;
-		private final BlockData _new;
+		private final BlockStateHolder<?> old;
+		private final BlockStateHolder<?> _new;
 
-		public ReplaceFloor(BlockData old, BlockData _new) {
+		public ReplaceFloor(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
 			super(Type.REPLACE_FLOOR);
 			this.old = old;
 			this._new = _new;
@@ -162,8 +161,8 @@ public abstract class PainterStep {
 		}
 
 		@Override
-		public void apply(Random rand, Location loc, int r) {
-			TerrainGenerator.replaceFloor(loc, r, old, _new);
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			TerrainGenerator.replaceFloor(ctx, loc, r, old, _new);
 		}
 	}
 

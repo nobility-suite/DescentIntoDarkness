@@ -1,48 +1,38 @@
 package com.gmail.sharpcastle33.did.generator;
 
-import java.util.Random;
 import java.util.logging.Level;
 
-import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.sk89q.worldedit.EditSession;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.WorldEditException;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.util.Vector;
 
 public class CaveGenerator {
 
-	public static void generateBlank(World world) {
-		int x = 0;
-		int y = 121;
-		int z = 0;
-
-		int ylen = 120;
-		int len = 200;
-
-		for(int i = -len; i < x+len; i++) {
-			for(int j = -ylen; j < y+ylen; j++) {
-				for(int k = -len; k < z+len; k++) {
-					world.getBlockAt(i, j, k).setType(Material.STONE);
-				}
-			}
-		}
+	public static void generateBlank(EditSession session, BlockStateHolder<?> base, int x, int y, int z, int radius, int yRadius) throws WorldEditException {
+		session.setBlocks(new CuboidRegion(
+				BlockVector3.at(x - radius, Math.max(0, y - yRadius), z - radius),
+				BlockVector3.at(x + radius, Math.min(255, y + yRadius), z + radius)),
+			base);
 	}
 
-	public static String generateCave(Location origin, Random rand, CaveStyle style) {
-		return generateCave(origin, rand,5, style);
+	public static String generateCave(CaveGenContext ctx, Vector3 pos) throws MaxChangedBlocksException {
+		return generateCave(ctx, pos, 5);
 
 	}
 
-	public static String generateCave(Location origin, Random rand, int size, CaveStyle style) {
-		Vector dir = new Vector(1,0,0);
-		return generateCave(origin.getWorld(),rand,size,style,origin.getBlockX(),origin.getBlockY(),origin.getBlockZ(),90,true,dir);
+	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws MaxChangedBlocksException {
+		return generateCave(ctx,size,pos,90,true,Vector3.UNIT_X);
 	}
 
-	public static String generateCave(World world, Random rand, int size, CaveStyle style, int x, int y, int z, int length, boolean branches, Vector dir) {
+	public static String generateCave(CaveGenContext ctx, int size, Vector3 pos, int length, boolean branches, Vector3 dir) throws MaxChangedBlocksException {
 
 		int len = 100;
-		String s = LayoutGenerator.generateCave(rand, length, 0);
+		String s = LayoutGenerator.generateCave(ctx, length, 0);
 
 		if(!branches) {
 			s = s.replace("X", "W");
@@ -50,10 +40,8 @@ public class CaveGenerator {
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
 		}
 
-		Location start = world.getBlockAt(x,y,z).getLocation();
-
 		ModuleGenerator gen = new ModuleGenerator();
-		gen.read(rand, s, start, size, style,dir);
+		gen.read(ctx, s, pos, size ,dir);
 		return s;
 	}
 
