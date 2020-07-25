@@ -1,136 +1,125 @@
 package com.gmail.sharpcastle33.did.generator;
 
-import java.util.Random;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.util.Vector;
+import com.gmail.sharpcastle33.did.Util;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 
 public class TerrainGenerator {
 
-	public static void paintOcean(Random rand, Location loc, int r) {
+	public static void paintOcean(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
 		r = r+1;
 		//Material.PRISMARINE;
 		//Material.PRISMARINE_BRICKS;
 		//Material.DARK_PRISMARINE;
 
-		radiusReplace(loc,r,Material.STONE.createBlockData(),Material.PRISMARINE.createBlockData());
-		chanceReplace(rand,loc,r,Material.PRISMARINE.createBlockData(),Material.DARK_PRISMARINE.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.PRISMARINE.createBlockData(),Material.PRISMARINE_BRICKS.createBlockData(), 0.1);
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.PRISMARINE));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.PRISMARINE), Util.requireDefaultState(BlockTypes.DARK_PRISMARINE),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.PRISMARINE), Util.requireDefaultState(BlockTypes.PRISMARINE_BRICKS), 0.1);
 	}
 
-	public static void paintCoral(Random rand, Location loc, int r) {
-		radiusReplace(loc,r,Material.STONE.createBlockData(), Material.BRAIN_CORAL_BLOCK.createBlockData());
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.BUBBLE_CORAL_BLOCK.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.TUBE_CORAL_BLOCK.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.HORN_CORAL_BLOCK.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.FIRE_CORAL_BLOCK.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.DEAD_HORN_CORAL_BLOCK.createBlockData(),0.1);
-		chanceReplace(rand,loc,r,Material.BRAIN_CORAL_BLOCK.createBlockData(),Material.WET_SPONGE.createBlockData(),0.05);
+	public static void paintCoral(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.BUBBLE_CORAL_BLOCK),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.TUBE_CORAL_BLOCK),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.HORN_CORAL_BLOCK),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.FIRE_CORAL_BLOCK),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.DEAD_HORN_CORAL_BLOCK),0.1);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BRAIN_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.WET_SPONGE),0.05);
 
 	}
 
-	public static void paintGeneric(Random rand, Location loc, int r) {
-		replaceFloor(loc,r,Material.STONE.createBlockData(),Material.GRAVEL.createBlockData());
-		chanceReplace(rand,loc,r,Material.STONE.createBlockData(),Material.ANDESITE.createBlockData(),0.2);
-		chanceReplace(rand,loc,r,Material.STONE.createBlockData(),Material.COBBLESTONE.createBlockData(),0.2);
-		chanceReplace(rand,loc,r,Material.STONE.createBlockData(),Material.MOSSY_COBBLESTONE.createBlockData(),0.05);
+	public static void paintGeneric(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE),0.05);
 	}
 
-	public static void paintMarble(Random rand, Location loc, int r) {
-		radiusReplace(loc,r,Material.STONE.createBlockData(), Material.DIORITE.createBlockData());
-		chanceReplace(rand,loc,r,Material.DIORITE.createBlockData(),Material.POLISHED_DIORITE.createBlockData(),0.2);
-		chanceReplace(rand,loc,r,Material.DIORITE.createBlockData(),Material.QUARTZ_BLOCK.createBlockData(),0.1);
+	public static void paintMarble(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.DIORITE));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.DIORITE), Util.requireDefaultState(BlockTypes.POLISHED_DIORITE),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.DIORITE), Util.requireDefaultState(BlockTypes.QUARTZ_BLOCK),0.1);
 	}
 
-	public static void paintGlacial(Random rand, Location loc, int r) {
-		radiusReplace(loc,r,Material.STONE.createBlockData(), Material.BLUE_ICE.createBlockData());
+	public static void paintGlacial(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.BLUE_ICE));
 
-		replaceFloor(loc,r,Material.BLUE_ICE.createBlockData(),Material.SNOW_BLOCK.createBlockData());
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.BLUE_ICE), Util.requireDefaultState(BlockTypes.SNOW_BLOCK));
 
-		chanceReplace(rand,loc,r,Material.BLUE_ICE.createBlockData(),Material.PACKED_ICE.createBlockData(),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.BLUE_ICE), Util.requireDefaultState(BlockTypes.PACKED_ICE),0.2);
 	}
 
-	public static void paintTest(Random rand, Location loc, int r) {
-		replaceFloor(loc,r,Material.STONE.createBlockData(),Material.SNOW_BLOCK.createBlockData());
-		replaceCeiling(loc,r,Material.STONE.createBlockData(),Material.OBSIDIAN.createBlockData());
-		radiusReplace(loc,r,Material.STONE.createBlockData(),Material.RED_WOOL.createBlockData());
+	public static void paintTest(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.SNOW_BLOCK));
+		replaceCeiling(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.OBSIDIAN));
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.RED_WOOL));
 	}
 
-	public static void paintMesa(Random rand, Location loc, int r) {
-		radiusReplace(loc,r,Material.STONE.createBlockData(),Material.GRANITE.createBlockData());
-		replaceFloor(loc,r,Material.GRANITE.createBlockData(),Material.RED_SAND.createBlockData());
-		replaceCeiling(loc,r,Material.GRANITE.createBlockData(),Material.RED_TERRACOTTA.createBlockData());
-		chanceReplace(rand,loc,r,Material.GRANITE.createBlockData(),Material.POLISHED_GRANITE.createBlockData(),0.2);
+	public static void paintMesa(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRANITE));
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.GRANITE), Util.requireDefaultState(BlockTypes.RED_SAND));
+		replaceCeiling(ctx,loc,r, Util.requireDefaultState(BlockTypes.GRANITE), Util.requireDefaultState(BlockTypes.RED_TERRACOTTA));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.GRANITE), Util.requireDefaultState(BlockTypes.POLISHED_GRANITE),0.2);
 	}
 
-	public static void paintDesert(Random rand, Location loc, int r) {
-		radiusReplace(loc,r,Material.STONE.createBlockData(),Material.SANDSTONE.createBlockData());
-		replaceFloor(loc,r,Material.SANDSTONE.createBlockData(), Material.SAND.createBlockData());
-		chanceReplace(rand,loc,r,Material.SANDSTONE.createBlockData(),Material.CHISELED_SANDSTONE.createBlockData(),0.2);
-		chanceReplace(rand,loc,r,Material.SANDSTONE.createBlockData(),Material.GRANITE.createBlockData(),0.2);
-		chanceReplace(rand,loc,r,Material.SANDSTONE.createBlockData(),Material.POLISHED_GRANITE.createBlockData(),0.1);
+	public static void paintDesert(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.SANDSTONE));
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.SANDSTONE), Util.requireDefaultState(BlockTypes.SAND));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.SANDSTONE), Util.requireDefaultState(BlockTypes.CHISELED_SANDSTONE),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.SANDSTONE), Util.requireDefaultState(BlockTypes.GRANITE),0.2);
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.SANDSTONE), Util.requireDefaultState(BlockTypes.POLISHED_GRANITE),0.1);
 	}
 
 
-	public static void paintMagma(Random rand, Location loc, int r) {
+	public static void paintMagma(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
 		//Material.OBSIDIAN
 		//Material.BLACK_CONCRETE_POWDER;
 		//Material.BLACK_CONCRETE;
 		//Material.MAGMA_BLOCK;
 		//Material.
-		replaceFloor(loc,r,Material.STONE.createBlockData(),Material.BLACK_CONCRETE_POWDER.createBlockData());
-		replaceCeiling(loc,r,Material.STONE.createBlockData(),Material.DEAD_TUBE_CORAL_BLOCK.createBlockData());
-		radiusReplace(loc,r,Material.STONE.createBlockData(),Material.GRAY_CONCRETE.createBlockData());
-		chanceReplace(rand,loc,r,Material.DEAD_TUBE_CORAL_BLOCK.createBlockData(),Material.DEAD_FIRE_CORAL_BLOCK.createBlockData(),0.5);
+		replaceFloor(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.BLACK_CONCRETE_POWDER));
+		replaceCeiling(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.DEAD_TUBE_CORAL_BLOCK));
+		radiusReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAY_CONCRETE));
+		chanceReplace(ctx,loc,r, Util.requireDefaultState(BlockTypes.DEAD_TUBE_CORAL_BLOCK), Util.requireDefaultState(BlockTypes.DEAD_FIRE_CORAL_BLOCK),0.5);
 
 	}
 
-	public static void generateBlob(Random rand, Location loc, int r, int rx, BlockData old, BlockData m) {
+	public static void generateBlob(CaveGenContext ctx, BlockVector3 loc, int r, int rx, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 
-		int tx = rand.nextInt(r*2)-r;
-		int tz = rand.nextInt(r*2)-r;
-		int ty = rand.nextInt(r*2)-r;
+		int tx = ctx.rand.nextInt(r*2)-r;
+		int tz = ctx.rand.nextInt(r*2)-r;
+		int ty = ctx.rand.nextInt(r*2)-r;
 
 
-		Location next = loc.clone().add(new Vector(tx,ty,tz));
-		radiusReplace(next,rx,old,m);
+		BlockVector3 next = loc.add(tx,ty,tz);
+		radiusReplace(ctx, next,rx,old,m);
 	}
 
-	public static void generateBlobs(Random rand, Location loc, int r, int rx, int amt, BlockData old, BlockData m) {
+	public static void generateBlobs(CaveGenContext ctx, BlockVector3 loc, int r, int rx, int amt, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 		for(int i = 0; i < amt; i++) {
-			generateBlob(rand,loc,r,rx,old,m);
+			generateBlob(ctx,loc,r,rx,old,m);
 		}
 	}
 
-	public static boolean isFloor(Location loc) {
-		Block b = loc.getBlock();
-
-		return isSolid(b) && isSolid(b.getRelative(BlockFace.DOWN)) && !isSolid(b.getRelative(BlockFace.UP));
+	public static boolean isFloor(CaveGenContext ctx, BlockVector3 pos) {
+		return isSolid(ctx, pos) && isSolid(ctx, pos.add(0, -1, 0)) && !isSolid(ctx, pos.add(0, 1, 0));
 	}
 
-	public static boolean isRoof(Location loc) {
-		Block b = loc.getBlock();
-
-		return isSolid(b) && !isSolid(b.getRelative(BlockFace.DOWN)) && isSolid(b.getRelative(BlockFace.UP));
+	public static boolean isRoof(CaveGenContext ctx, BlockVector3 pos) {
+		return isSolid(ctx, pos) && !isSolid(ctx, pos.add(0, -1, 0)) && isSolid(ctx, pos.add(0, 1, 0));
 	}
 
-	public static boolean isSolid(Block b) {
-		Material m = b.getType();
-		return m != Material.AIR && m != Material.GLOWSTONE && m != Material.WATER && m != Material.LAVA;
+	public static boolean isSolid(CaveGenContext ctx, BlockVector3 pos) {
+		return !ctx.style.isTransparentBlock(ctx.getBlock(pos));
 	}
 
-	public static void replaceFloor(Location loc, int r, BlockData old, BlockData m) {
+	public static void replaceFloor(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-
-		World w = loc.getWorld();
-		assert w != null;
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< -2; ty++){
@@ -140,10 +129,10 @@ public class TerrainGenerator {
 							continue;
 						}
 						if(ty+y > 0) {
-							Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
-							if(isFloor(b.getLocation()))
-								if(b.getBlockData().matches(old)) {
-									b.setBlockData(m);
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isFloor(ctx, pos))
+								if(ctx.getBlock(pos).equalsFuzzy(old)) {
+									ctx.setBlock(pos, m);
 								}
 
 						}
@@ -154,14 +143,11 @@ public class TerrainGenerator {
 
 	}
 
-	public static void replaceCeiling(Location loc, int r, BlockData old, BlockData m) {
+	public static void replaceCeiling(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-
-		World w = loc.getWorld();
-		assert w != null;
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=r; ty >2; ty--){
@@ -171,10 +157,10 @@ public class TerrainGenerator {
 							continue;
 						}
 						if(ty+y > 0) {
-							Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
-							if(isRoof(b.getLocation()))
-								if(b.getBlockData().matches(old)) {
-									b.setBlockData(m);
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isRoof(ctx, pos))
+								if(ctx.getBlock(pos).equalsFuzzy(old)) {
+									ctx.setBlock(pos, m);
 								}
 
 						}
@@ -185,16 +171,13 @@ public class TerrainGenerator {
 
 	}
 
-	public static void chanceReplace(Random rand, Location loc, int r, BlockData old, BlockData m, double chance) {
+	public static void chanceReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
 
-		World w = loc.getWorld();
-		assert w != null;
-
 		if(chance >= 1) {
-			radiusReplace(loc,r,old,m);
+			radiusReplace(ctx,loc,r,old,m);
 			return;
 		}
 
@@ -206,10 +189,10 @@ public class TerrainGenerator {
 							continue;
 						}
 						if(ty+y > 0) {
-							Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
-							if(b.getBlockData().matches(old)) {
-								if(rand.nextDouble() < chance)
-									b.setBlockData(m);
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(ctx.getBlock(pos).equalsFuzzy(old)) {
+								if(ctx.rand.nextDouble() < chance)
+									ctx.setBlock(pos, m);
 							}
 
 						}
@@ -219,13 +202,10 @@ public class TerrainGenerator {
 		}
 	}
 
-	public static void radiusReplace(Location loc, int r, BlockData old, BlockData m) {
+	public static void radiusReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-
-		World w = loc.getWorld();
-		assert w != null;
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
@@ -235,11 +215,10 @@ public class TerrainGenerator {
 							continue;
 						}
 						if(ty+y > 0) {
-							Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
-							if(b.getBlockData().matches(old)) {
-								b.setBlockData(m);
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(ctx.getBlock(pos).equalsFuzzy(old)) {
+								ctx.setBlock(pos, m);
 							}
-
 						}
 					}
 				}
@@ -247,107 +226,89 @@ public class TerrainGenerator {
 		}
 	}
 
-	public static Location getWall(Location loc, int r, Vector direction) {
+	public static BlockVector3 getWall(CaveGenContext ctx, BlockVector3 loc, int r, BlockVector3 direction) {
 		r= (int) (r *1.8);
-		Location ret = loc.clone();
+		BlockVector3 ret = loc;
 		for(int i = 0; i < r; i++) {
-			ret.add(direction);
-			if(ret.getBlock().getType() != Material.AIR) {
-				Block up = ret.getBlock();
-				if(up.getType() != Material.WATER && up.getType() != Material.LAVA) {
-					if(up.getType() != Material.GLOWSTONE)
-						return up.getLocation();
-				}
+			ret = ret.add(direction);
+			if (!ctx.style.isTransparentBlock(ctx.getBlock(ret))) {
+				return ret;
 			}
 		}
 		return ret;
 	}
 
-	public static Location getCeiling(Location loc, int r) {
-		Location ret = loc.clone();
+	public static BlockVector3 getCeiling(CaveGenContext ctx, BlockVector3 loc, int r) {
+		BlockVector3 ret = loc;
 		for(int i = 0; i < r+2; i++) {
-			ret.add(0,1,0);
-			if(ret.getBlock().getRelative(BlockFace.UP).getType() != Material.AIR) {
-				Block up = ret.getBlock().getRelative(BlockFace.UP);
-				if(up.getType() != Material.WATER && up.getType() != Material.LAVA) {
-					if(up.getType() != Material.GLOWSTONE)
-						return up.getLocation();
-				}
+			ret = ret.add(0,1,0);
+			if (!ctx.style.isTransparentBlock(ctx.getBlock(ret))) {
+				return ret;
 			}
 		}
 		return ret;
 	}
 
-	public static Location getFloor(Location loc, int r) {
-		Location ret = loc.clone();
+	public static BlockVector3 getFloor(CaveGenContext ctx, BlockVector3 loc, int r) {
+		BlockVector3 ret = loc;
 		for(int i = 0; i < r+2; i++) {
-			ret.add(0,-1,0);
-			if(ret.getBlock().getRelative(BlockFace.DOWN).getType() != Material.AIR) {
-				Block up = ret.getBlock().getRelative(BlockFace.DOWN);
-				if(up.getType() != Material.WATER && up.getType() != Material.LAVA) {
-					if(up.getType() != Material.GLOWSTONE)
-						return up.getLocation();
-				}
+			ret = ret.add(0, -1, 0);
+			if (!ctx.style.isTransparentBlock(ctx.getBlock(ret))) {
+				return ret;
 			}
 		}
 		return ret;
 	}
 
-	public static void genStalagmites(Random rand, Location loc, int r, int amount) {
+	public static void genStalagmites(CaveGenContext ctx, BlockVector3 loc, int r, int amount) throws MaxChangedBlocksException {
 		for(int i = 0; i < amount; i++) {
 			int hozMod = Math.min(3, r);
-			int tx = rand.nextInt(hozMod)+1;
-			int tz = rand.nextInt(hozMod)+1;
+			int tx = ctx.rand.nextInt(hozMod)+1;
+			int tz = ctx.rand.nextInt(hozMod)+1;
 
-			Location start = loc.clone().add(new Vector(tx,0,tz));
-			Location end = getCeiling(start,r);
-			end.add(new Vector(0,-1,0));
-			end.getBlock().setType(Material.COBBLESTONE_WALL);
+			BlockVector3 start = loc.add(tx,0,tz);
+			BlockVector3 end = getCeiling(ctx,start,r);
+			end = end.add(0,-1,0);
+			ctx.setBlock(end, Util.requireDefaultState(BlockTypes.COBBLESTONE_WALL));
 		}
 
 	}
 
-	public boolean isBottomSlabPos(Location loc) {
-		Location temp = loc.clone();
-		Location tx = temp.clone().add(1,0,0);
-		Location tz = temp.clone().add(0,0,1);
-		Location tx1 = temp.clone().add(-1,0,0);
-		Location tz1 = temp.clone().add(0,0,-1);
+	public boolean isBottomSlabPos(CaveGenContext ctx, BlockVector3 loc) {
+		BlockVector3 tx = loc.add(1,0,0);
+		BlockVector3 tz = loc.add(0,0,1);
+		BlockVector3 tx1 = loc.add(-1,0,0);
+		BlockVector3 tz1 = loc.add(0,0,-1);
 
-		return isSlabConditionBottom(tx)
-				|| isSlabConditionBottom(tz)
-				|| isSlabConditionBottom(tx1)
-				|| isSlabConditionBottom(tz1);
+		return isSlabConditionBottom(ctx, tx)
+				|| isSlabConditionBottom(ctx, tz)
+				|| isSlabConditionBottom(ctx, tx1)
+				|| isSlabConditionBottom(ctx, tz1);
 	}
 
-	public boolean isTopSlabPos(Location loc) {
-		Location temp = loc.clone();
-		Location tx = temp.clone().add(1,0,0);
-		Location tz = temp.clone().add(0,0,1);
-		Location tx1 = temp.clone().add(-1,0,0);
-		Location tz1 = temp.clone().add(0,0,-1);
+	public boolean isTopSlabPos(CaveGenContext ctx, BlockVector3 loc) {
+		BlockVector3 tx = loc.add(1,0,0);
+		BlockVector3 tz = loc.add(0,0,1);
+		BlockVector3 tx1 = loc.add(-1,0,0);
+		BlockVector3 tz1 = loc.add(0,0,-1);
 
-		return isSlabConditionTop(tx)
-				|| isSlabConditionTop(tz)
-				|| isSlabConditionTop(tx1)
-				|| isSlabConditionTop(tz1);
+		return isSlabConditionTop(ctx, tx)
+				|| isSlabConditionTop(ctx, tz)
+				|| isSlabConditionTop(ctx, tx1)
+				|| isSlabConditionTop(ctx, tz1);
 	}
 
 
-	public boolean isSlabConditionBottom(Location l) {
-		Material m = l.getBlock().getType();
-		if(m != Material.GLOWSTONE && m != Material.AIR) {
-			Material mx = l.getBlock().getRelative(BlockFace.UP).getType();
-			return mx == Material.AIR || mx == Material.GLOWSTONE;
+	public boolean isSlabConditionBottom(CaveGenContext ctx, BlockVector3 loc) {
+		if(!ctx.style.isTransparentBlock(ctx.getBlock(loc))) {
+			return ctx.style.isTransparentBlock(ctx.getBlock(loc.add(0, 1, 0)));
 		}
 		return false;
 	}
 
-	public boolean isSlabConditionTop(Location l) {
-		Material m = l.getBlock().getType();
-		if(m != Material.GLOWSTONE && m != Material.AIR) {
-			Material mx = l.getBlock().getRelative(BlockFace.DOWN).getType();
-			return mx == Material.AIR || mx == Material.GLOWSTONE;
+	public boolean isSlabConditionTop(CaveGenContext ctx, BlockVector3 loc) {
+		if(!ctx.style.isTransparentBlock(ctx.getBlock(loc))) {
+			return ctx.style.isTransparentBlock(ctx.getBlock(loc.add(0, -1, 0)));
 		}
 		return false;
 	}

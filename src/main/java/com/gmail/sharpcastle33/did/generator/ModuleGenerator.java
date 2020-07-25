@@ -1,83 +1,80 @@
 package com.gmail.sharpcastle33.did.generator;
 
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.logging.Level;
 
-import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.Util;
+import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.util.Vector;
 
 public class ModuleGenerator {
 
-	ArrayList<Location> centroids = new ArrayList<>();
+	ArrayList<Vector3> centroids = new ArrayList<>();
 
 
-	public  void read(Random rand, String cave, Location start, int size, CaveStyle style, Vector dir) {
+	public  void read(CaveGenContext ctx, String cave, Vector3 start, int size, Vector3 dir) throws MaxChangedBlocksException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
-		Location loc = start;
+		Vector3 loc = start;
 
 
 		for (char c : cave.toCharArray()) {
-			int tempSize = size + getSizeMod(rand);
+			int tempSize = size + getSizeMod(ctx);
 			//Bukkit.getLogger().log(Level.WARNING, "Applying... " + ch[i]);
 			if (c == 'A') {
-				dir = redirectLeft(rand, dir);
+				dir = redirectLeft(ctx, dir);
 			}
 			if (c == 'D') {
-				dir = redirectRight(rand, dir);
+				dir = redirectRight(ctx, dir);
 			}
 			//Bukkit.getLogger().log(Level.WARNING, "New Vector: " + ch[i] + ", " + dir);
-			loc = apply(rand, c, loc, tempSize, style, size, dir);
-			centroids.add(loc.clone());
+			loc = apply(ctx, c, loc, tempSize, size, dir);
+			centroids.add(loc);
 		}
 
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
-		for(Location l : centroids) {
-			smooth(rand, l,size+2);
+		for(Vector3 l : centroids) {
+			smooth(ctx, l.toBlockPoint(),size+2);
 		}
 
-		for(Location l : centroids) {
-			for (PainterStep painterStep : style.getPainterSteps()) {
-				painterStep.apply(rand, l, size+2);
+		for(Vector3 l : centroids) {
+			for (PainterStep painterStep : ctx.style.getPainterSteps()) {
+				painterStep.apply(ctx, l.toBlockPoint(), size+2);
 			}
 		}
 
 		//	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
 
-		generateOres(rand,Material.COAL_ORE, 100, 7, 4, size);
-		generateOres(rand,Material.DIAMOND_ORE, 100, 11, 4, size);
-		generateOres(rand,Material.EMERALD_ORE, 100, 12, 3, size);
+		generateOres(ctx,Util.requireDefaultState(BlockTypes.COAL_ORE), 100, 7, 4, size);
+		generateOres(ctx,Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 100, 11, 4, size);
+		generateOres(ctx,Util.requireDefaultState(BlockTypes.EMERALD_ORE), 100, 12, 3, size);
 
 
 	}
 
-	public  void smooth(Random rand, Location loc, int r) {
+	public  void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-		World w = loc.getWorld();
-		assert w != null;
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
 				for(int tz=-r; tz< r+1; tz++){
 					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
 						//delete(tx+x, ty+y, tz+z);
-						Block b = w.getBlockAt(tx+x, ty+y, tz+z);
+						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
-						if(b.getType() == Material.STONE) {
-							int amt = countAir(b);
+						if(ctx.style.getBaseBlock().equalsFuzzy(ctx.getBlock(pos))) {
+							int amt = countAir(ctx, pos);
 							if(amt>=13) {
 								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
-								if(rand.nextInt(100) < 95) {
-									b.setType(Material.AIR);
+								if(ctx.rand.nextInt(100) < 95) {
+									ctx.setBlock(pos, ctx.style.getAirBlock());
 								}
 							}
 						}
@@ -87,19 +84,14 @@ public class ModuleGenerator {
 		}
 	}
 
-	public  int countAir(Block b) {
+	public  int countAir(CaveGenContext ctx, BlockVector3 loc) {
 		int r = 1;
 		int ret = 0;
-		Location loc = b.getLocation();
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-		World w = loc.getWorld();
-		assert w != null;
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
 				for(int tz=-r; tz< r+1; tz++){
-					if(w.getBlockAt(x+tx, y+ty, z+tz).getType() == Material.AIR){
+					BlockVector3 pos = loc.add(tx, ty, tz);
+					if(ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))){
 						ret++;
 					}
 				}
@@ -108,104 +100,100 @@ public class ModuleGenerator {
 		return ret;
 	}
 
-	public  Location vary(Random rand, Location loc) {
-		int x = rand.nextInt(2)-1;
-		int y = rand.nextInt(2)-1;
-		int z = rand.nextInt(2)-1;
-		return loc.add(new Vector(x,y,z));
+	public  Vector3 vary(CaveGenContext ctx, Vector3 loc) {
+		int x = ctx.rand.nextInt(2)-1;
+		int y = ctx.rand.nextInt(2)-1;
+		int z = ctx.rand.nextInt(2)-1;
+		return loc.add(x,y,z);
 	}
 
-	public  Vector randomRedirect(Random rand, Vector current) {
-		int choice = rand.nextInt(100);
-		Vector clone = current.clone();
+	public  Vector3 randomRedirect(CaveGenContext ctx, Vector3 current) {
+		int choice = ctx.rand.nextInt(100);
 		if(choice <= 50) {
-			return clone;
+			return current;
 		}else if(choice <= 70) {
-			return clone.rotateAroundY(Math.PI/12);
+			return Util.rotateAroundY(current, Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(-Math.PI/12);
+			return Util.rotateAroundY(current, -Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(Math.PI/6);
+			return Util.rotateAroundY(current, Math.PI/6);
 		}else {
-			return clone.rotateAroundY(-Math.PI/6);
+			return Util.rotateAroundY(current, -Math.PI/6);
 		}
 	}
 
-	public  Vector redirectRight(Random rand, Vector current) {
-		int choice = rand.nextInt(100);
-		Vector clone = current.clone();
+	public  Vector3 redirectRight(CaveGenContext ctx, Vector3 current) {
+		int choice = ctx.rand.nextInt(100);
 		if(choice <= 45) {
-			return clone.rotateAroundY(-Math.PI/12);
+			return Util.rotateAroundY(current, -Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(-Math.PI/12);
+			return Util.rotateAroundY(current, -Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(-Math.PI/6);
+			return Util.rotateAroundY(current, -Math.PI/6);
 		}else {
-			return clone.rotateAroundY(-Math.PI/6);
+			return Util.rotateAroundY(current, -Math.PI/6);
 		}
 	}
 
-	public  Vector redirectLeft(Random rand, Vector current) {
-		int choice = rand.nextInt(100);
-		Vector clone = current.clone();
+	public  Vector3 redirectLeft(CaveGenContext ctx, Vector3 current) {
+		int choice = ctx.rand.nextInt(100);
 		if(choice <= 45) {
-			return clone.rotateAroundY(Math.PI/12);
+			return Util.rotateAroundY(current, Math.PI/12);
 		}else if(choice <= 90) {
-			return clone.rotateAroundY(Math.PI/12);
+			return Util.rotateAroundY(current, Math.PI/12);
 		}else if(choice <= 95) {
-			return clone.rotateAroundY(Math.PI/6);
+			return Util.rotateAroundY(current, Math.PI/6);
 		}else {
-			return clone.rotateAroundY(Math.PI/6);
+			return Util.rotateAroundY(current, Math.PI/6);
 		}
 	}
 
-	public  Location apply(Random rand, char c, Location loc, int size, CaveStyle style, int realSize, Vector dir) {
+	public Vector3 apply(CaveGenContext ctx, char c, Vector3 loc, int size, int realSize, Vector3 dir) throws MaxChangedBlocksException {
 		switch(c) {
 			case 'W':
-				deleteSphere(loc,size);
-				return getNext(rand,c,loc,size,dir);
+				deleteSphere(ctx,loc,size);
+				return getNext(ctx,c,loc,size,dir);
 			case 'A':
 				//dir = redirectLeft(dir);
-				deleteSphere(loc,size);
-				return getNext(rand,c,loc,size,dir);
+				deleteSphere(ctx,loc,size);
+				return getNext(ctx,c,loc,size,dir);
 			case 'S':
-				deleteSphere(loc,size);
-				return getNext(rand,c,loc,size,dir);
+				deleteSphere(ctx,loc,size);
+				return getNext(ctx,c,loc,size,dir);
 			case 'D':
 				//dir = redirectRight(dir);
-				deleteSphere(loc,size);
-				return getNext(rand,c,loc,size,dir);
+				deleteSphere(ctx,loc,size);
+				return getNext(ctx,c,loc,size,dir);
 			case 'X':
-				Vector clone = dir.clone();
-				int coinflip = rand.nextBoolean() ? 1 : -1;
+				int coinflip = ctx.rand.nextBoolean() ? 1 : -1;
 
-				int newSize = rand.nextInt(20);
-				int sizeMod = rand.nextInt(2);
-				CaveGenerator.generateCave(loc.getWorld(),rand,size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone.rotateAroundY(Math.PI/2*coinflip));
-				return getNext(rand,c,loc,size,dir);
+				int newSize = ctx.rand.nextInt(20);
+				int sizeMod = ctx.rand.nextInt(2);
+				CaveGenerator.generateCave(ctx,size-sizeMod,loc,20+newSize,false, Util.rotateAroundY(dir, Math.PI / 2 * coinflip));
+				return getNext(ctx,c,loc,size,dir);
 			case 'x':
-				return generateSmallBranch(rand,loc,size,style,dir);
+				return generateSmallBranch(ctx,loc,size,dir);
 			case 'O':
-				int lengthMod = rand.nextInt(4);
+				int lengthMod = ctx.rand.nextInt(4);
 				int length = 8+lengthMod;
-				createDropshaft(rand,loc,size,length);
+				createDropshaft(ctx,loc,size,length);
 				if(size <=7) {
 					return loc.add(0,-(length-4),0);
 				}
 				return loc.add(0,-(length-2),0);
 			case 'L':
-				return generateLargeRoom(rand,loc,size);
+				return generateLargeRoom(ctx,loc,size);
 			case 'R':
-				return generateSmallRoom(rand,loc,size);
+				return generateSmallRoom(ctx,loc,size);
 			case 'P':
-				return generatePoolRoom(rand,loc,size);
+				return generatePoolRoom(ctx,loc,size);
 			case 'H':
-				return generateShelfRoom(rand,loc,size,dir);
+				return generateShelfRoom(ctx,loc,size,dir);
 			case 'C':
 //				if(size>7) {
 //					return generateChasm(loc,size,dir);
 //				}else return generateLargeRoom(loc,size);
-				return generateLargeRoom(rand,loc,size);
+				return generateLargeRoom(ctx,loc,size);
 				
 			/*case 'Q':
 				return rampUp(loc, size, new Vector(1,1,0));
@@ -220,10 +208,8 @@ public class ModuleGenerator {
 		return loc;
 	}
 
-	private  Location generateSmallBranch(Random rand, Location loc, int size, CaveStyle style, Vector dir) {
-		Vector clone = dir.clone();
-
-		clone.rotateAroundY(2 * Math.PI * (rand.nextDouble() * 3/4 + 1.0/8));
+	private  Vector3 generateSmallBranch(CaveGenContext ctx, Vector3 loc, int size, Vector3 dir) throws MaxChangedBlocksException {
+		Vector3 clone = Util.rotateAroundY(dir, 2 * Math.PI * (ctx.rand.nextDouble() * 3/4 + 1.0/8));
 
 		if(size < 7) {
 			size = 6;
@@ -233,167 +219,166 @@ public class ModuleGenerator {
 			size = size/2 + 2;
 		}
 
-		generateSmallRoom(rand,loc,size);
+		loc = generateSmallRoom(ctx,loc,size);
 
-		int newSize = rand.nextInt(20);
-		int sizeMod = rand.nextInt(1);
-		CaveGenerator.generateCave(loc.getWorld(),rand,size-sizeMod,style,loc.getBlockX(),loc.getBlockY(),loc.getBlockZ(),20+newSize,false,clone);
-		return getNext(rand,'X',loc,size,dir);
+		int newSize = ctx.rand.nextInt(20);
+		int sizeMod = ctx.rand.nextInt(1);
+		CaveGenerator.generateCave(ctx,size-sizeMod,loc,20+newSize,false,clone);
+		return getNext(ctx,'X',loc,size,dir);
 	}
 
-	private  Location findFloor(Location loc) {
-		while(loc.getY() > 1 && loc.getBlock().getType() == Material.AIR) {
-			loc = loc.add(new Vector(0,-1,0));
+	private  BlockVector3 findFloor(CaveGenContext ctx, BlockVector3 loc) {
+		while(loc.getY() > 1 && ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(loc))) {
+			loc = loc.add(0,-1,0);
 		}
 		return loc;
 	}
 
-	private  void floodFill(Material fill, Location loc) {
-		assert fill != Material.AIR; // would cause an infinite loop
-		if(loc.getBlock().getType() == Material.AIR) {
-			loc.getBlock().setType(fill);
-			floodFill(fill,loc.clone().add(1,0,0));
-			floodFill(fill,loc.clone().add(-1,0,0));
-			floodFill(fill,loc.clone().add(0,0,-1));
-			floodFill(fill,loc.clone().add(0,0,1));
+	private  void floodFill(CaveGenContext ctx, BlockStateHolder<?> fill, BlockVector3 loc) throws MaxChangedBlocksException {
+		if (ctx.style.getAirBlock().equalsFuzzy(fill)) {
+			// would cause an infinite loop
+			throw new IllegalArgumentException("Cannot flood fill with air block");
+		}
+		if(ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(loc))) {
+			ctx.setBlock(loc, fill);
+			floodFill(ctx,fill,loc.add(1,0,0));
+			floodFill(ctx,fill,loc.add(-1,0,0));
+			floodFill(ctx,fill,loc.add(0,0,-1));
+			floodFill(ctx,fill,loc.add(0,0,1));
 		}
 	}
 
-	private  Location generateChasm(Random rand, Location loc, int size, Vector caveDir) {
+	private  Vector3 generateChasm(CaveGenContext ctx, Vector3 loc, int size, Vector3 caveDir) throws MaxChangedBlocksException {
 
-		ArrayList<Location> centers = new ArrayList<>();
+		ArrayList<Vector3> centers = new ArrayList<>();
 
 		size = size-1;
-		Location ret = loc.clone();
-		Vector retVec = caveDir.clone();
-		retVec.multiply(size);
-		int chasmSize = rand.nextInt(2)+3;
-		int chasmSizeBackward = rand.nextInt(3)+2;
-		int coinflip = rand.nextBoolean() ? 1 : -1;
-		Vector dir = caveDir.clone();
-		dir.rotateAroundY(Math.PI / 2 * coinflip);
+		Vector3 retVec = caveDir;
+		retVec = retVec.multiply(size);
+		int chasmSize = ctx.rand.nextInt(2)+3;
+		int chasmSizeBackward = ctx.rand.nextInt(3)+2;
+		int coinflip = ctx.rand.nextBoolean() ? 1 : -1;
+		Vector3 dir = caveDir;
+		dir = Util.rotateAroundY(dir, Math.PI / 2 * coinflip);
 
 		int vert = size/2 + 1;
-		Location start = loc.clone();
-		start.add(new Vector(0,vert*-2,0));
+		Vector3 start = loc;
+		start = start.add(0,vert*-2,0);
 
-		start.add(dir.clone().multiply(-1*size*(chasmSizeBackward)));
+		start = start.add(dir.multiply(-1*size*(chasmSizeBackward)));
 
-		Location og = start.clone();
+		Vector3 og = start;
 		chasmSize = chasmSize+chasmSizeBackward;
 		for(int i = 0; i < 3; i++) {
-			Location set = start.clone();
-			vary(rand, set);
+			Vector3 set = start;
+			set = vary(ctx, set);
 			centers.add(set);
 			for(int j = 0; j < chasmSize; j++) {
-				deleteSphere(set,size);
-				set.add(dir.clone().multiply(size));
+				deleteSphere(ctx,set,size);
+				set = set.add(dir.multiply(size));
 			}
-			start.add(new Vector(0,vert,0));
+			start = start.add(0,vert,0);
 		}
 
-		for(Location l : centers) {
-			centroids.add(l.clone());
-			smooth(rand, l,size+2);
+		for(Vector3 l : centers) {
+			centroids.add(l);
+			smooth(ctx, l.toBlockPoint(),size+2);
 		}
 
-		Location lava = findFloor(og).add(new Vector(0,2,0));
+		BlockVector3 lava = findFloor(ctx, og.toBlockPoint()).add(0,2,0);
 		//floodFill(Material.LAVA,lava);
 
-		return ret.add(retVec);
+		return loc.add(retVec);
 	}
 
-	public  Location generateSmallRoom(Random rand, Location loc, int r) {
-		int amount = rand.nextInt(4)+4;
+	public  Vector3 generateSmallRoom(CaveGenContext ctx, Vector3 loc, int r) throws MaxChangedBlocksException {
+		int amount = ctx.rand.nextInt(4)+4;
 		r -= 1;
 
 		r = Math.max(r, 4);
 
 		for(int i = 0; i < amount; i++) {
-			Location clone = loc.clone();
-			int tx = rand.nextInt(r-2)+2;
-			int ty = rand.nextInt(r);
-			int tz = rand.nextInt(r-2)+2;
+			int tx = ctx.rand.nextInt(r-2)+2;
+			int ty = ctx.rand.nextInt(r);
+			int tz = ctx.rand.nextInt(r-2)+2;
 
-			if(rand.nextBoolean()) {tx*=-1; }
-			if(rand.nextBoolean()) {tz*=-1; }
+			if(ctx.rand.nextBoolean()) {tx*=-1; }
+			if(ctx.rand.nextBoolean()) {tz*=-1; }
 
-			int sizeMod = rand.nextInt(1);
+			int sizeMod = ctx.rand.nextInt(1);
 
-			if(rand.nextBoolean()) {sizeMod*=-1; }
+			if(ctx.rand.nextBoolean()) {sizeMod*=-1; }
 
-
-			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
-			centroids.add(clone.clone());
+			Vector3 center = loc.add(tx, ty, tz);
+			deleteSphere(ctx, center,r+sizeMod);
+			centroids.add(center);
 
 		}
 
-		switch (rand.nextInt(4)) {
+		switch (ctx.rand.nextInt(4)) {
 			case 0:
-				return loc.add(new Vector(r - 3, 0, 0));
+				return loc.add(r - 3, 0, 0);
 			case 1:
-				return loc.add(new Vector(-1 * r + 3, 0, 0));
+				return loc.add(-1 * r + 3, 0, 0);
 			case 2:
-				return loc.add(new Vector(0, 0, -1 * r + 3));
+				return loc.add(0, 0, -1 * r + 3);
 			case 3:
-				return loc.add(new Vector(0, 0, r - 3));
+				return loc.add(0, 0, r - 3);
 		}
 
 		return loc;
 	}
 
-	public  Location generatePoolRoom(Random rand, Location loc, int r) {
-		int amount = rand.nextInt(4)+3;
+	public  Vector3 generatePoolRoom(CaveGenContext ctx, Vector3 loc, int r) throws MaxChangedBlocksException {
+		int amount = ctx.rand.nextInt(4)+3;
 		r -= 1;
 
 		for(int i = 0; i < amount; i++) {
-			Location clone = loc.clone();
-			int tx = rand.nextInt(r-2)+2;
-			int ty = rand.nextInt(r);
-			int tz = rand.nextInt(r-2)+2;
+			int tx = ctx.rand.nextInt(r-2)+2;
+			int ty = ctx.rand.nextInt(r);
+			int tz = ctx.rand.nextInt(r-2)+2;
 
-			if(rand.nextBoolean()) {tx*=-1; }
-			if(rand.nextBoolean()) {tz*=-1; }
+			if(ctx.rand.nextBoolean()) {tx*=-1; }
+			if(ctx.rand.nextBoolean()) {tz*=-1; }
 
-			int sizeMod = rand.nextInt(1);
+			int sizeMod = ctx.rand.nextInt(1);
 
-			if(rand.nextBoolean()) {sizeMod*=-1; }
+			if(ctx.rand.nextBoolean()) {sizeMod*=-1; }
 
-			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
+			deleteSphere(ctx, loc.add(tx,ty,tz),r+sizeMod);
 
 
 		}
 
 		for(int i = 0; i < amount-1; i++) {
-			Location clone = loc.clone();
-			int tx = rand.nextInt(r-3)+2;
-			int ty = rand.nextInt(r-1);
-			int tz = rand.nextInt(r-3)+2;
+			int tx = ctx.rand.nextInt(r-3)+2;
+			int ty = ctx.rand.nextInt(r-1);
+			int tz = ctx.rand.nextInt(r-3)+2;
 
-			if(rand.nextBoolean()) {tx*=-1; }
-			if(rand.nextBoolean()) {tz*=-1; }
+			if(ctx.rand.nextBoolean()) {tx*=-1; }
+			if(ctx.rand.nextBoolean()) {tz*=-1; }
 
-			int sizeMod = rand.nextInt(1);
+			int sizeMod = ctx.rand.nextInt(1);
 
-			if(rand.nextBoolean()) {sizeMod*=-1; }
+			if(ctx.rand.nextBoolean()) {sizeMod*=-1; }
 
-			deleteSphere(clone.add(new Vector(tx,-ty,tz)),r+sizeMod);
+			deleteSphere(ctx, loc.add(tx,-ty,tz),r+sizeMod);
 
 
 		}
 
-		Location pool = findFloor(loc.clone()).add(new Vector(0,1,0));
-		floodFill(Material.WATER,pool);
+		BlockVector3 pool = findFloor(ctx, loc.toBlockPoint()).add(0,1,0);
+		floodFill(ctx, Util.requireDefaultState(BlockTypes.WATER),pool);
 
-		switch (rand.nextInt(4)) {
+		switch (ctx.rand.nextInt(4)) {
 			case 0:
-				return loc.add(new Vector(r - 2, 0, 0));
+				return loc.add(r - 2, 0, 0);
 			case 1:
-				return loc.add(new Vector(-1 * r + 2, 0, 0));
+				return loc.add(-1 * r + 2, 0, 0);
 			case 2:
-				return loc.add(new Vector(0, 0, -1 * r + 2));
+				return loc.add(0, 0, -1 * r + 2);
 			case 3:
-				return loc.add(new Vector(0, 0, r - 2));
+				return loc.add(0, 0, r - 2);
 		}
 
 
@@ -401,8 +386,8 @@ public class ModuleGenerator {
 		return loc;
 	}
 
-	public  Location generateLargeRoom(Random rand, Location loc, int r) {
-		int amount = rand.nextInt(5)+3;
+	public  Vector3 generateLargeRoom(CaveGenContext ctx, Vector3 loc, int r) throws MaxChangedBlocksException {
+		int amount = ctx.rand.nextInt(5)+3;
 
 
 		if(r < 3) {
@@ -410,130 +395,127 @@ public class ModuleGenerator {
 		}
 
 		for(int i = 0; i < amount; i++) {
-			Location clone = loc.clone();
-			int tx = rand.nextInt(r-2)+2;
-			int ty = rand.nextInt(r);
-			int tz = rand.nextInt(r-2)+2;
+			int tx = ctx.rand.nextInt(r-2)+2;
+			int ty = ctx.rand.nextInt(r);
+			int tz = ctx.rand.nextInt(r-2)+2;
 
-			if(rand.nextBoolean()) {tx*=-1; }
-			if(rand.nextBoolean()) {tz*=-1; }
+			if(ctx.rand.nextBoolean()) {tx*=-1; }
+			if(ctx.rand.nextBoolean()) {tz*=-1; }
 
-			int sizeMod = rand.nextInt(2);
+			int sizeMod = ctx.rand.nextInt(2);
 
-			if(rand.nextBoolean()) {sizeMod*=-1; }
+			if(ctx.rand.nextBoolean()) {sizeMod*=-1; }
 
-			deleteSphere(clone.add(new Vector(tx,ty,tz)),r+sizeMod);
-			centroids.add(clone.clone());
+			Vector3 center = loc.add(tx, ty, tz);
+			deleteSphere(ctx, center,r+sizeMod);
+			centroids.add(center);
 
 
 		}
 
-		switch (rand.nextInt(4)) {
+		switch (ctx.rand.nextInt(4)) {
 			case 0:
-				return loc.add(new Vector(2 * r - 2, 0, 0));
+				return loc.add(2 * r - 2, 0, 0);
 			case 1:
-				return loc.add(new Vector(-2 * r + 2, 0, 0));
+				return loc.add(-2 * r + 2, 0, 0);
 			case 2:
-				return loc.add(new Vector(0, 0, -2 * r + 2));
+				return loc.add(0, 0, -2 * r + 2);
 			case 3:
-				return loc.add(new Vector(0, 0, 2 * r - 2));
+				return loc.add(0, 0, 2 * r - 2);
 		}
 
 		return loc;
 	}
 
-	public  Location generateShelfRoom(Random rand, Location loc, int r, Vector direction) {
-		if(rand.nextBoolean()) {
-			return generateShelfFromBottom(rand,loc,r,direction);
+	public  Vector3 generateShelfRoom(CaveGenContext ctx, Vector3 loc, int r, Vector3 direction) throws MaxChangedBlocksException {
+		if(ctx.rand.nextBoolean()) {
+			return generateShelfFromBottom(ctx,loc,r,direction);
 		} else {
-			return generateShelfFromTop(rand,loc,r,direction);
+			return generateShelfFromTop(ctx,loc,r,direction);
 		}
 	}
 
-	public  Location generateShelfFromBottom(Random rand, Location loc, int r, Vector direction) {
-		Location next = generateLargeRoom(rand,loc,r);
-		next = generateSmallRoom(rand,next,r);
+	public  Vector3 generateShelfFromBottom(CaveGenContext ctx, Vector3 loc, int r, Vector3 direction) throws MaxChangedBlocksException {
+		Vector3 next = generateLargeRoom(ctx,loc,r);
+		next = generateSmallRoom(ctx,next,r);
 
-		int coinflip = rand.nextBoolean() ? 1 : -1;
+		int coinflip = ctx.rand.nextBoolean() ? 1 : -1;
 
-		Location shelf = loc.clone().add(new Vector(0,rand.nextInt(5)+6,0));
-		Vector adjust = direction.clone();
-		adjust.rotateAroundY(Math.PI / 2 + rand.nextDouble() * Math.PI / 18 * coinflip);
-		shelf.add(adjust);
+		Vector3 shelf = loc.add(0,ctx.rand.nextInt(5)+6,0);
+		Vector3 adjust = direction;
+		adjust = Util.rotateAroundY(adjust, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * coinflip);
+		shelf = shelf.add(adjust);
 
-		Vector dir = direction.clone();
+		Vector3 dir = direction;
 		int size = Math.max(r-2,5);
 
 		for(int i = 0; i < 3; i++) {
-			generateSmallRoom(rand,shelf,size);
-			vary(rand, shelf);
-			shelf = shelf.add(dir.clone().multiply(size));
+			shelf = generateSmallRoom(ctx,shelf,size);
+			shelf = vary(ctx, shelf);
+			shelf = shelf.add(dir.multiply(size));
 		}
 
 		return next;
 	}
 
-	public  Location generateShelfFromTop(Random rand, Location loc, int r, Vector direction) {
+	public  Vector3 generateShelfFromTop(CaveGenContext ctx, Vector3 loc, int r, Vector3 direction) throws MaxChangedBlocksException {
 
 
-		int coinflip = rand.nextBoolean() ? 1 : -1;
+		int coinflip = ctx.rand.nextBoolean() ? 1 : -1;
 
-		Location shelf = loc.clone().add(new Vector(0,-1*rand.nextInt(5)+6,0));
-		Vector adjust = direction.clone();
-		adjust.rotateAroundY(Math.PI / 2 +rand.nextDouble() * Math.PI / 18 * coinflip);
-		shelf.add(adjust);
+		Vector3 shelf = loc.add(0,-1*ctx.rand.nextInt(5)+6,0);
+		Vector3 adjust = direction;
+		adjust = Util.rotateAroundY(adjust, Math.PI / 2 +ctx.rand.nextDouble() * Math.PI / 18 * coinflip);
+		shelf = shelf.add(adjust);
 
-		Vector dir = direction.clone();
 		int size = Math.max(r-2,5);
-		Location next = loc.clone();
+		Vector3 next = loc;
 		for(int i = 0; i < 3; i++) {
-			generateSmallRoom(rand,next,size);
-			vary(rand, next);
-			next = shelf.add(dir.clone().multiply(size));
+			next = generateSmallRoom(ctx,next,size);
+			next = vary(ctx, next);
+			next = shelf.add(direction.multiply(size));
 		}
 
-		shelf = generateLargeRoom(rand,loc,r);
-		shelf = generateSmallRoom(rand,shelf,r);
+		shelf = generateLargeRoom(ctx,loc,r);
+		shelf = generateSmallRoom(ctx,shelf,r);
 
 
 		return next;
 	}
 
 
-	public  Location rampUp(Random rand, Location loc, int r, Vector direction) {
-		Location next = loc;
+	public  Vector3 rampUp(CaveGenContext ctx, Vector3 loc, int r, Vector3 direction) throws MaxChangedBlocksException {
+		Vector3 next = loc;
 		for(int i = 0; i < r; i++) {
 			next = loc.add(direction);
-			deleteSphere(next,r+getSizeMod(rand));
+			deleteSphere(ctx,next,r+getSizeMod(ctx));
 		}
-		return vary(rand, next);
+		return vary(ctx, next);
 	}
 
-	public  void deleteSphere(Location loc, int r) {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-
-		World w = loc.getWorld();
-		assert w != null;
+	public  void deleteSphere(CaveGenContext ctx, Vector3 loc, int r) throws MaxChangedBlocksException {
+		double x = loc.getX();
+		double y = loc.getY();
+		double z = loc.getZ();
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
 				for(int tz=-r; tz< r+1; tz++){
-					if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= r-2){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
 						//delete(tx+x, ty+y, tz+z);
 						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
 							continue;
 						}
-						if(ty+y > 0)
-							w.getBlockAt(tx+x, ty+y, tz+z).setType(Material.AIR);
+						if(ty+y > 0) {
+							ctx.setBlock(BlockVector3.at(tx + x, ty + y, tz + z), ctx.style.getAirBlock());
+						}
 					}
 				}
 			}
 		}
 	}
 
-	public  void createDropshaft(Random rand, Location loc, int r, int length) {
+	public  void createDropshaft(CaveGenContext ctx, Vector3 loc, int r, int length) throws MaxChangedBlocksException {
 		int i = 0;
 		if(r >= 6) {
 			r=r-1;
@@ -541,20 +523,19 @@ public class ModuleGenerator {
 
 
 		while(i < length) {
-			loc = vary(rand, loc);
-			int n = rand.nextInt(2)+2;
-			loc.add(0,-n,0);
+			loc = vary(ctx, loc);
+			int n = ctx.rand.nextInt(2)+2;
+			loc = loc.add(0,-n,0);
 			i+=n;
-			centroids.add(loc.clone());
-			deleteSphere(loc,r);
+			centroids.add(loc);
+			deleteSphere(ctx,loc,r);
 		}
 	}
 
-	public  Location getNext(Random rand, char c, Location loc, int r, Vector dir) {
+	public Vector3 getNext(CaveGenContext ctx, char c, Vector3 loc, int r, Vector3 dir) {
 		r = r-2;
-		loc = vary(rand, loc);
-		Vector apply = dir.clone();
-		apply.multiply(r); //dir.multiply(r);
+		loc = vary(ctx, loc);
+		Vector3 apply = dir.multiply(r);
 		switch(c) {
 			case 'W':
 				return loc.add(apply);
@@ -573,29 +554,29 @@ public class ModuleGenerator {
 		}
 	}
 
-	public  int getSizeMod(Random rand) {
-		return rand.nextInt(3)-2;
+	public  int getSizeMod(CaveGenContext ctx) {
+		return ctx.rand.nextInt(3)-2;
 	}
 
-	public void generateOres(Random rand, Material ore, int rarity, int size, int radius, int caveRadius) {
-		for(Location loc : centroids) {
-			int chance = rand.nextInt(rarity);
+	public void generateOres(CaveGenContext ctx, BlockStateHolder<?> ore, int rarity, int size, int radius, int caveRadius) throws MaxChangedBlocksException {
+		for(Vector3 loc : centroids) {
+			int chance = ctx.rand.nextInt(rarity);
 			if(chance == 0) {
-				placeOreCluster(rand,loc,caveRadius,size,radius,ore);
+				placeOreCluster(ctx,loc.toBlockPoint(),caveRadius,size,radius,ore);
 			}
 		}
 	}
 
 
-	public void generateWaterfalls(Random rand, Location loc, int caveRadius, int amount, int rarity, int placeRadius) {
-		for(Location l : centroids) {
-			if(rand.nextInt(rarity) == 0) {
+	public void generateWaterfalls(CaveGenContext ctx, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {
+		for(Vector3 l : centroids) {
+			if(ctx.rand.nextInt(rarity) == 0) {
 				placeWaterfalls(loc,caveRadius,amount,placeRadius);
 			}
 		}
 	}
 
-	public int placeWaterfalls(Location loc, int caveRadius, int amount, int placeRadius) {
+	public int placeWaterfalls(Vector3 loc, int caveRadius, int amount, int placeRadius) {
 		for(int i = 0; i < amount; i++) {
 			//TODO
 		}
@@ -604,50 +585,48 @@ public class ModuleGenerator {
 
 	}
 
-	public int placeOreCluster(Random rand, Location loc, int caveRadius, int size, int radius, Material ore) {
-		Location toPlace;
+	public int placeOreCluster(CaveGenContext ctx, BlockVector3 loc, int caveRadius, int size, int radius, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
+		BlockVector3 toPlace;
 		boolean wall = false;
-		switch(rand.nextInt(6)) {
+		switch(ctx.rand.nextInt(6)) {
 			case 1:
-				toPlace = TerrainGenerator.getWall(loc, size, new Vector(caveRadius,0,0));
+				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(caveRadius,0,0));
 				wall = true;
-				toPlace.getBlock().setType(Material.ORANGE_WOOL);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.ORANGE_WOOL));
 				break;
 			case 2:
-				toPlace = TerrainGenerator.getWall(loc, size, new Vector(-caveRadius,0,0));
+				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(-caveRadius,0,0));
 				wall = true;
-				toPlace.getBlock().setType(Material.PURPLE_WOOL);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.PURPLE_WOOL));
 				break;
 			case 3:
-				toPlace = TerrainGenerator.getWall(loc, size, new Vector(0,0,caveRadius));
+				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(0,0,caveRadius));
 				wall = true;
-				toPlace.getBlock().setType(Material.YELLOW_WOOL);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.YELLOW_WOOL));
 				break;
 			case 4:
-				toPlace = TerrainGenerator.getWall(loc, size, new Vector(0,0,-caveRadius));
+				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(0,0,-caveRadius));
 				wall = true;
-				toPlace.getBlock().setType(Material.GREEN_WOOL);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.GREEN_WOOL));
 				break;
 			case 5:
-				toPlace = TerrainGenerator.getCeiling(loc, caveRadius);
-				toPlace.getBlock().setType(Material.WHITE_WOOL);
+				toPlace = TerrainGenerator.getCeiling(ctx, loc, caveRadius);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.WHITE_WOOL));
 				break;
 			default:
-				toPlace = TerrainGenerator.getFloor(loc, caveRadius);
-				toPlace.getBlock().setType(Material.RED_WOOL);
+				toPlace = TerrainGenerator.getFloor(ctx, loc, caveRadius);
+				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.RED_WOOL));
 				break;
 
 		}
-		return generateOreCluster(rand,toPlace,size,radius,ore,wall);
+		return generateOreCluster(ctx,toPlace,size,radius,ore,wall);
 
 	}
 
-	public int generateOreCluster(Random rand, Location loc, int size, int radius, Material ore, boolean wall) {
+	public int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int size, int radius, BlockStateHolder<?> ore, boolean wall) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-		World w = loc.getWorld();
-		assert w != null;
 		int count = 0;
 
 		for(int tx = -radius; tx< radius +1; tx++){
@@ -655,14 +634,14 @@ public class ModuleGenerator {
 				for(int tz = -radius; tz< radius +1; tz++){
 					if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= radius -2){
 						if(ty+y > 0) {
-							Block b =  w.getBlockAt(tx+x, ty+y, tz+z);
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
-							if(b.getType() != Material.AIR) {
+							if(!ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))) {
 								if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == radius -2)) {
-									if(rand.nextBoolean())
+									if(ctx.rand.nextBoolean())
 										continue;
 								}
-								b.setType(ore);
+								ctx.setBlock(pos, ore);
 								count++;
 							}
 

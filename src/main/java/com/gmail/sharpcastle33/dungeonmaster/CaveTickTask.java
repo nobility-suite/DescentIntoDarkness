@@ -3,8 +3,11 @@ package com.gmail.sharpcastle33.dungeonmaster;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.bukkit.Location;
-import org.bukkit.Material;
+import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
@@ -59,12 +62,14 @@ public class CaveTickTask extends BukkitRunnable{
 			int z = p.getLocation().getBlockZ() + tz;
 
 			World world = p.getWorld();
-			if(world.getBlockAt(x, y, z).getType() == Material.AIR) {
-				if(world.getBlockAt(x, y+1, z).getType() == Material.AIR) {
-					Location loc = new Location(world,x,y,z);
-					Location fin = TerrainGenerator.getFloor(loc, 16);
-					world.spawnEntity(fin, mob);
-					return;
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), CaveStyle.DEFAULT, rand)) {
+				BlockVector3 pos = BlockVector3.at(x, y, z);
+				if(ctx.getBlock(pos).getBlockType() == BlockTypes.AIR) {
+					if(ctx.getBlock(BlockVector3.at(x, y + 1, z)).getBlockType() == BlockTypes.AIR) {
+						BlockVector3 fin = TerrainGenerator.getFloor(ctx, pos, 16);
+						world.spawnEntity(BukkitAdapter.adapt(world, fin), mob);
+						return;
+					}
 				}
 			}
 		}

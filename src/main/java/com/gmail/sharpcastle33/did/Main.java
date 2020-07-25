@@ -22,7 +22,9 @@ import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 import java.io.File;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -64,15 +66,8 @@ public class Main extends JavaPlugin {
 		saveConfig();
 
 		caveStylesConfig = reloadConfig("caveStyles");
-		CaveStyle defaultStyle = new CaveStyle();
-		defaultStyle.setPainterSteps(Lists.newArrayList(
-				new PainterStep.ReplaceFloor(Material.STONE.createBlockData(), Material.GRAVEL.createBlockData()),
-				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.ANDESITE.createBlockData(), 0.2),
-				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.COBBLESTONE.createBlockData(), 0.2),
-				new PainterStep.ChanceReplace(Material.STONE.createBlockData(), Material.MOSSY_COBBLESTONE.createBlockData(), 0.05)
-		));
 		ConfigurationSection defaultConfig = new MemoryConfiguration();
-		defaultStyle.serialize(defaultConfig);
+		CaveStyle.DEFAULT.serialize(defaultConfig);
 		caveStylesConfig.addDefaults(defaultConfig.getValues(false).entrySet().stream()
 				.map(entry -> new AbstractMap.SimpleEntry<>("default." + entry.getKey(), entry.getValue()))
 				.collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (a, b) -> a, (Supplier<HashMap<String, Object>>)HashMap::new)));
@@ -122,5 +117,20 @@ public class Main extends JavaPlugin {
 
 	public DungeonMaster getDungeonMaster() {
 		return this.dungeonMaster;
+	}
+
+	private static List<Material> ALL_MATERIALS;
+
+	public static List<Material> getAllMaterials() {
+		// I can't find a better way of doing this
+		if (ALL_MATERIALS == null) {
+			ALL_MATERIALS = new ArrayList<>();
+			for (Material material : Material.values()) {
+				if (!material.name().startsWith("LEGACY_")) {
+					ALL_MATERIALS.add(material);
+				}
+			}
+		}
+		return ALL_MATERIALS;
 	}
 }
