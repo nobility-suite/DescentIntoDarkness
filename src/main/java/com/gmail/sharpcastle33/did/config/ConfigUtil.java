@@ -5,6 +5,8 @@ import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 
+import java.util.Locale;
+
 public class ConfigUtil {
 	public static BlockStateHolder<?> parseBlock(String val) {
 		try {
@@ -22,5 +24,18 @@ public class ConfigUtil {
 		} catch (NumberFormatException e) {
 			throw new InvalidConfigException("Invalid double: " + val);
 		}
+	}
+
+	public static <T extends Enum<T>> T parseEnum(Class<T> type, String val) {
+		for (T enumVal : type.getEnumConstants()) {
+			if (enumVal.name().equals(val.toUpperCase(Locale.ROOT))) {
+				return enumVal;
+			}
+		}
+		throw new InvalidConfigException("Invalid " + type.getSimpleName() + ": " + val);
+	}
+
+	public static String enumToString(Enum<?> val) {
+		return val.name().toLowerCase(Locale.ROOT);
 	}
 }

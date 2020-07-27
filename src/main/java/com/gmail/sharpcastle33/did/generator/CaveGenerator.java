@@ -3,7 +3,6 @@ package com.gmail.sharpcastle33.did.generator;
 import java.util.logging.Level;
 
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -20,16 +19,16 @@ public class CaveGenerator {
 			base);
 	}
 
-	public static String generateCave(CaveGenContext ctx, Vector3 pos) throws MaxChangedBlocksException {
+	public static String generateCave(CaveGenContext ctx, Vector3 pos) throws WorldEditException {
 		return generateCave(ctx, pos, 5);
 
 	}
 
-	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws MaxChangedBlocksException {
+	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
 		return generateCave(ctx,size,pos,90,true,Vector3.UNIT_X);
 	}
 
-	public static String generateCave(CaveGenContext ctx, int size, Vector3 pos, int length, boolean branches, Vector3 dir) throws MaxChangedBlocksException {
+	public static String generateCave(CaveGenContext ctx, int size, Vector3 pos, int length, boolean branches, Vector3 dir) throws WorldEditException {
 
 		int len = 100;
 		String s = LayoutGenerator.generateCave(ctx, length, 0);

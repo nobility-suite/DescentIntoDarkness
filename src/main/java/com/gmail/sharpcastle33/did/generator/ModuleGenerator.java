@@ -1,12 +1,16 @@
 package com.gmail.sharpcastle33.did.generator;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 import com.gmail.sharpcastle33.did.Util;
 import com.sk89q.worldedit.MaxChangedBlocksException;
+import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.util.Direction;
+import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
@@ -16,7 +20,7 @@ public class ModuleGenerator {
 	ArrayList<Vector3> centroids = new ArrayList<>();
 
 
-	public  void read(CaveGenContext ctx, String cave, Vector3 start, int size, Vector3 dir) throws MaxChangedBlocksException {
+	public  void read(CaveGenContext ctx, String cave, Vector3 start, int size, Vector3 dir) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
 		Vector3 loc = start;
@@ -48,13 +52,9 @@ public class ModuleGenerator {
 			}
 		}
 
-		//	public void generateOres(Material ore, int rarity, int size, int radius, int caveRadius) {
-
-		generateOres(ctx,Util.requireDefaultState(BlockTypes.COAL_ORE), 100, 7, 4, size);
-		generateOres(ctx,Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 100, 11, 4, size);
-		generateOres(ctx,Util.requireDefaultState(BlockTypes.EMERALD_ORE), 100, 12, 3, size);
-
-
+		for (Structure structure : ctx.style.getStructures()) {
+			generateStructure(ctx, 100, structure);
+		}
 	}
 
 	public  void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
@@ -148,7 +148,7 @@ public class ModuleGenerator {
 		}
 	}
 
-	public Vector3 apply(CaveGenContext ctx, char c, Vector3 loc, int size, int realSize, Vector3 dir) throws MaxChangedBlocksException {
+	public Vector3 apply(CaveGenContext ctx, char c, Vector3 loc, int size, int realSize, Vector3 dir) throws WorldEditException {
 		switch(c) {
 			case 'W':
 				deleteSphere(ctx,loc,size);
@@ -208,7 +208,7 @@ public class ModuleGenerator {
 		return loc;
 	}
 
-	private  Vector3 generateSmallBranch(CaveGenContext ctx, Vector3 loc, int size, Vector3 dir) throws MaxChangedBlocksException {
+	private  Vector3 generateSmallBranch(CaveGenContext ctx, Vector3 loc, int size, Vector3 dir) throws WorldEditException {
 		Vector3 clone = Util.rotateAroundY(dir, 2 * Math.PI * (ctx.rand.nextDouble() * 3/4 + 1.0/8));
 
 		if(size < 7) {
@@ -558,11 +558,19 @@ public class ModuleGenerator {
 		return ctx.rand.nextInt(3)-2;
 	}
 
-	public void generateOres(CaveGenContext ctx, BlockStateHolder<?> ore, int rarity, int size, int radius, int caveRadius) throws MaxChangedBlocksException {
+	public void generateStructure(CaveGenContext ctx, int caveRadius, Structure structure) throws WorldEditException {
 		for(Vector3 loc : centroids) {
-			int chance = ctx.rand.nextInt(rarity);
-			if(chance == 0) {
-				placeOreCluster(ctx,loc.toBlockPoint(),caveRadius,size,radius,ore);
+			if(ctx.rand.nextDouble() < structure.getChance()) {
+				Direction dir = structure.getRandomDirection(ctx.rand);
+				BlockVector3 pos;
+				if (dir == Direction.DOWN) {
+					pos = TerrainGenerator.getFloor(ctx, loc.toBlockPoint(), caveRadius);
+				} else if (dir == Direction.UP) {
+					pos = TerrainGenerator.getCeiling(ctx, loc.toBlockPoint(), caveRadius);
+				} else {
+					pos = TerrainGenerator.getWall(ctx, loc.toBlockPoint(), caveRadius, dir.toBlockVector());
+				}
+				structure.place(ctx, pos, Util.getOpposite(dir));
 			}
 		}
 	}
@@ -585,45 +593,7 @@ public class ModuleGenerator {
 
 	}
 
-	public int placeOreCluster(CaveGenContext ctx, BlockVector3 loc, int caveRadius, int size, int radius, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
-		BlockVector3 toPlace;
-		boolean wall = false;
-		switch(ctx.rand.nextInt(6)) {
-			case 1:
-				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(caveRadius,0,0));
-				wall = true;
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.ORANGE_WOOL));
-				break;
-			case 2:
-				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(-caveRadius,0,0));
-				wall = true;
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.PURPLE_WOOL));
-				break;
-			case 3:
-				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(0,0,caveRadius));
-				wall = true;
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.YELLOW_WOOL));
-				break;
-			case 4:
-				toPlace = TerrainGenerator.getWall(ctx, loc, size, BlockVector3.at(0,0,-caveRadius));
-				wall = true;
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.GREEN_WOOL));
-				break;
-			case 5:
-				toPlace = TerrainGenerator.getCeiling(ctx, loc, caveRadius);
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.WHITE_WOOL));
-				break;
-			default:
-				toPlace = TerrainGenerator.getFloor(ctx, loc, caveRadius);
-				ctx.setBlock(toPlace, Util.requireDefaultState(BlockTypes.RED_WOOL));
-				break;
-
-		}
-		return generateOreCluster(ctx,toPlace,size,radius,ore,wall);
-
-	}
-
-	public int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int size, int radius, BlockStateHolder<?> ore, boolean wall) throws MaxChangedBlocksException {
+	public static int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int radius, List<BlockStateHolder<?>> oldBlocks, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
@@ -632,12 +602,19 @@ public class ModuleGenerator {
 		for(int tx = -radius; tx< radius +1; tx++){
 			for(int ty = -radius; ty< radius +1; ty++){
 				for(int tz = -radius; tz< radius +1; tz++){
-					if(Math.sqrt(Math.pow(tx, 2)  +  Math.pow(ty, 2)  +  Math.pow(tz, 2)) <= radius -2){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (radius - 2) * (radius - 2)) {
 						if(ty+y > 0) {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
-							if(!ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))) {
-								if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == radius -2)) {
+							BlockState block = ctx.getBlock(pos);
+							boolean canPlaceOre;
+							if (oldBlocks == null) {
+								canPlaceOre = !ctx.style.isTransparentBlock(block);
+							} else {
+								canPlaceOre = oldBlocks.stream().anyMatch(oldBlock -> oldBlock.equalsFuzzy(block));
+							}
+							if(canPlaceOre) {
+								if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == radius - 2)) {
 									if(ctx.rand.nextBoolean())
 										continue;
 								}

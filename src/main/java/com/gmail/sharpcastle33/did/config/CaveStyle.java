@@ -2,6 +2,7 @@ package com.gmail.sharpcastle33.did.config;
 
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.generator.PainterStep;
+import com.gmail.sharpcastle33.did.generator.Structure;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -30,12 +31,21 @@ public class CaveStyle {
 			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
 			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
 	);
+	private List<Structure> structures = Lists.newArrayList(
+			new Structure.Vein("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
+			new Structure.Vein("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
+			new Structure.Vein("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
+	);
 
 	public void serialize(ConfigurationSection map) {
 		map.set("airBlock", airBlock.getAsString());
 		map.set("baseBlock", baseBlock.getAsString());
 		map.set("transparentBlocks", transparentBlocks.stream().map(BlockStateHolder::getAsString).collect(Collectors.toCollection(ArrayList::new)));
 		map.set("painterSteps", painterSteps.stream().map(PainterStep::serialize).collect(Collectors.toCollection(ArrayList::new)));
+		ConfigurationSection structuresSection = map.createSection("structures");
+		for (Structure structure : structures) {
+			structure.serialize(structuresSection.createSection(structure.getName()));
+		}
 	}
 
 	public static CaveStyle deserialize(ConfigurationSection map) {
@@ -57,6 +67,16 @@ public class CaveStyle {
 		if (painterSteps != null) {
 			style.painterSteps.clear();
 			painterSteps.stream().map(PainterStep::deserialize).forEachOrdered(style.painterSteps::add);
+		}
+		ConfigurationSection structuresSection = map.getConfigurationSection("structures");
+		if (structuresSection != null) {
+			style.structures.clear();
+			for (String key : structuresSection.getKeys(false)) {
+				ConfigurationSection structureSection = structuresSection.getConfigurationSection(key);
+				if (structureSection != null) {
+					style.structures.add(Structure.deserialize(key, structureSection));
+				}
+			}
 		}
 		return style;
 	}
@@ -83,5 +103,9 @@ public class CaveStyle {
 
 	public List<PainterStep> getPainterSteps() {
 		return painterSteps;
+	}
+
+	public List<Structure> getStructures() {
+		return structures;
 	}
 }
