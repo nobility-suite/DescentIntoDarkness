@@ -570,7 +570,7 @@ public class ModuleGenerator {
 				} else {
 					pos = TerrainGenerator.getWall(ctx, loc.toBlockPoint(), caveRadius, dir.toBlockVector());
 				}
-				structure.place(ctx, pos, Util.getOpposite(dir));
+				structure.place(ctx, pos, dir);
 			}
 		}
 	}

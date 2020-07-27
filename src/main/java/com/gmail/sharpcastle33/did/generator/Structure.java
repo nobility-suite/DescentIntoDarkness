@@ -117,39 +117,39 @@ public abstract class Structure {
                 AffineTransform transform = new AffineTransform();
                 if (originSide == Direction.DOWN) {
                     switch (side) {
-                        case UP: transform.scale(1, -1, 1); break;
-                        case NORTH: transform.rotateX(-90); break;
-                        case SOUTH: transform.rotateX(90); break;
-                        case WEST: transform.rotateZ(90); break;
-                        case EAST: transform.rotateZ(-90); break;
+                        case UP: transform = transform.scale(1, -1, 1); break;
+                        case NORTH: transform = transform.rotateX(-90); break;
+                        case SOUTH: transform = transform.rotateX(90); break;
+                        case WEST: transform = transform.rotateZ(90); break;
+                        case EAST: transform = transform.rotateZ(-90); break;
                         default: throw new AssertionError("There are too many directions!");
                     }
                 } else if (originSide == Direction.UP) {
                     switch (side) {
-                        case DOWN: transform.scale(1, -1, 1); break;
-                        case NORTH: transform.rotateX(90); break;
-                        case SOUTH: transform.rotateX(-90); break;
-                        case WEST: transform.rotateZ(-90); break;
-                        case EAST: transform.rotateZ(90); break;
+                        case DOWN: transform = transform.scale(1, -1, 1); break;
+                        case NORTH: transform = transform.rotateX(90); break;
+                        case SOUTH: transform = transform.rotateX(-90); break;
+                        case WEST: transform = transform.rotateZ(-90); break;
+                        case EAST: transform = transform.rotateZ(90); break;
                         default: throw new AssertionError("There are too many directions!");
                     }
                 } else {
                     if (side.isCardinal()) {
-                        transform.rotateY(originSide.toBlockVector().toYaw() - side.toBlockVector().toYaw());
+                        transform = transform.rotateY(originSide.toBlockVector().toYaw() - side.toBlockVector().toYaw());
                     } else if (side == Direction.DOWN) {
                         switch (originSide) {
-                            case NORTH: transform.rotateX(90); break;
-                            case SOUTH: transform.rotateX(-90); break;
-                            case WEST: transform.rotateZ(-90); break;
-                            case EAST: transform.rotateZ(90); break;
+                            case NORTH: transform = transform.rotateX(90); break;
+                            case SOUTH: transform = transform.rotateX(-90); break;
+                            case WEST: transform = transform.rotateZ(-90); break;
+                            case EAST: transform = transform.rotateZ(90); break;
                             default: throw new AssertionError("There are too many directions!");
                         }
                     } else {
                         switch (originSide) {
-                            case NORTH: transform.rotateX(-90); break;
-                            case SOUTH: transform.rotateX(90); break;
-                            case WEST: transform.rotateZ(90); break;
-                            case EAST: transform.rotateZ(-90); break;
+                            case NORTH: transform = transform.rotateX(-90); break;
+                            case SOUTH: transform = transform.rotateX(90); break;
+                            case WEST: transform = transform.rotateZ(90); break;
+                            case EAST: transform = transform.rotateZ(-90); break;
                             default: throw new AssertionError("There are too many directions!");
                         }
                     }
@@ -206,9 +206,15 @@ public abstract class Structure {
                 if (schematic == null) {
                     throw new InvalidConfigException("Unknown schematic " + schematicName);
                 }
-                Direction originSide = Direction.DOWN;
-                if (map.contains("originSide")) {
-                    originSide = ConfigUtil.parseEnum(Direction.class, map.getString("originSide"));
+                String originSideVal = map.getString("originSide");
+                Direction originSide;
+                if (originSideVal == null) {
+                    originSide = Direction.DOWN;
+                } else {
+                    originSide = ConfigUtil.parseEnum(Direction.class, originSideVal);
+                    if (!originSide.isCardinal() && !originSide.isUpright()) {
+                        throw new InvalidConfigException("Invalid Direction: " + originSideVal);
+                    }
                 }
                 return new SchematicStructure(name, edges, chance, schematicName, schematic, originSide);
             }
