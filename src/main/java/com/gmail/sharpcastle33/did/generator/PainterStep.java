@@ -99,7 +99,7 @@ public abstract class PainterStep {
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			TerrainGenerator.chanceReplace(ctx, loc, r, old, _new, chance);
+			PostProcessor.chanceReplace(ctx, loc, r, old, _new, chance);
 		}
 	}
 
@@ -120,7 +120,7 @@ public abstract class PainterStep {
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			TerrainGenerator.radiusReplace(ctx, loc, r, old, _new);
+			PostProcessor.radiusReplace(ctx, loc, r, old, _new);
 		}
 	}
 
@@ -141,7 +141,7 @@ public abstract class PainterStep {
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			TerrainGenerator.replaceCeiling(ctx, loc, r, old, _new);
+			PostProcessor.replaceCeiling(ctx, loc, r, old, _new);
 		}
 	}
 
@@ -162,7 +162,7 @@ public abstract class PainterStep {
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			TerrainGenerator.replaceFloor(ctx, loc, r, old, _new);
+			PostProcessor.replaceFloor(ctx, loc, r, old, _new);
 		}
 	}
 

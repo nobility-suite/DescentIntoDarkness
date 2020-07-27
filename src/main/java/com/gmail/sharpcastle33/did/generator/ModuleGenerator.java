@@ -17,10 +17,15 @@ import org.bukkit.Bukkit;
 
 public class ModuleGenerator {
 
-	ArrayList<Vector3> centroids = new ArrayList<>();
+	private final List<Centroid> centroids;
+	private final int size;
 
+	public ModuleGenerator(List<Centroid> centroids, int size) {
+		this.centroids = centroids;
+		this.size = size;
+	}
 
-	public  void read(CaveGenContext ctx, String cave, Vector3 start, int size, Vector3 dir) throws WorldEditException {
+	public void read(CaveGenContext ctx, String cave, Vector3 start, Vector3 dir) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.WARNING, "Cave string: " + cave);
 		Vector3 loc = start;
@@ -37,68 +42,11 @@ public class ModuleGenerator {
 			}
 			//Bukkit.getLogger().log(Level.WARNING, "New Vector: " + ch[i] + ", " + dir);
 			loc = apply(ctx, c, loc, tempSize, size, dir);
-			centroids.add(loc);
-		}
-
-		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
-
-		for(Vector3 l : centroids) {
-			smooth(ctx, l.toBlockPoint(),size+2);
-		}
-
-		for(Vector3 l : centroids) {
-			for (PainterStep painterStep : ctx.style.getPainterSteps()) {
-				painterStep.apply(ctx, l.toBlockPoint(), size+2);
-			}
-		}
-
-		for (Structure structure : ctx.style.getStructures()) {
-			generateStructure(ctx, 100, structure);
+			centroids.add(new Centroid(loc, size));
 		}
 	}
 
-	public  void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
 
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
-						//delete(tx+x, ty+y, tz+z);
-						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-
-						if(ctx.style.getBaseBlock().equalsFuzzy(ctx.getBlock(pos))) {
-							int amt = countAir(ctx, pos);
-							if(amt>=13) {
-								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
-								if(ctx.rand.nextInt(100) < 95) {
-									ctx.setBlock(pos, ctx.style.getAirBlock());
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	public  int countAir(CaveGenContext ctx, BlockVector3 loc) {
-		int r = 1;
-		int ret = 0;
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					BlockVector3 pos = loc.add(tx, ty, tz);
-					if(ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))){
-						ret++;
-					}
-				}
-			}
-		}
-		return ret;
-	}
 
 	public  Vector3 vary(CaveGenContext ctx, Vector3 loc) {
 		int x = ctx.rand.nextInt(2)-1;
@@ -169,7 +117,7 @@ public class ModuleGenerator {
 
 				int newSize = ctx.rand.nextInt(20);
 				int sizeMod = ctx.rand.nextInt(2);
-				CaveGenerator.generateCave(ctx,size-sizeMod,loc,20+newSize,false, Util.rotateAroundY(dir, Math.PI / 2 * coinflip));
+				CaveGenerator.generateBranch(ctx,size-sizeMod,loc,20+newSize,false, Util.rotateAroundY(dir, Math.PI / 2 * coinflip),centroids);
 				return getNext(ctx,c,loc,size,dir);
 			case 'x':
 				return generateSmallBranch(ctx,loc,size,dir);
@@ -223,7 +171,7 @@ public class ModuleGenerator {
 
 		int newSize = ctx.rand.nextInt(20);
 		int sizeMod = ctx.rand.nextInt(1);
-		CaveGenerator.generateCave(ctx,size-sizeMod,loc,20+newSize,false,clone);
+		CaveGenerator.generateBranch(ctx,size-sizeMod,loc,20+newSize,false,clone,centroids);
 		return getNext(ctx,'X',loc,size,dir);
 	}
 
@@ -281,8 +229,8 @@ public class ModuleGenerator {
 		}
 
 		for(Vector3 l : centers) {
-			centroids.add(l);
-			smooth(ctx, l.toBlockPoint(),size+2);
+			centroids.add(new Centroid(l, size));
+			PostProcessor.smooth(ctx, l.toBlockPoint(),size+2);
 		}
 
 		BlockVector3 lava = findFloor(ctx, og.toBlockPoint()).add(0,2,0);
@@ -311,7 +259,7 @@ public class ModuleGenerator {
 
 			Vector3 center = loc.add(tx, ty, tz);
 			deleteSphere(ctx, center,r+sizeMod);
-			centroids.add(center);
+			centroids.add(new Centroid(center, size));
 
 		}
 
@@ -408,7 +356,7 @@ public class ModuleGenerator {
 
 			Vector3 center = loc.add(tx, ty, tz);
 			deleteSphere(ctx, center,r+sizeMod);
-			centroids.add(center);
+			centroids.add(new Centroid(center, size));
 
 
 		}
@@ -527,7 +475,7 @@ public class ModuleGenerator {
 			int n = ctx.rand.nextInt(2)+2;
 			loc = loc.add(0,-n,0);
 			i+=n;
-			centroids.add(loc);
+			centroids.add(new Centroid(loc, size));
 			deleteSphere(ctx,loc,r);
 		}
 	}
@@ -556,41 +504,6 @@ public class ModuleGenerator {
 
 	public  int getSizeMod(CaveGenContext ctx) {
 		return ctx.rand.nextInt(3)-2;
-	}
-
-	public void generateStructure(CaveGenContext ctx, int caveRadius, Structure structure) throws WorldEditException {
-		for(Vector3 loc : centroids) {
-			if(ctx.rand.nextDouble() < structure.getChance()) {
-				Direction dir = structure.getRandomDirection(ctx.rand);
-				BlockVector3 pos;
-				if (dir == Direction.DOWN) {
-					pos = TerrainGenerator.getFloor(ctx, loc.toBlockPoint(), caveRadius);
-				} else if (dir == Direction.UP) {
-					pos = TerrainGenerator.getCeiling(ctx, loc.toBlockPoint(), caveRadius);
-				} else {
-					pos = TerrainGenerator.getWall(ctx, loc.toBlockPoint(), caveRadius, dir.toBlockVector());
-				}
-				structure.place(ctx, pos, dir);
-			}
-		}
-	}
-
-
-	public void generateWaterfalls(CaveGenContext ctx, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {
-		for(Vector3 l : centroids) {
-			if(ctx.rand.nextInt(rarity) == 0) {
-				placeWaterfalls(loc,caveRadius,amount,placeRadius);
-			}
-		}
-	}
-
-	public int placeWaterfalls(Vector3 loc, int caveRadius, int amount, int placeRadius) {
-		for(int i = 0; i < amount; i++) {
-			//TODO
-		}
-
-		return 0;
-
 	}
 
 	public static int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int radius, List<BlockStateHolder<?>> oldBlocks, BlockStateHolder<?> ore) throws MaxChangedBlocksException {

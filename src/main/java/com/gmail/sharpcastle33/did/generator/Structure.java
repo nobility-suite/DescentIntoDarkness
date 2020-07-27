@@ -192,7 +192,7 @@ public abstract class Structure {
             public Structure deserialize(String name, ConfigurationSection map) {
                 List<Edge> edges = deserializeEdges(map.get("edges"));
                 double chance = map.getDouble("chance", 1);
-                List<SchematicStructure.Schematic> schematics = ConfigUtil.deserializeSingleableList(map.getString("schematics"), schematicName -> {
+                List<SchematicStructure.Schematic> schematics = ConfigUtil.deserializeSingleableList(map.get("schematics"), schematicName -> {
                     Clipboard data = Main.plugin.getSchematic(schematicName);
                     if (data == null) {
                         throw new InvalidConfigException("Unknown schematic: " + schematicName);
