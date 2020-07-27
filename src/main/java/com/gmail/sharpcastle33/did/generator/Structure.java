@@ -1,6 +1,7 @@
 package com.gmail.sharpcastle33.did.generator;
 
 import com.gmail.sharpcastle33.did.Main;
+import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.google.common.collect.Lists;
@@ -219,6 +220,9 @@ public abstract class Structure {
             if (canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
                 Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(true).build();
                 Operations.complete(paste);
+                if (ctx.isDebug()) {
+                    ctx.setBlock(to, Util.requireDefaultState(BlockTypes.DIAMOND_BLOCK));
+                }
             }
         }
 

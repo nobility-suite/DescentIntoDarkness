@@ -93,6 +93,7 @@ public class CommandListener implements TabExecutor {
 		String styleName = args.length <= 2 ? "default" : args[2];
 		int size = args.length <= 3 ? 9 : Integer.parseInt(args[3]);
 		long seed = args.length <= 4 ? new Random().nextLong() : Long.parseLong(args[4]);
+		boolean debug = args.length > 5 && Boolean.parseBoolean(args[5]);
 
 		CaveStyle style = Main.plugin.getCaveStyles().get(styleName);
 		if (style == null) {
@@ -102,7 +103,7 @@ public class CommandListener implements TabExecutor {
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
 		String s;
-		try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed))) {
+		try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed)).setDebug(debug)) {
 			s = CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size);
 		} catch (WorldEditException e) {
 			p.sendMessage(ChatColor.DARK_RED + "Failed");
@@ -126,6 +127,8 @@ public class CommandListener implements TabExecutor {
 					if (args[1].equals("cave")) {
 						if (args.length == 3) {
 							return StringUtil.copyPartialMatches(args[2], Main.plugin.getCaveStyles().keySet(), new ArrayList<>());
+						} else if (args.length == 6) {
+							return StringUtil.copyPartialMatches(args[5], Arrays.asList("false", "true"), new ArrayList<>());
 						}
 					} else if (args[1].equals("blank")) {
 						if (args.length == 3) {

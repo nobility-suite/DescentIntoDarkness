@@ -20,12 +20,22 @@ public class CaveGenContext implements AutoCloseable {
     private final EditSession session;
     public final CaveStyle style;
     public final Random rand;
+    private boolean debug;
     private final Map<BlockVector3, BlockState> blockCache = new HashMap<>();
 
     private CaveGenContext(EditSession session, CaveStyle style, Random rand) {
         this.session = session;
         this.style = style;
         this.rand = rand;
+    }
+
+    public CaveGenContext setDebug(boolean debug) {
+        this.debug = debug;
+        return this;
+    }
+
+    public boolean isDebug() {
+        return debug;
     }
 
     public static CaveGenContext create(World world, CaveStyle style, Random rand) {
