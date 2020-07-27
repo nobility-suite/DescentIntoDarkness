@@ -121,6 +121,14 @@ public abstract class Structure {
 
     public abstract void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException;
 
+    protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
+        if (canReplace == null) {
+            return ctx.style.isTransparentBlock(block);
+        } else {
+            return canReplace.stream().anyMatch(it -> it.equalsFuzzy(block));
+        }
+    }
+
     public static class SchematicStructure extends Structure {
         private final List<Schematic> schematics;
         private final Direction originSide;
@@ -221,14 +229,8 @@ public abstract class Structure {
                 }
                 BlockVector3 destPos = transform.apply(pos.subtract(schematic.getOrigin()).toVector3()).toBlockPoint().add(to);
                 BlockStateHolder<?> block = ctx.getBlock(destPos);
-                if (canReplace == null) {
-                    if (!ctx.style.isTransparentBlock(block)) {
-                        return false;
-                    }
-                } else {
-                    if (canReplace.stream().noneMatch(it -> it.equalsFuzzy(block))) {
-                        return false;
-                    }
+                if (!canReplace(ctx, block)) {
+                    return false;
                 }
             }
             return true;
@@ -277,6 +279,68 @@ public abstract class Structure {
         }
     }
 
+    public static class PatchStructure extends Structure {
+        private final BlockStateHolder<?> block;
+        private final int spreadX;
+        private final int spreadY;
+        private final int spreadZ;
+        private final int tries;
+
+        protected PatchStructure(String name, ConfigurationSection map) {
+            super(name, Type.PATCH, map);
+            this.block = ConfigUtil.parseBlock(map.getString("block"));
+            this.spreadX = map.getInt("spreadX", 8);
+            this.spreadY = map.getInt("spreadY", 4);
+            this.spreadZ = map.getInt("spreadZ", 8);
+            if (spreadX < 0 || spreadY < 0 || spreadZ < 0) {
+                throw new InvalidConfigException("Spread cannot be negative");
+            }
+            this.tries = map.getInt("tries", 64);
+        }
+
+        protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
+            super(name, type, edges, chance, canPlaceOn, canReplace);
+            this.block = block;
+            this.spreadX = spreadX;
+            this.spreadY = spreadY;
+            this.spreadZ = spreadZ;
+            this.tries = tries;
+        }
+
+        @Override
+        protected void serialize0(ConfigurationSection map) {
+            map.set("block", block.getAsString());
+            map.set("spreadX", spreadX);
+            map.set("spreadY", spreadY);
+            map.set("spreadZ", spreadZ);
+            map.set("tries", tries);
+        }
+
+        @Override
+        public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+            BlockVector3 origin = pos.subtract(side.toBlockVector());
+            for (int i = 0; i < tries; i++) {
+                BlockVector3 offsetPos = origin.add(
+                        ctx.rand.nextInt(spreadX + 1) - ctx.rand.nextInt(spreadX + 1),
+                        ctx.rand.nextInt(spreadY + 1) - ctx.rand.nextInt(spreadY + 1),
+                        ctx.rand.nextInt(spreadZ + 1) - ctx.rand.nextInt(spreadZ + 1)
+                );
+                if (canReplace(ctx, ctx.getBlock(offsetPos))) {
+                    BlockStateHolder<?> blockBelow = ctx.getBlock(offsetPos.add(side.toBlockVector()));
+                    boolean allowPlacement;
+                    if (canPlaceOn == null) {
+                        allowPlacement = !ctx.style.isTransparentBlock(blockBelow);
+                    } else {
+                        allowPlacement = canPlaceOn.stream().anyMatch(it -> it.equalsFuzzy(blockBelow));
+                    }
+                    if (allowPlacement) {
+                        ctx.setBlock(offsetPos, this.block);
+                    }
+                }
+            }
+        }
+    }
+
     public enum Type {
         SCHEMATIC {
             @Override
@@ -288,6 +352,12 @@ public abstract class Structure {
             @Override
             public Structure deserialize(String name, ConfigurationSection map) {
                 return new VeinStructure(name, map);
+            }
+        },
+        PATCH {
+            @Override
+            public Structure deserialize(String name, ConfigurationSection map) {
+                return new PatchStructure(name, map);
             }
         },
         ;
