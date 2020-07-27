@@ -32,9 +32,9 @@ public class CaveStyle {
 			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
 	);
 	private List<Structure> structures = Lists.newArrayList(
-			new Structure.Vein("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
-			new Structure.Vein("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
-			new Structure.Vein("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
+			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
+			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
+			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
 	);
 
 	public void serialize(ConfigurationSection map) {

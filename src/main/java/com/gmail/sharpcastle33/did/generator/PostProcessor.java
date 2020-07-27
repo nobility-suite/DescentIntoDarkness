@@ -94,7 +94,9 @@ public class PostProcessor {
 				} else {
 					pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), caveRadius, dir.toBlockVector());
 				}
-				structure.place(ctx, pos, dir);
+				if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
+					structure.place(ctx, pos, dir);
+				}
 			}
 		}
 	}
