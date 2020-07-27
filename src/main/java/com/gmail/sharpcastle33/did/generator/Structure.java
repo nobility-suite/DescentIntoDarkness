@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 public abstract class Structure {
     private final String name;
@@ -57,11 +56,7 @@ public abstract class Structure {
 
     public void serialize(ConfigurationSection map) {
         map.set("type", ConfigUtil.enumToString(type));
-        if (edges.size() == 1) {
-            map.set("edges", ConfigUtil.enumToString(edges.get(0)));
-        } else {
-            map.set("edges", edges.stream().map(ConfigUtil::enumToString).collect(Collectors.toCollection(ArrayList::new)));
-        }
+        map.set("edges", ConfigUtil.serializeSingleableList(edges, ConfigUtil::enumToString));
         map.set("chance", chance);
         serialize0(map);
     }
@@ -77,42 +72,35 @@ public abstract class Structure {
     }
 
     protected static List<Edge> deserializeEdges(Object edges) {
-        if (edges == null) {
-            return Lists.newArrayList(Edge.values());
+        List<Edge> ret = ConfigUtil.deserializeSingleableList(edges, val -> ConfigUtil.parseEnum(Edge.class, val), () -> Lists.newArrayList(Edge.values()));
+        if (ret.isEmpty()) {
+            throw new InvalidConfigException("No edges to choose from");
         }
-        if (edges instanceof List) {
-            ArrayList<Edge> ret = ((List<?>) edges).stream().map(val -> ConfigUtil.parseEnum(Edge.class, val.toString())).collect(Collectors.toCollection(ArrayList::new));
-            if (ret.isEmpty()) {
-                throw new InvalidConfigException("No edges to choose from");
-            }
-            return ret;
-        }
-        return Lists.newArrayList(ConfigUtil.parseEnum(Edge.class, edges.toString()));
+        return ret;
     }
 
     public abstract void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException;
 
     public static class SchematicStructure extends Structure {
-        private final String schematicName;
-        private final Clipboard schematic;
+        private final List<Schematic> schematics;
         private final Direction originSide;
 
-        public SchematicStructure(String name, List<Edge> edges, double chance, String schematicName, Clipboard schematic, Direction originSide) {
+        public SchematicStructure(String name, List<Edge> edges, double chance, List<Schematic> schematics, Direction originSide) {
             super(name, Type.SCHEMATIC, edges, chance);
-            this.schematicName = schematicName;
-            this.schematic = schematic;
+            this.schematics = schematics;
             this.originSide = originSide;
         }
 
         @Override
         protected void serialize0(ConfigurationSection map) {
-            map.set("schematic", schematicName);
+            map.set("schematics", ConfigUtil.serializeSingleableList(schematics, schematic -> schematic.name));
             map.set("originSide", ConfigUtil.enumToString(originSide));
         }
 
         @Override
         public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
-            ClipboardHolder clipboardHolder = new ClipboardHolder(schematic);
+            Schematic chosenSchematic = schematics.get(ctx.rand.nextInt(schematics.size()));
+            ClipboardHolder clipboardHolder = new ClipboardHolder(chosenSchematic.data);
             if (side != originSide) {
                 AffineTransform transform = new AffineTransform();
                 if (originSide == Direction.DOWN) {
@@ -159,6 +147,16 @@ public abstract class Structure {
             Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(pos.subtract(side.toBlockVector())).ignoreAirBlocks(true).build();
             Operations.complete(paste);
         }
+
+        public static class Schematic {
+            private final String name;
+            private final Clipboard data;
+
+            private Schematic(String name, Clipboard data) {
+                this.name = name;
+                this.data = data;
+            }
+        }
     }
 
     public static class Vein extends Structure {
@@ -176,11 +174,7 @@ public abstract class Structure {
         @Override
         protected void serialize0(ConfigurationSection map) {
             if (oldBlocks != null) {
-                if (oldBlocks.size() == 1) {
-                    map.set("oldBlocks", oldBlocks.get(0).getAsString());
-                } else {
-                    map.set("oldBlocks", oldBlocks.stream().map(BlockStateHolder::getAsString).collect(Collectors.toCollection(ArrayList::new)));
-                }
+                map.set("oldBlocks", ConfigUtil.serializeSingleableList(oldBlocks, BlockStateHolder::getAsString));
             }
             map.set("newBlock", newBlock.getAsString());
             map.set("radius", radius);
@@ -198,13 +192,15 @@ public abstract class Structure {
             public Structure deserialize(String name, ConfigurationSection map) {
                 List<Edge> edges = deserializeEdges(map.get("edges"));
                 double chance = map.getDouble("chance", 1);
-                String schematicName = map.getString("schematic");
-                if (schematicName == null) {
-                    throw new InvalidConfigException("Missing schematic");
-                }
-                Clipboard schematic = Main.plugin.getSchematic(schematicName);
-                if (schematic == null) {
-                    throw new InvalidConfigException("Unknown schematic " + schematicName);
+                List<SchematicStructure.Schematic> schematics = ConfigUtil.deserializeSingleableList(map.getString("schematics"), schematicName -> {
+                    Clipboard data = Main.plugin.getSchematic(schematicName);
+                    if (data == null) {
+                        throw new InvalidConfigException("Unknown schematic: " + schematicName);
+                    }
+                    return new SchematicStructure.Schematic(schematicName, data);
+                }, () -> null);
+                if (schematics == null) {
+                    throw new InvalidConfigException("Missing \"schematics\"");
                 }
                 String originSideVal = map.getString("originSide");
                 Direction originSide;
@@ -216,7 +212,7 @@ public abstract class Structure {
                         throw new InvalidConfigException("Invalid Direction: " + originSideVal);
                     }
                 }
-                return new SchematicStructure(name, edges, chance, schematicName, schematic, originSide);
+                return new SchematicStructure(name, edges, chance, schematics, originSide);
             }
         },
         VEIN {
@@ -225,14 +221,7 @@ public abstract class Structure {
                 List<Edge> edges = deserializeEdges(map.get("edges"));
                 double chance = map.getDouble("chance", 1);
                 Object oldBlocksVal = map.get("oldBlocks");
-                List<BlockStateHolder<?>> oldBlocks;
-                if (oldBlocksVal == null) {
-                    oldBlocks = null;
-                } else if (oldBlocksVal instanceof List) {
-                    oldBlocks = ((List<?>) oldBlocksVal).stream().map(val -> ConfigUtil.parseBlock(val.toString())).collect(Collectors.toCollection(ArrayList::new));
-                } else {
-                    oldBlocks = Lists.newArrayList(ConfigUtil.parseBlock(oldBlocksVal.toString()));
-                }
+                List<BlockStateHolder<?>> oldBlocks = ConfigUtil.deserializeSingleableList(oldBlocksVal, ConfigUtil::parseBlock, () -> null);
                 String newBlockVal = map.getString("newBlock");
                 if (newBlockVal == null) {
                     throw new InvalidConfigException("Vein missing newBlock");
