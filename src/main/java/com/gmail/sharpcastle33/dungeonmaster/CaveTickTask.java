@@ -14,7 +14,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.gmail.sharpcastle33.did.generator.TerrainGenerator;
+import com.gmail.sharpcastle33.did.generator.PostProcessor;
 
 public class CaveTickTask extends BukkitRunnable{
 
@@ -66,7 +66,7 @@ public class CaveTickTask extends BukkitRunnable{
 				BlockVector3 pos = BlockVector3.at(x, y, z);
 				if(ctx.getBlock(pos).getBlockType() == BlockTypes.AIR) {
 					if(ctx.getBlock(BlockVector3.at(x, y + 1, z)).getBlockType() == BlockTypes.AIR) {
-						BlockVector3 fin = TerrainGenerator.getFloor(ctx, pos, 16);
+						BlockVector3 fin = PostProcessor.getFloor(ctx, pos, 16);
 						world.spawnEntity(BukkitAdapter.adapt(world, fin), mob);
 						return;
 					}

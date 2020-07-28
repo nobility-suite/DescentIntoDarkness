@@ -1,9 +1,10 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -20,28 +21,24 @@ public class CaveGenerator {
 			base);
 	}
 
-	public static String generateCave(CaveGenContext ctx, Vector3 pos) throws MaxChangedBlocksException {
-		return generateCave(ctx, pos, 5);
-
+	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
+		ArrayList<Centroid> centroids = new ArrayList<>();
+		String caveString = generateBranch(ctx, size, pos, 90, true, Vector3.UNIT_X, centroids);
+		PostProcessor.postProcess(ctx, centroids);
+		return caveString;
 	}
 
-	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws MaxChangedBlocksException {
-		return generateCave(ctx,size,pos,90,true,Vector3.UNIT_X);
-	}
-
-	public static String generateCave(CaveGenContext ctx, int size, Vector3 pos, int length, boolean branches, Vector3 dir) throws MaxChangedBlocksException {
-
-		int len = 100;
+	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids) throws WorldEditException {
 		String s = LayoutGenerator.generateCave(ctx, length, 0);
 
-		if(!branches) {
+		if(!moreBranches) {
 			s = s.replace("X", "W");
 			s = s.replace("x", "W");
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
 		}
 
-		ModuleGenerator gen = new ModuleGenerator();
-		gen.read(ctx, s, pos, size ,dir);
+		ModuleGenerator gen = new ModuleGenerator(centroids, size);
+		gen.read(ctx, s, pos ,dir);
 		return s;
 	}
 

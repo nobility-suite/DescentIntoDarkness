@@ -2,8 +2,10 @@ package com.gmail.sharpcastle33.did;
 
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
-import com.gmail.sharpcastle33.did.generator.PainterStep;
-import com.google.common.collect.Lists;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandExecutor;
@@ -20,6 +22,7 @@ import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -37,6 +40,7 @@ public class Main extends JavaPlugin {
 	private FileConfiguration config = getConfig();
 	private FileConfiguration caveStylesConfig;
 	private Map<String, CaveStyle> caveStyles = null;
+	private Map<String, Clipboard> schematics = new HashMap<>();
 
 	public static Main plugin;
 
@@ -73,10 +77,11 @@ public class Main extends JavaPlugin {
 				.collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (a, b) -> a, (Supplier<HashMap<String, Object>>)HashMap::new)));
 		caveStylesConfig.options().copyDefaults(true);
 		saveConfig("caveStyles", caveStylesConfig);
-		getCaveStyles(); // for error messages TODO: load this lazily?
+		reload();
 	}
 
 	public void reload() {
+		schematics.clear();
 		reloadConfig();
 		caveStylesConfig = reloadConfig("caveStyles");
 		caveStyles = null;
@@ -113,6 +118,37 @@ public class Main extends JavaPlugin {
 			}
 		}
 		return caveStyles;
+	}
+
+	public Clipboard getSchematic(String name) {
+		Clipboard schematic = schematics.get(name);
+		if (schematic != null) {
+			return schematic;
+		}
+		File schemDir = new File(getDataFolder(), "schematics");
+		if (!schemDir.exists()) {
+			//noinspection ResultOfMethodCallIgnored
+			schemDir.mkdirs();
+		}
+
+		File schemFile = new File(schemDir, name + ".schem");
+		if (!schemFile.exists()) {
+			return null;
+		}
+
+		ClipboardFormat format = ClipboardFormats.findByFile(schemFile);
+		if (format == null) {
+			return null;
+		}
+		try (ClipboardReader reader = format.getReader(new FileInputStream(schemFile))) {
+			schematic = reader.read();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+		schematics.put(name, schematic);
+		return schematic;
 	}
 
 	public DungeonMaster getDungeonMaster() {
