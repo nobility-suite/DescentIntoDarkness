@@ -2,6 +2,8 @@ package com.gmail.sharpcastle33.did;
 
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
+import com.gmail.sharpcastle33.instancing.InstanceManager;
+import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
@@ -29,30 +31,48 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public class Main extends JavaPlugin {
+public class DescentIntoDarkness extends JavaPlugin {
 
+	private InstanceManager instanceManager;
 	private DungeonMaster dungeonMaster;
 
 	private FileConfiguration config = getConfig();
 	private FileConfiguration caveStylesConfig;
-	private Map<String, CaveStyle> caveStyles = null;
+	private NavigableMap<String, CaveStyle> caveStyles = null;
 	private Map<String, Clipboard> schematics = new HashMap<>();
 
-	public static Main plugin;
+	public static DescentIntoDarkness plugin;
+	public static Core multiverseCore;
 
 	@Override
 	public void onEnable() {
 		plugin = this;
+		multiverseCore = (Core) Bukkit.getPluginManager().getPlugin("Multiverse-Core");
+		if (multiverseCore == null) {
+			throw new RuntimeException("DescentIntoDarkness depends on Multiverse-Core, which was not found");
+		}
 
 		setupConfig();
 
+		if (instanceManager != null) {
+			instanceManager.destroy();
+		}
+		instanceManager = new InstanceManager();
 		dungeonMaster = new DungeonMaster();
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
+	}
+
+	@Override
+	public void onDisable() {
+		instanceManager.destroy();
 	}
 
 	private <T extends CommandExecutor & TabCompleter> void registerCommand(String name, T executor) {
@@ -102,9 +122,9 @@ public class Main extends JavaPlugin {
 		}
 	}
 
-	public Map<String, CaveStyle> getCaveStyles() {
+	public NavigableMap<String, CaveStyle> getCaveStyles() {
 		if (caveStyles == null) {
-			caveStyles = new HashMap<>();
+			caveStyles = new TreeMap<>();
 			for (String styleName : caveStylesConfig.getKeys(false)) {
 				try {
 					ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
@@ -151,8 +171,34 @@ public class Main extends JavaPlugin {
 		return schematic;
 	}
 
+	public InstanceManager getInstanceManager() {
+		return instanceManager;
+	}
+
 	public DungeonMaster getDungeonMaster() {
 		return this.dungeonMaster;
+	}
+
+	public CompletableFuture<Void> runAsync(Runnable task) {
+		return supplyAsync(() -> {
+			task.run();
+			return null;
+		});
+	}
+
+	public <T> CompletableFuture<T> supplyAsync(Supplier<T> task) {
+		CompletableFuture<T> future = new CompletableFuture<>();
+		Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+			T result;
+			try {
+				result = task.get();
+			} catch (Throwable t) {
+				future.completeExceptionally(t);
+				return;
+			}
+			future.complete(result);
+		});
+		return future;
 	}
 
 	private static List<Material> ALL_MATERIALS;

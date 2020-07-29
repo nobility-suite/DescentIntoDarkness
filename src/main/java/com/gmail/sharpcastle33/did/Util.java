@@ -6,6 +6,7 @@ import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 public class Util {
 
@@ -41,6 +42,12 @@ public class Util {
             case SOUTH_SOUTHWEST: return Direction.NORTH_NORTHEAST;
             default: throw new AssertionError("Stop adding new directions, sk89q!");
         }
+    }
+
+    public static <T> CompletableFuture<T> completeExceptionally(Throwable t) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        future.completeExceptionally(t);
+        return future;
     }
 
 }

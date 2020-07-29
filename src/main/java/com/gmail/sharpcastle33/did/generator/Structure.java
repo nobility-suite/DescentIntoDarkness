@@ -1,6 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
-import com.gmail.sharpcastle33.did.Main;
+import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
@@ -137,7 +137,7 @@ public abstract class Structure {
         public SchematicStructure(String name, ConfigurationSection map) {
             super(name, Type.SCHEMATIC, map);
             this.schematics = ConfigUtil.deserializeSingleableList(map.get("schematics"), schematicName -> {
-                Clipboard data = Main.plugin.getSchematic(schematicName);
+                Clipboard data = DescentIntoDarkness.plugin.getSchematic(schematicName);
                 if (data == null) {
                     throw new InvalidConfigException("Unknown schematic: " + schematicName);
                 }

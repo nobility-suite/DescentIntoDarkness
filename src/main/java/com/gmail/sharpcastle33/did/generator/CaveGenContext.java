@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -11,6 +12,7 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,9 @@ public class CaveGenContext implements AutoCloseable {
     }
 
     public boolean setBlock(BlockVector3 pos, BlockStateHolder<?> block) throws MaxChangedBlocksException {
+        if (pos.getBlockY() < 0 || pos.getBlockY() > 255) {
+            return false;
+        }
         if (session.setBlock(pos, block)) {
             blockCache.put(pos, block.toImmutableState());
             return true;
@@ -53,6 +58,9 @@ public class CaveGenContext implements AutoCloseable {
     }
 
     public BlockState getBlock(BlockVector3 pos) {
+        if (pos.getBlockY() < 0 || pos.getBlockY() > 255) {
+            return Util.requireDefaultState(BlockTypes.AIR);
+        }
         return blockCache.computeIfAbsent(pos, session::getBlock);
     }
 
