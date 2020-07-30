@@ -23,6 +23,7 @@ public class CaveGenerator {
 	}
 
 	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
+		Bukkit.getLogger().log(Level.INFO, "Generating cave of size " + size);
 		ArrayList<Centroid> centroids = new ArrayList<>();
 		String caveString = generateBranch(ctx, size, pos, 90, true, Vector3.UNIT_X, centroids);
 		PostProcessor.postProcess(ctx, centroids);

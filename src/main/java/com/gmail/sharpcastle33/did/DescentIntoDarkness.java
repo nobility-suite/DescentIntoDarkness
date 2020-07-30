@@ -79,7 +79,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 				@Override
 				public @NotNull ChunkData generateChunkData(@NotNull World world, @NotNull Random random, int x, int z, @NotNull BiomeGrid biome) {
 					ChunkData chunkData = createChunkData(world);
-					chunkData.setRegion(0, 0, 0, 16, 256, 16, data);
+					chunkData.setRegion(0, 0, 0, 16, 1, 16, Material.BEDROCK);
+					chunkData.setRegion(0, 1, 0, 16, 255, 16, data);
+					chunkData.setRegion(0, 255, 0, 16, 256, 16, Material.BEDROCK);
 					return chunkData;
 				}
 

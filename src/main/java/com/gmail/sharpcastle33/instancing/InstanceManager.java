@@ -3,6 +3,7 @@ package com.gmail.sharpcastle33.instancing;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
@@ -16,9 +17,12 @@ import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.Vector3;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldType;
+import org.bukkit.entity.EnderDragon;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,19 +34,24 @@ public class InstanceManager {
 	public CompletableFuture<Instance> createInstance(CaveStyle style) {
 		int id = nextInstanceId++;
 		String name = getWorldName(id);
-		World world = createFlatWorld(id, style, World.Environment.NORMAL);
+		World world = createFlatWorld(id, style, World.Environment.THE_END);
 		if (world == null) {
 			return Util.completeExceptionally(new RuntimeException("Could not create world"));
 		}
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			Random rand = new Random();
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
-				CaveGenerator.generateCave(ctx, Vector3.at(0, 210, 0), rand.nextInt(5) + 7);
+				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969), rand.nextInt(5) + 7);
 			} catch (WorldEditException e) {
 				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);
 			}
-			Instance instance = new Instance(id, world, new Location(world, 0, 210, 0));
+			Location spawnPoint = new Location(world, 6969, 210, 6969);
+			while (style.isTransparentBlock(BukkitAdapter.adapt(spawnPoint.getBlock().getBlockData()))) {
+				spawnPoint.add(0, -1, 0);
+			}
+			spawnPoint.add(0, 1, 0);
+			Instance instance = new Instance(id, world, spawnPoint);
 			DescentIntoDarkness.plugin.runSyncNow(() -> instances.add(instance));
 			return instance;
 		});
@@ -56,6 +65,7 @@ public class InstanceManager {
 	}
 
 	public void destroy() {
+		Bukkit.getLogger().log(Level.INFO, "Deleting " + instances.size() + " cave instances");
 		while (!instances.isEmpty()) {
 			deleteInstance(instances.get(0));
 		}
@@ -117,7 +127,13 @@ public class InstanceManager {
 		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
 			return null;
 		}
-		return worldManager.getMVWorld(worldName).getCBWorld();
+		World world = worldManager.getMVWorld(worldName).getCBWorld();
+		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+
+		// this is not what players are coming here to do...
+		world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove);
+
+		return world;
 	}
 
 }
