@@ -1,6 +1,5 @@
 package com.gmail.sharpcastle33.did.listeners;
 
-import com.boydti.fawe.util.TaskManager;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
@@ -9,7 +8,6 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.google.common.collect.Iterators;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
-import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -88,18 +86,14 @@ public class CommandListener implements TabExecutor {
 		DescentIntoDarkness.plugin.getInstanceManager().createInstance(style).whenComplete((instance, throwable) -> {
 			if (throwable != null) {
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to create instance", throwable);
-				TaskManager.IMP.sync(() -> {
-					p.sendMessage(ChatColor.DARK_RED + "Failed to create instance");
-					return null;
-				});
+				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed to create instance"));
 			} else {
-				TaskManager.IMP.sync(() -> {
+				DescentIntoDarkness.plugin.runSyncLater(() -> {
 					if (!DescentIntoDarkness.plugin.getInstanceManager().teleportPlayerTo(p, instance)) {
 						p.sendMessage(ChatColor.DARK_RED + "Failed to teleport you to the cave");
 					} else {
 						p.sendMessage(ChatColor.GREEN + "Done!");
 					}
-					return null;
 				});
 			}
 		});
@@ -113,14 +107,18 @@ public class CommandListener implements TabExecutor {
 		p.sendMessage(ChatColor.DARK_RED + "Generating...");
 
 		Location pos = p.getLocation();
-		try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(p.getWorld()), -1)) {
-			CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius, yRadius);
-		} catch (WorldEditException e) {
-			p.sendMessage(ChatColor.DARK_RED + "Failed");
-			Bukkit.getLogger().log(Level.SEVERE, "Failed to generate blank", e);
-			return;
-		}
-		p.sendMessage(ChatColor.GREEN + "Done!");
+		DescentIntoDarkness.plugin.runAsync(() -> {
+			try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(p.getWorld()), -1)) {
+				CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius, yRadius);
+			}
+		}).whenComplete((v, throwable) -> {
+			if (throwable != null) {
+				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed"));
+				Bukkit.getLogger().log(Level.SEVERE, "Failed to generate blank", throwable);
+			} else {
+				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.GREEN + "Done!"));
+			}
+		});
 	}
 
 	private void generateCave(Player p, String[] args) {
@@ -136,15 +134,18 @@ public class CommandListener implements TabExecutor {
 		}
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
-		String s;
-		try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed)).setDebug(debug)) {
-			s = CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size);
-		} catch (WorldEditException e) {
-			p.sendMessage(ChatColor.DARK_RED + "Failed");
-			Bukkit.getLogger().log(Level.SEVERE, "Failed to generate cave", e);
-			return;
-		}
-		p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
+		DescentIntoDarkness.plugin.supplyAsync(() -> {
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed)).setDebug(debug)) {
+				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size);
+			}
+		}).whenComplete((s, throwable) -> {
+			if (throwable != null) {
+				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed"));
+				Bukkit.getLogger().log(Level.SEVERE, "Failed to generate cave", throwable);
+			} else {
+				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s));
+			}
+		});
 	}
 
 	@Override

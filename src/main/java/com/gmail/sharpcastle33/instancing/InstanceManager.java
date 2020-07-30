@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
-import com.boydti.fawe.util.TaskManager;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
@@ -40,11 +39,11 @@ public class InstanceManager {
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
 				CaveGenerator.generateCave(ctx, Vector3.at(0, 210, 0), rand.nextInt(5) + 7);
 			} catch (WorldEditException e) {
-				TaskManager.IMP.sync(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
+				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);
 			}
 			Instance instance = new Instance(id, world, new Location(world, 0, 210, 0));
-			TaskManager.IMP.sync(() -> instances.add(instance));
+			DescentIntoDarkness.plugin.runSyncNow(() -> instances.add(instance));
 			return instance;
 		});
 	}
@@ -114,7 +113,7 @@ public class InstanceManager {
 	private World createFlatWorld(int id, CaveStyle style, World.Environment environment) {
 		MVWorldManager worldManager = DescentIntoDarkness.multiverseCore.getMVWorldManager();
 		String worldName = getWorldName(id);
-		String generator = "DescentIntoDarkness:full_" + style.getBaseBlock();
+		String generator = "DescentIntoDarkness:full_" + style.getBaseBlock().getAsString();
 		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
 			return null;
 		}

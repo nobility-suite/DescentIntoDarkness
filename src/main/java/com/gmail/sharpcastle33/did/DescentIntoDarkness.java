@@ -43,6 +43,7 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -218,6 +219,45 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	public DungeonMaster getDungeonMaster() {
 		return this.dungeonMaster;
+	}
+
+	public void runSyncNow(Runnable task) {
+		try {
+			runSyncLater(task).get();
+		} catch (InterruptedException | ExecutionException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Exception occurred when running synchronous task", e);
+		}
+	}
+
+	public <T> T supplySyncNow(Supplier<T> task) {
+		try {
+			return supplySyncLater(task).get();
+		} catch (InterruptedException | ExecutionException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Exception occurred when running synchronous task", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	public CompletableFuture<Void> runSyncLater(Runnable task) {
+		return supplySyncLater(() -> {
+			task.run();
+			return null;
+		});
+	}
+
+	public <T> CompletableFuture<T> supplySyncLater(Supplier<T> task) {
+		CompletableFuture<T> future = new CompletableFuture<>();
+		Bukkit.getScheduler().runTask(this, () -> {
+			T result;
+			try {
+				result = task.get();
+			} catch (Throwable t) {
+				future.completeExceptionally(t);
+				return;
+			}
+			future.complete(result);
+		});
+		return future;
 	}
 
 	public CompletableFuture<Void> runAsync(Runnable task) {
