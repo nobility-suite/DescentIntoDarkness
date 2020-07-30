@@ -9,7 +9,7 @@
 	<repositories>
 		<repository>
 			<id>fast-async-worldedit-repo</id>
-			<url>https://dl.bintray.com/earthcomputer/mods/</url>
+			<url>https://mvn.intellectualsites.com/content/repositories/releases</url>
 		</repository>
 		<repository>
 			<id>multiverse-repo</id>
@@ -41,17 +41,15 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.sk89q.worldedit</groupId>
-			<artifactId>FastAsyncWorldEdit</artifactId>
-			<version>1.16-793</version>
-			<classifier>worldedit-core</classifier>
+			<groupId>com.intellectualsites.fawe</groupId>
+			<artifactId>FAWE-Core</artifactId>
+			<version>1.16-306</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.sk89q.worldedit</groupId>
-			<artifactId>FastAsyncWorldEdit</artifactId>
-			<version>1.16-793</version>
-			<classifier>worldedit-bukkit</classifier>
+			<groupId>com.intellectualsites.fawe</groupId>
+			<artifactId>FAWE-Bukkit</artifactId>
+			<version>1.16-306</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
