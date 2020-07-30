@@ -1,15 +1,20 @@
 package com.gmail.sharpcastle33.did;
 
 import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.instancing.InstanceManager;
 import com.onarandombox.MultiverseCore.api.Core;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormats;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -17,11 +22,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -50,6 +59,38 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	public static DescentIntoDarkness plugin;
 	public static Core multiverseCore;
+
+	@Override
+	public @Nullable ChunkGenerator getDefaultWorldGenerator(@NotNull String worldName, @Nullable String id) {
+		if (id == null) {
+			return null;
+		}
+		if (id.startsWith("full_")) {
+			id = id.substring(5);
+			BlockStateHolder<?> state;
+			try {
+				state = ConfigUtil.parseBlock(id);
+			} catch (InvalidConfigException e) {
+				return null;
+			}
+			BlockData data = BukkitAdapter.adapt(state);
+			return new ChunkGenerator() {
+				@Override
+				public @NotNull ChunkData generateChunkData(@NotNull World world, @NotNull Random random, int x, int z, @NotNull BiomeGrid biome) {
+					ChunkData chunkData = createChunkData(world);
+					chunkData.setRegion(0, 0, 0, 16, 256, 16, data);
+					return chunkData;
+				}
+
+				@Override
+				public boolean isParallelCapable() {
+					return true;
+				}
+			};
+		}
+
+		return null;
+	}
 
 	@Override
 	public void onEnable() {

@@ -12,17 +12,10 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.onarandombox.MultiverseCore.api.MVDestination;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
-import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.MultiverseCore.enums.TeleportResult;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.MaxChangedBlocksException;
-import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.regions.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -38,16 +31,19 @@ public class InstanceManager {
 	public CompletableFuture<Instance> createInstance(CaveStyle style) {
 		int id = nextInstanceId++;
 		String name = getWorldName(id);
-		return createFlatWorld(id, style, World.Environment.NORMAL).thenApply(v -> {
-			MultiverseWorld mvWorld = TaskManager.IMP.sync(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().getMVWorld(name));
+		World world = createFlatWorld(id, style, World.Environment.NORMAL);
+		if (world == null) {
+			return Util.completeExceptionally(new RuntimeException("Could not create world"));
+		}
+		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			Random rand = new Random();
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(mvWorld.getCBWorld()), style, rand)) {
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
 				CaveGenerator.generateCave(ctx, Vector3.at(0, 210, 0), rand.nextInt(5) + 7);
 			} catch (WorldEditException e) {
 				TaskManager.IMP.sync(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);
 			}
-			Instance instance = new Instance(id, mvWorld.getCBWorld(), new Location(mvWorld.getCBWorld(), 0, 210, 0));
+			Instance instance = new Instance(id, world, new Location(world, 0, 210, 0));
 			TaskManager.IMP.sync(() -> instances.add(instance));
 			return instance;
 		});
@@ -115,31 +111,14 @@ public class InstanceManager {
 		return "did_cave_" + id;
 	}
 
-	private CompletableFuture<Void> createFlatWorld(int id, CaveStyle style, World.Environment environment) {
-		String flatName = String.format("did_flat_%s_%s", environment, style.getBaseBlock().getAsString());
+	private World createFlatWorld(int id, CaveStyle style, World.Environment environment) {
 		MVWorldManager worldManager = DescentIntoDarkness.multiverseCore.getMVWorldManager();
-		if (!worldManager.isMVWorld(flatName)) {
-			if (!worldManager.addWorld(flatName, environment, "0", WorldType.FLAT, Boolean.FALSE, "3;1*minecraft:bedrock;2;", false)) {
-				return Util.completeExceptionally(new RuntimeException("Could not create world"));
-			}
-			World world = worldManager.getMVWorld(flatName).getCBWorld();
-			return DescentIntoDarkness.plugin.runAsync(() -> {
-				try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(world), -1)) {
-					session.setBlocks((Region)new CuboidRegion(BlockVector3.at(-250, 0, -250), BlockVector3.at(250, 255, 250)), style.getBaseBlock());
-				} catch (MaxChangedBlocksException e) {
-					throw new RuntimeException(e);
-				}
-			}).thenRun(() -> {
-				if (!TaskManager.IMP.sync(() -> worldManager.cloneWorld(flatName, getWorldName(id)))) {
-					throw new RuntimeException("Could not clone world");
-				}
-			});
+		String worldName = getWorldName(id);
+		String generator = "DescentIntoDarkness:full_" + style.getBaseBlock();
+		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
+			return null;
 		}
-		if (!worldManager.cloneWorld(flatName, getWorldName(id))) {
-			return Util.completeExceptionally(new RuntimeException("Could not clone world"));
-		} else {
-			return CompletableFuture.completedFuture(null);
-		}
+		return worldManager.getMVWorld(worldName).getCBWorld();
 	}
 
 }
