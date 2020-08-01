@@ -34,6 +34,7 @@ public class OreListener implements Listener {
 					toDrop.setAmount(ore.getMinDropAmount() + rand.nextInt(ore.getMaxDropAmount() - ore.getMinDropAmount() + 1));
 					p.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
 					event.setDropItems(false);
+					event.setExpToDrop(0);
 				}
 				break;
 			}
