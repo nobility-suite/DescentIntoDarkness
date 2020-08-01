@@ -19,7 +19,6 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
-import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.util.StringUtil;
@@ -50,10 +49,6 @@ public class CommandListener implements TabExecutor {
 			case "teleport":
 				teleport(p, args);
 				break;
-			case "start":
-				DungeonMaster dungeonMaster = DescentIntoDarkness.plugin.getDungeonMaster();
-				dungeonMaster.start(new Random(), p);
-				break;
 			case "reload":
 				DescentIntoDarkness.plugin.reload();
 				p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
@@ -83,13 +78,13 @@ public class CommandListener implements TabExecutor {
 			return;
 		}
 		p.sendMessage(ChatColor.DARK_RED + "Creating instance...");
-		DescentIntoDarkness.plugin.getInstanceManager().createInstance(style).whenComplete((instance, throwable) -> {
+		DescentIntoDarkness.plugin.getCaveTrackerManager().createCave(style).whenComplete((instance, throwable) -> {
 			if (throwable != null) {
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to create instance", throwable);
 				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed to create instance"));
 			} else {
 				DescentIntoDarkness.plugin.runSyncLater(() -> {
-					if (!DescentIntoDarkness.plugin.getInstanceManager().teleportPlayerTo(p, instance)) {
+					if (!DescentIntoDarkness.plugin.getCaveTrackerManager().teleportPlayerTo(p, instance)) {
 						p.sendMessage(ChatColor.DARK_RED + "Failed to teleport you to the cave");
 					} else {
 						p.sendMessage(ChatColor.GREEN + "Done!");
@@ -153,7 +148,7 @@ public class CommandListener implements TabExecutor {
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {
-			return StringUtil.copyPartialMatches(args[0], Arrays.asList("generate", "teleport", "start", "reload"), new ArrayList<>());
+			return StringUtil.copyPartialMatches(args[0], Arrays.asList("generate", "teleport", "reload"), new ArrayList<>());
 		} else {
 			if (args[0].equals("generate")) {
 				if (args.length == 2) {

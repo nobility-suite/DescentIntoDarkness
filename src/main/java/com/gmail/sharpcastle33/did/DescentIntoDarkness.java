@@ -3,7 +3,7 @@ package com.gmail.sharpcastle33.did;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
-import com.gmail.sharpcastle33.instancing.InstanceManager;
+import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -27,7 +27,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
-import com.gmail.sharpcastle33.dungeonmaster.DungeonMaster;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,8 +49,7 @@ import java.util.stream.Collectors;
 
 public class DescentIntoDarkness extends JavaPlugin {
 
-	private InstanceManager instanceManager;
-	private DungeonMaster dungeonMaster;
+	private CaveTrackerManager caveTrackerManager;
 
 	private FileConfiguration config = getConfig();
 	private FileConfiguration caveStylesConfig;
@@ -105,18 +103,17 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 		setupConfig();
 
-		if (instanceManager != null) {
-			instanceManager.destroy();
+		if (caveTrackerManager != null) {
+			caveTrackerManager.destroy();
 		}
-		instanceManager = new InstanceManager();
-		dungeonMaster = new DungeonMaster();
+		caveTrackerManager = new CaveTrackerManager();
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
 	}
 
 	@Override
 	public void onDisable() {
-		instanceManager.destroy();
+		caveTrackerManager.destroy();
 	}
 
 	private <T extends CommandExecutor & TabCompleter> void registerCommand(String name, T executor) {
@@ -215,12 +212,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 		return schematic;
 	}
 
-	public InstanceManager getInstanceManager() {
-		return instanceManager;
-	}
-
-	public DungeonMaster getDungeonMaster() {
-		return this.dungeonMaster;
+	public CaveTrackerManager getCaveTrackerManager() {
+		return caveTrackerManager;
 	}
 
 	public void runSyncNow(Runnable task) {
