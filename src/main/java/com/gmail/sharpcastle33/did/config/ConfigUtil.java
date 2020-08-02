@@ -5,10 +5,13 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -21,6 +24,49 @@ public class ConfigUtil {
 			return WorldEdit.getInstance().getBlockFactory().parseFromInput(val, context);
 		} catch (InputParseException e) {
 			throw new InvalidConfigException("Invalid block state: " + val, e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static ItemStack parseItem(Object val) {
+		if (val instanceof String) {
+			String typeAndCount = (String) val;
+			int starIndex = typeAndCount.indexOf('*');
+			int count = starIndex == -1 ? 1 : parseInt(typeAndCount.substring(0, starIndex));
+			String originalItemName = starIndex == -1 ? typeAndCount : typeAndCount.substring(starIndex + 1);
+			String itemName = originalItemName;
+			if (itemName.startsWith("minecraft:")) itemName = itemName.substring("minecraft:".length());
+			itemName = itemName.toUpperCase(Locale.ROOT);
+			Material material = Material.getMaterial(itemName);
+			if (material == null || !material.isItem()) {
+				throw new InvalidConfigException("Unknown item: " + originalItemName);
+			}
+			if (count < 1 || count > material.getMaxStackSize()) {
+				throw new InvalidConfigException("Cannot have a stack size of " + count + " for item " + originalItemName);
+			}
+			return new ItemStack(material, count);
+		} else if (val instanceof Map) {
+			return ItemStack.deserialize((Map<String, Object>) val);
+		} else {
+			throw new InvalidConfigException("Don't know how to turn a " + val.getClass().getSimpleName() + " into an ItemStack");
+		}
+	}
+
+	public static Object serializeItemStack(ItemStack stack) {
+		if (stack.hasItemMeta()) {
+			return stack.serialize();
+		} else if (stack.getAmount() != 1) {
+			return stack.getAmount() + "*" + stack.getType().getKey();
+		} else {
+			return stack.getType().getKey().toString();
+		}
+	}
+
+	public static int parseInt(String val) {
+		try {
+			return Integer.parseInt(val);
+		} catch (NumberFormatException e) {
+			throw new InvalidConfigException("Invalid integer: " + val);
 		}
 	}
 

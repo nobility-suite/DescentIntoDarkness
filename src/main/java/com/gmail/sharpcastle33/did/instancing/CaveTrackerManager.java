@@ -57,14 +57,14 @@ public class CaveTrackerManager {
 				spawnPoint.add(0, -1, 0);
 			}
 			spawnPoint.add(0, 1, 0);
-			CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint);
+			CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
 			DescentIntoDarkness.plugin.runSyncNow(() -> caveTrackers.add(caveTracker));
 			return caveTracker;
 		});
 	}
 
 	public void deleteCave(CaveTracker caveTracker) {
-		List<UUID> members = caveTracker.getMembers();
+		List<UUID> members = caveTracker.getPlayers();
 		for (int i = members.size() - 1; i >= 0; i--) {
 			UUID player = members.get(i);
 
@@ -85,7 +85,7 @@ public class CaveTrackerManager {
 				Util.teleportOfflinePlayer(offlinePlayer, spawnLocation);
 			}
 
-			caveTracker.removeMember(player);
+			caveTracker.removePlayer(player);
 		}
 
 		caveTrackers.remove(caveTracker);
@@ -112,7 +112,7 @@ public class CaveTrackerManager {
 		if (existingCave == null) {
 			overworldPlayerLocations.put(p.getUniqueId(), p.getLocation());
 		} else {
-			existingCave.removeMember(p.getUniqueId());
+			existingCave.removePlayer(p.getUniqueId());
 		}
 
 		if (newCave == null) {
@@ -133,7 +133,7 @@ public class CaveTrackerManager {
 			if (DescentIntoDarkness.multiverseCore.getSafeTTeleporter().teleport(Bukkit.getConsoleSender(), p, dest) != TeleportResult.SUCCESS) {
 				return false;
 			}
-			newCave.addMember(p.getUniqueId());
+			newCave.addPlayer(p.getUniqueId());
 		}
 
 		return true;
@@ -142,7 +142,7 @@ public class CaveTrackerManager {
 	@Nullable
 	public CaveTracker getCave(Player p) {
 		for(CaveTracker i : caveTrackers) {
-			List<UUID> members = i.getMembers();
+			List<UUID> members = i.getPlayers();
 			if(members.contains(p.getUniqueId())) {
 				return i;
 			}

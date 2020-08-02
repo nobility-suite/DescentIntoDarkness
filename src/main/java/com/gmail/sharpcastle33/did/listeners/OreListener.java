@@ -1,60 +1,44 @@
 package com.gmail.sharpcastle33.did.listeners;
 
-import java.util.HashMap;
-
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.World;
-import org.bukkit.block.Block;
+import com.gmail.sharpcastle33.did.DescentIntoDarkness;
+import com.gmail.sharpcastle33.did.config.Ore;
+import com.gmail.sharpcastle33.did.instancing.CaveTracker;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
 
-public class OreListener implements Listener{
+import java.util.Random;
 
-	HashMap<Location,Integer> oreMap;
+public class OreListener implements Listener {
 
-	public OreListener() {
-		oreMap = new HashMap<>();
-	}
+	private final Random rand = new Random();
 
 	@EventHandler
 	public void oreBreak(BlockBreakEvent event) {
 		Player p = event.getPlayer();
-		Block b = event.getBlock();
+		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(p);
+		if (cave == null) {
+			return;
+		}
 
-		if(b.getType() == Material.DIAMOND_ORE || b.getType() == Material.IRON_ORE || b.getType() == Material.COAL_ORE) {
-			Location loc = b.getLocation();
-			if(oreMap.containsKey(loc)) {
-				int get = oreMap.get(loc);
-				if(get == 1) {
-					oreMap.remove(loc);
-					b.setType(Material.AIR);
-					World world = b.getLocation().getWorld();
-					assert world != null;
-					world.playSound(b.getLocation(), Sound.ITEM_SHIELD_BREAK, 1, 1);
-					dropOre(b);
-				}else {
-					oreMap.put(loc, get - 1);
-					event.setCancelled(true);
-					dropOre(b);
+		BlockStateHolder<?> block = BukkitAdapter.adapt(event.getBlock().getBlockData());
+		for (Ore ore : cave.getStyle().getOres()) {
+			if (ore.getBlock().equalsFuzzy(block)) {
+				cave.addPlayerPollution(p.getUniqueId(), ore.getPollution());
+				if (ore.getDropItem() != null) {
+					ItemStack toDrop = new ItemStack(ore.getDropItem());
+					toDrop.setAmount(ore.getMinDropAmount() + rand.nextInt(ore.getMaxDropAmount() - ore.getMinDropAmount() + 1));
+					p.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
+					event.setDropItems(false);
+					event.setExpToDrop(0);
 				}
-			}else{
-				oreMap.put(loc, 9);
-				event.setCancelled(true);
-				dropOre(b);
+				break;
 			}
 		}
-	}
-
-	public void dropOre(Block b) {
-		Material mat = b.getType();
-		World world = b.getLocation().getWorld();
-		assert world != null;
-		world.dropItemNaturally(b.getLocation(), new ItemStack(Material.COAL));
 	}
 
 }
