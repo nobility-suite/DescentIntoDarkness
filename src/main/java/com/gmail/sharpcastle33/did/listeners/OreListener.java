@@ -31,7 +31,7 @@ public class OreListener implements Listener {
 			if (ore.getBlock().equalsFuzzy(block)) {
 				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry();
 				if (spawnEntry != null) {
-					cave.addPlayerPollution(p.getUniqueId(), spawnEntry, ore.getPollution());
+					cave.addPlayerMobPollution(p.getUniqueId(), spawnEntry, ore.getPollution());
 				}
 				if (ore.getDropItem() != null) {
 					ItemStack toDrop = new ItemStack(ore.getDropItem());

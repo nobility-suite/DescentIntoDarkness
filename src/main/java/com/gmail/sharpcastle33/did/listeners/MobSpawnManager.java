@@ -21,9 +21,9 @@ public class MobSpawnManager implements Runnable {
 	private static final float NATURAL_POLLUTION_INCREASE = 0.1f;
 	private static final int ATTEMPTS_PER_TICK = 10;
 	public static final List<MobSpawnEntry> MOB_SPAWN_ENTRIES = ImmutableList.of(
-			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 1, 10, 20, 20),
-			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 1, 15, 25, 20),
-			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 2, 15, 25, 20)
+			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 100, 300, 1, 10, 20, 20),
+			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 100, 300, 1, 15, 25, 20),
+			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 100, 300, 2, 15, 25, 20)
 	);
 
 	private final Random rand = new Random();
@@ -42,9 +42,9 @@ public class MobSpawnManager implements Runnable {
 		if (rand.nextFloat() < NATURAL_POLLUTION_INCREASE) {
 			MobSpawnEntry mobType = getRandomSpawnEntry();
 			if (mobType != null) {
-				Player victim = getRandomPlayer(cave, mobType, 0);
+				Player victim = getRandomPlayer(cave, mobType, Integer.MIN_VALUE);
 				if (victim != null) {
-					cave.addPlayerPollution(victim.getUniqueId(), mobType, 1);
+					cave.addPlayerMobPollution(victim.getUniqueId(), mobType, victim.isSprinting() ? 5 : 1);
 				}
 			}
 		}
@@ -62,12 +62,17 @@ public class MobSpawnManager implements Runnable {
 		if (spawnEntry == null) {
 			return false;
 		}
-		if (spawnEntry.getPollutionCost() > cave.getTotalPollution()) {
+		if (!cave.isSpawningPack(spawnEntry) && cave.getPackSpawnThreshold(spawnEntry) > cave.getMobPollution(spawnEntry)) {
 			return false;
 		}
+		boolean spawningPack = cave.getMobPollution(spawnEntry) >= spawnEntry.getSingleMobCost();
+		cave.setSpawningPack(spawnEntry, spawningPack);
+		if (!spawningPack) {
+			cave.setPackSpawnThreshold(spawnEntry, spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1));
+		}
 
-		// try to spawn that mob next to a player with enough pollution to afford it, otherwise spawn it next to a random player with pollution
-		Player chosenPlayer = getRandomPlayer(cave, spawnEntry, spawnEntry.getPollutionCost());
+		// try to spawn that mob next to a player with enough pollution to afford it
+		Player chosenPlayer = getRandomPlayer(cave, spawnEntry, spawnEntry.getSingleMobCost());
 		if (chosenPlayer == null) {
 			chosenPlayer = getRandomPlayer(cave, spawnEntry, 1);
 			if (chosenPlayer == null) {
@@ -110,7 +115,7 @@ public class MobSpawnManager implements Runnable {
 		mob.setRotation(rand.nextFloat() * 360, 0);
 
 		// deduct pollution
-		cave.addPlayerPollution(chosenPlayer.getUniqueId(), spawnEntry, -spawnEntry.getPollutionCost());
+		cave.addPlayerMobPollution(chosenPlayer.getUniqueId(), spawnEntry, -spawnEntry.getSingleMobCost());
 		cave.setSpawnCooldown(cave.getSpawnCooldown() + spawnEntry.getCooldown());
 
 		return true;
