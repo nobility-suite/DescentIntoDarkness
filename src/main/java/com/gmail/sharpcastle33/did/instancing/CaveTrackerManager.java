@@ -1,6 +1,7 @@
 package com.gmail.sharpcastle33.did.instancing;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,8 @@ import org.bukkit.WorldType;
 import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
 import org.jetbrains.annotations.Nullable;
 
 public class CaveTrackerManager {
@@ -36,6 +39,7 @@ public class CaveTrackerManager {
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
 	private final Map<UUID, Location> overworldPlayerLocations = new HashMap<>();
 	private int nextInstanceId;
+	private Objective pollutionObjective;
 
 	public CompletableFuture<CaveTracker> createCave(CaveStyle style) {
 		int id = nextInstanceId++;
@@ -57,9 +61,11 @@ public class CaveTrackerManager {
 				spawnPoint.add(0, -1, 0);
 			}
 			spawnPoint.add(0, 1, 0);
-			CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
-			DescentIntoDarkness.plugin.runSyncNow(() -> caveTrackers.add(caveTracker));
-			return caveTracker;
+			return DescentIntoDarkness.plugin.supplySyncNow(() -> {
+				CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
+				caveTrackers.add(caveTracker);
+				return caveTracker;
+			});
 		});
 	}
 
@@ -148,6 +154,19 @@ public class CaveTrackerManager {
 			}
 		}
 		return null;
+	}
+
+	public List<CaveTracker> getCaves() {
+		return Collections.unmodifiableList(caveTrackers);
+	}
+
+	public Objective getPollutionObjective() {
+		if (pollutionObjective == null) {
+			pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
+			// Temporary, for debug
+			pollutionObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+		}
+		return pollutionObjective;
 	}
 
 	private String getWorldName(int id) {

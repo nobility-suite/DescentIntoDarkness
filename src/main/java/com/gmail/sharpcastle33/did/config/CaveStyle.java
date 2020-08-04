@@ -27,9 +27,9 @@ public class CaveStyle {
 			FuzzyBlockState.builder().type(Objects.requireNonNull(BlockTypes.LAVA)).build()
 	);
 	private final List<Ore> ores = Lists.newArrayList(
-			new Ore("coal_ore", Util.requireDefaultState(BlockTypes.COAL_ORE), 1, null, 1, 1),
-			new Ore("diamond_ore", Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 1, null, 1, 1),
-			new Ore("emerald_ore", Util.requireDefaultState(BlockTypes.EMERALD_ORE), 1, null, 1, 1)
+			new Ore("coal_ore", Util.requireDefaultState(BlockTypes.COAL_ORE), 10, null, 1, 1),
+			new Ore("diamond_ore", Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 30, null, 1, 1),
+			new Ore("emerald_ore", Util.requireDefaultState(BlockTypes.EMERALD_ORE), 30, null, 1, 1)
 	);
 
 	// cave generation
