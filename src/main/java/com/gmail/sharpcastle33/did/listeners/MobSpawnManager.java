@@ -17,13 +17,13 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class MobSpawnerListener implements Runnable {
-	private static final float NATURAL_POLLUTION_INCREASE = 0.05f;
-	private static final int ATTEMPTS_PER_TICK = 5;
-	private static final List<MobSpawnEntry> MOB_SPAWN_ENTRIES = ImmutableList.of(
-			new MobSpawnEntry(EntityType.ZOMBIE, 50, 1, 10, 20),
-			new MobSpawnEntry(EntityType.SKELETON, 70, 1, 15, 25),
-			new MobSpawnEntry(EntityType.CREEPER, 100, 2, 15, 25)
+public class MobSpawnManager implements Runnable {
+	private static final float NATURAL_POLLUTION_INCREASE = 0.1f;
+	private static final int ATTEMPTS_PER_TICK = 10;
+	public static final List<MobSpawnEntry> MOB_SPAWN_ENTRIES = ImmutableList.of(
+			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 1, 10, 20, 20),
+			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 1, 15, 25, 20),
+			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 2, 15, 25, 20)
 	);
 
 	private final Random rand = new Random();
@@ -33,35 +33,45 @@ public class MobSpawnerListener implements Runnable {
 			return;
 		}
 
+		if (cave.getSpawnCooldown() > 0) {
+			cave.setSpawnCooldown(cave.getSpawnCooldown() - 1);
+			return;
+		}
+
 		// Prevent lack of mob spawning due to idleness
 		if (rand.nextFloat() < NATURAL_POLLUTION_INCREASE) {
-			Player victim = getRandomPlayer(cave, 0);
-			if (victim != null) {
-				cave.addPlayerPollution(victim.getUniqueId(), 1);
+			MobSpawnEntry mobType = getRandomSpawnEntry();
+			if (mobType != null) {
+				Player victim = getRandomPlayer(cave, mobType, 0);
+				if (victim != null) {
+					cave.addPlayerPollution(victim.getUniqueId(), mobType, 1);
+				}
 			}
 		}
 
 		for (int i = 0; i < ATTEMPTS_PER_TICK; i++) {
-			spawnMob(cave);
+			if (spawnMob(cave)) {
+				break;
+			}
 		}
 	}
 
-	private void spawnMob(CaveTracker cave) {
+	private boolean spawnMob(CaveTracker cave) {
 		// pick random type of mob to spawn and check if the cave has enough total pollution to spawn it
 		MobSpawnEntry spawnEntry = getRandomSpawnEntry();
 		if (spawnEntry == null) {
-			return;
+			return false;
 		}
 		if (spawnEntry.getPollutionCost() > cave.getTotalPollution()) {
-			return;
+			return false;
 		}
 
 		// try to spawn that mob next to a player with enough pollution to afford it, otherwise spawn it next to a random player with pollution
-		Player chosenPlayer = getRandomPlayer(cave, spawnEntry.getPollutionCost());
+		Player chosenPlayer = getRandomPlayer(cave, spawnEntry, spawnEntry.getPollutionCost());
 		if (chosenPlayer == null) {
-			chosenPlayer = getRandomPlayer(cave, 1);
+			chosenPlayer = getRandomPlayer(cave, spawnEntry, 1);
 			if (chosenPlayer == null) {
-				return;
+				return false;
 			}
 		}
 
@@ -76,13 +86,13 @@ public class MobSpawnerListener implements Runnable {
 
 		// quick exit for the blocks the mob will definitely intersect
 		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY(), spawnLocation.getBlockZ()).isPassable()) {
-			return;
+			return false;
 		}
 		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() + 1, spawnLocation.getBlockZ()).isPassable()) {
-			return;
+			return false;
 		}
 		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() - 1, spawnLocation.getBlockZ()).getType().isSolid()) {
-			return;
+			return false;
 		}
 
 		// spawn mob and check its hitbox doesn't intersect anything
@@ -92,7 +102,7 @@ public class MobSpawnerListener implements Runnable {
 				for (int z = (int)Math.floor(mob.getBoundingBox().getMinZ()); z <= (int)Math.ceil(mob.getBoundingBox().getMaxZ()); z++) {
 					if (!cave.getWorld().getBlockAt(x, y, z).isPassable()) {
 						mob.remove();
-						return;
+						return false;
 					}
 				}
 			}
@@ -100,19 +110,22 @@ public class MobSpawnerListener implements Runnable {
 		mob.setRotation(rand.nextFloat() * 360, 0);
 
 		// deduct pollution
-		cave.addPlayerPollution(chosenPlayer.getUniqueId(), -spawnEntry.getPollutionCost());
+		cave.addPlayerPollution(chosenPlayer.getUniqueId(), spawnEntry, -spawnEntry.getPollutionCost());
+		cave.setSpawnCooldown(cave.getSpawnCooldown() + spawnEntry.getCooldown());
+
+		return true;
 	}
 
 	@Nullable
-	private Player getRandomPlayer(CaveTracker cave, int minPollution) {
+	private Player getRandomPlayer(CaveTracker cave, MobSpawnEntry spawnEntry, int minPollution) {
 		int totalOnlinePollution = cave.getPlayers().stream()
 				.filter(this::isPlayerOnline)
-				.mapToInt(cave::getPlayerPollution)
+				.mapToInt(player -> cave.getPlayerPollution(player, spawnEntry))
 				.filter(pollution -> pollution >= minPollution)
 				.sum();
 
 		if (totalOnlinePollution <= 0) {
-			List<UUID> players = cave.getPlayers().stream().filter(this::isPlayerOnline).collect(Collectors.toList());
+			List<UUID> players = cave.getPlayers().stream().filter(this::isPlayerOnline).filter(player -> cave.getPlayerPollution(player, spawnEntry) >= minPollution).collect(Collectors.toList());
 			if (players.isEmpty()) {
 				return null;
 			}
@@ -125,7 +138,7 @@ public class MobSpawnerListener implements Runnable {
 			if (!isPlayerOnline(player)) {
 				continue;
 			}
-			int pollution = cave.getPlayerPollution(player);
+			int pollution = cave.getPlayerPollution(player, spawnEntry);
 			if (pollution < minPollution) {
 				continue;
 			}
@@ -139,7 +152,7 @@ public class MobSpawnerListener implements Runnable {
 	}
 
 	@Nullable
-	private MobSpawnEntry getRandomSpawnEntry() {
+	public MobSpawnEntry getRandomSpawnEntry() {
 		int totalWeight = MOB_SPAWN_ENTRIES.stream().mapToInt(MobSpawnEntry::getWeight).sum();
 		int index = rand.nextInt(totalWeight);
 		for (MobSpawnEntry entry : MOB_SPAWN_ENTRIES) {

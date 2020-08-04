@@ -1,6 +1,7 @@
 package com.gmail.sharpcastle33.did.listeners;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
+import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.config.Ore;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -28,7 +29,10 @@ public class OreListener implements Listener {
 		BlockStateHolder<?> block = BukkitAdapter.adapt(event.getBlock().getBlockData());
 		for (Ore ore : cave.getStyle().getOres()) {
 			if (ore.getBlock().equalsFuzzy(block)) {
-				cave.addPlayerPollution(p.getUniqueId(), ore.getPollution());
+				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry();
+				if (spawnEntry != null) {
+					cave.addPlayerPollution(p.getUniqueId(), spawnEntry, ore.getPollution());
+				}
 				if (ore.getDropItem() != null) {
 					ItemStack toDrop = new ItemStack(ore.getDropItem());
 					toDrop.setAmount(ore.getMinDropAmount() + rand.nextInt(ore.getMaxDropAmount() - ore.getMinDropAmount() + 1));

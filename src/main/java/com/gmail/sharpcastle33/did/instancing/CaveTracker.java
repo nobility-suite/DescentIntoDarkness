@@ -9,6 +9,8 @@ import java.util.UUID;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
+import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -24,8 +26,9 @@ public class CaveTracker {
 	private final CaveStyle style;
 	private final List<UUID> players = new ArrayList<>();
 	private int totalPollution;
-	private final Map<UUID, Integer> playerPollutions = new HashMap<>();
+	private final Map<UUID, Map<String, Integer>> playerMobPollutions = new HashMap<>();
 	private final Team team;
+	private int spawnCooldown;
 
 	public CaveTracker(int id, World world, Location start, CaveStyle style) {
 		this.id = id;
@@ -57,35 +60,56 @@ public class CaveTracker {
 
 	public void addPlayer(UUID player) {
 		this.players.add(player);
-		team.addEntry(getPollutionScore(player).getEntry());
+		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
+			team.addEntry(getPollutionScore(player, spawnEntry).getEntry());
+		}
 	}
 
 	public void removePlayer(UUID player) {
-		playerPollutions.remove(player);
+		playerMobPollutions.remove(player);
 		this.players.remove(player);
-		team.removeEntry(getPollutionScore(player).getEntry());
-		Util.resetScore(getPollutionScore(player));
+		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
+			team.removeEntry(getPollutionScore(player, spawnEntry).getEntry());
+			Util.resetScore(getPollutionScore(player, spawnEntry));
+		}
 	}
 
-	public int getPlayerPollution(UUID player) {
-		Integer pollution = playerPollutions.get(player);
+	public int getPlayerPollution(UUID player, MobSpawnEntry spawnEntry) {
+		Map<String, Integer> spawnEntries = playerMobPollutions.get(player);
+		if (spawnEntries == null) {
+			return 0;
+		}
+		Integer pollution = spawnEntries.get(spawnEntry.getName());
 		return pollution == null ? 0 : pollution;
 	}
 
-	public void addPlayerPollution(UUID player, int amt) {
-		playerPollutions.merge(player, amt, Integer::sum);
+	public void addPlayerPollution(UUID player, MobSpawnEntry spawnEntry, int amt) {
+		playerMobPollutions.computeIfAbsent(player, k -> new HashMap<>()).merge(spawnEntry.getName(), amt, Integer::sum);
 		totalPollution += amt;
-		getPollutionScore(player).setScore(getPlayerPollution(player));
+		getPollutionScore(player, spawnEntry).setScore(getPlayerPollution(player, spawnEntry));
 	}
 
 	public int getTotalPollution() {
 		return totalPollution;
 	}
 
-	private Score getPollutionScore(UUID player) {
+	private Score getPollutionScore(UUID player, MobSpawnEntry spawnEntry) {
 		OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(player);
 		//noinspection ConstantConditions - Bukkit derp
 		String name = offlinePlayer != null && offlinePlayer.getName() != null ? offlinePlayer.getName() : player.toString();
+		name += "_" + spawnEntry.getName();
 		return DescentIntoDarkness.plugin.getCaveTrackerManager().getPollutionObjective().getScore(name);
+	}
+
+	public Team getTeam() {
+		return team;
+	}
+
+	public int getSpawnCooldown() {
+		return spawnCooldown;
+	}
+
+	public void setSpawnCooldown(int spawnCooldown) {
+		this.spawnCooldown = spawnCooldown;
 	}
 }

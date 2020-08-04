@@ -94,6 +94,7 @@ public class CaveTrackerManager {
 			caveTracker.removePlayer(player);
 		}
 
+		caveTracker.getTeam().unregister();
 		caveTrackers.remove(caveTracker);
 		DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(getWorldName(caveTracker.getId()));
 	}
@@ -162,7 +163,10 @@ public class CaveTrackerManager {
 
 	public Objective getPollutionObjective() {
 		if (pollutionObjective == null) {
-			pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
+			pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().getObjective("pollution");
+			if (pollutionObjective == null) {
+				pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
+			}
 			// Temporary, for debug
 			pollutionObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
 		}

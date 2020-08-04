@@ -4,7 +4,7 @@ import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
-import com.gmail.sharpcastle33.did.listeners.MobSpawnerListener;
+import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -53,6 +53,7 @@ import java.util.stream.Collectors;
 public class DescentIntoDarkness extends JavaPlugin {
 
 	private CaveTrackerManager caveTrackerManager;
+	private MobSpawnManager mobSpawnManager;
 	private Scoreboard scoreboard;
 
 	private FileConfiguration config = getConfig();
@@ -113,7 +114,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 		caveTrackerManager = new CaveTrackerManager();
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, new MobSpawnerListener(), 0, 1);
+		mobSpawnManager = new MobSpawnManager();
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
 	}
 
 	@Override
@@ -221,13 +223,17 @@ public class DescentIntoDarkness extends JavaPlugin {
 		return caveTrackerManager;
 	}
 
+	public MobSpawnManager getMobSpawnManager() {
+		return mobSpawnManager;
+	}
+
 	public Scoreboard getScoreboard() {
 		if (scoreboard == null) {
 			ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
 			if (scoreboardManager == null) {
 				throw new IllegalStateException("Accessed DescentIntoDarkness.getScoreboard too early");
 			}
-			scoreboard = scoreboardManager.getNewScoreboard();
+			scoreboard = scoreboardManager.getMainScoreboard();
 		}
 		return scoreboard;
 	}
