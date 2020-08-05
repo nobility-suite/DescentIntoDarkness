@@ -116,6 +116,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
 		mobSpawnManager = new MobSpawnManager();
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
+		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);
 	}
 
 	@Override

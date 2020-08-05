@@ -1,12 +1,10 @@
 package com.gmail.sharpcastle33.did.config;
 
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
 
 public final class MobSpawnEntry {
 	private final String name;
-	private final EntityType mob; // TODO: allow mythic mobs type
+	private final String mob;
 	private final int singleMobCost;
 	private final int minPackCost;
 	private final int maxPackCost;
@@ -17,7 +15,7 @@ public final class MobSpawnEntry {
 
 	public MobSpawnEntry(
 			String name,
-			EntityType mob,
+			String mob,
 			int singleMobCost,
 			int minPackCost,
 			int maxPackCost,
@@ -41,7 +39,7 @@ public final class MobSpawnEntry {
 		return name;
 	}
 
-	public EntityType getMob() {
+	public String getMob() {
 		return mob;
 	}
 
@@ -87,7 +85,7 @@ public final class MobSpawnEntry {
 	}
 
 	public void serialize(ConfigurationSection map) {
-		map.set("mob", mob.getKey().toString());
+		map.set("mob", mob);
 		map.set("singleMobCost", singleMobCost);
 		map.set("minPackCost", minPackCost);
 		map.set("maxPackCost", maxPackCost);
@@ -98,7 +96,7 @@ public final class MobSpawnEntry {
 	}
 
 	public static MobSpawnEntry deserialize(String name, ConfigurationSection map) {
-		EntityType mob = BukkitAdapter.adapt(com.sk89q.worldedit.world.entity.EntityType.REGISTRY.get(ConfigUtil.requireString(map, "mob")));
+		String mob = ConfigUtil.requireString(map, "mob");
 		int singleMobCost = map.getInt("singleMobCost", 50);
 		int minPackCost = map.getInt("minPackCost", 100);
 		int maxPackCost = map.getInt("maxPackCost", 300);

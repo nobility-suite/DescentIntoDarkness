@@ -8,7 +8,6 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.block.FuzzyBlockState;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,9 +32,9 @@ public class CaveStyle {
 			new Ore("emerald_ore", Util.requireDefaultState(BlockTypes.EMERALD_ORE), 30, null, 1, 1)
 	);
 	private final List<MobSpawnEntry> spawnEntries = Lists.newArrayList(
-			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 100, 300, 10, 10, 20, 20),
-			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 100, 300, 10, 15, 25, 20),
-			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 100, 300, 20, 15, 25, 20)
+			new MobSpawnEntry("zombie", "minecraft:zombie", 50, 100, 300, 10, 10, 20, 20),
+			new MobSpawnEntry("skeleton", "minecraft:skeleton", 70, 100, 300, 10, 15, 25, 20),
+			new MobSpawnEntry("creeper", "minecraft:creeper", 100, 100, 300, 20, 15, 25, 20)
 	);
 	private float naturalPollutionIncrease = 0.1f;
 	private int spawnAttemptsPerTick = 10;

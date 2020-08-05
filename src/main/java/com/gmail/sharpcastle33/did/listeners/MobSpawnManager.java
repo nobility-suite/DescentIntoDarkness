@@ -3,20 +3,32 @@ package com.gmail.sharpcastle33.did.listeners;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
+import io.lumine.xikage.mythicmobs.MythicMobs;
+import io.lumine.xikage.mythicmobs.adapters.bukkit.BukkitAdapter;
+import io.lumine.xikage.mythicmobs.api.bukkit.events.MythicMobSpawnEvent;
+import io.lumine.xikage.mythicmobs.mobs.ActiveMob;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public class MobSpawnManager implements Runnable {
+public class MobSpawnManager implements Runnable, Listener {
 	private final Random rand = new Random();
+	private boolean spawningMob = false;
 
 	private void spawnMobs(CaveTracker cave) {
 		if (cave.getPlayers().isEmpty()) {
@@ -91,23 +103,52 @@ public class MobSpawnManager implements Runnable {
 			return false;
 		}
 
-		// spawn mob and check its hitbox doesn't intersect anything
-		Entity mob = cave.getWorld().spawnEntity(spawnLocation.toLocation(cave.getWorld()), spawnEntry.getMob());
-		for (int x = (int)Math.floor(mob.getBoundingBox().getMinX()); x <= (int)Math.ceil(mob.getBoundingBox().getMaxX()); x++) {
-			for (int y = (int)Math.floor(mob.getBoundingBox().getMinY()); y <= (int)Math.ceil(mob.getBoundingBox().getMaxY()); y++) {
-				for (int z = (int)Math.floor(mob.getBoundingBox().getMinZ()); z <= (int)Math.ceil(mob.getBoundingBox().getMaxZ()); z++) {
-					if (!cave.getWorld().getBlockAt(x, y, z).isPassable()) {
-						mob.remove();
-						return false;
-					}
-				}
-			}
+		if (!doSpawn(cave, spawnEntry, spawnLocation)) {
+			return false;
 		}
-		mob.setRotation(rand.nextFloat() * 360, 0);
 
 		// deduct pollution
 		cave.addPlayerMobPollution(chosenPlayer.getUniqueId(), spawnEntry, -spawnEntry.getSingleMobCost());
 		cave.setSpawnCooldown(cave.getSpawnCooldown() + spawnEntry.getCooldown());
+
+		return true;
+	}
+
+	private boolean doSpawn(CaveTracker cave, MobSpawnEntry spawnEntry, Vector spawnLocation) {
+		boolean isMythicMob = MythicMobs.inst().getMobManager().getMythicMob(spawnEntry.getMob()) != null;
+		Location loc = spawnLocation.toLocation(cave.getWorld());
+
+		// spawn mob and check its hitbox doesn't intersect anything
+		// the event cancels the mob spawning in this case
+		Entity mob;
+		if (isMythicMob) {
+			spawningMob = true;
+			ActiveMob activeMob;
+			try {
+				activeMob = MythicMobs.inst().getMobManager().spawnMob(spawnEntry.getMob(), loc);
+			} finally {
+				spawningMob = false;
+			}
+			if (activeMob == null) {
+				return false;
+			}
+			mob = BukkitAdapter.adapt(activeMob.getEntity());
+		} else {
+			com.sk89q.worldedit.world.entity.EntityType entityType =
+					com.sk89q.worldedit.world.entity.EntityType.REGISTRY.get(spawnEntry.getMob().toLowerCase(Locale.ROOT));
+			if (entityType == null) {
+				Bukkit.getLogger().log(Level.SEVERE, "Could not spawn mob: " + spawnEntry.getMob());
+				return false;
+			}
+			EntityType bukkitEntity = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(entityType);
+			mob = cave.getWorld().spawnEntity(loc, bukkitEntity);
+			if (!canSpawnMob(cave.getWorld(), mob)) {
+				mob.remove();
+				return false;
+			}
+		}
+
+		mob.setRotation(rand.nextFloat() * 360, 0);
 
 		return true;
 	}
@@ -173,5 +214,32 @@ public class MobSpawnManager implements Runnable {
 		for (CaveTracker cave : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
 			spawnMobs(cave);
 		}
+	}
+
+	@EventHandler
+	public void onMythicMobSpawn(MythicMobSpawnEvent event) {
+		if (!spawningMob) {
+			return;
+		}
+		World world = event.getLocation().getWorld();
+		if (world == null) {
+			return;
+		}
+		if (!canSpawnMob(world, event.getEntity())) {
+			event.setCancelled();
+		}
+	}
+
+	private boolean canSpawnMob(World world, Entity mob) {
+		for (int x = (int)Math.floor(mob.getBoundingBox().getMinX()); x <= (int)Math.ceil(mob.getBoundingBox().getMaxX()); x++) {
+			for (int y = (int)Math.floor(mob.getBoundingBox().getMinY()); y <= (int)Math.ceil(mob.getBoundingBox().getMaxY()); y++) {
+				for (int z = (int)Math.floor(mob.getBoundingBox().getMinZ()); z <= (int)Math.ceil(mob.getBoundingBox().getMaxZ()); z++) {
+					if (!world.getBlockAt(x, y, z).isPassable()) {
+						return false;
+					}
+				}
+			}
+		}
+		return true;
 	}
 }

@@ -20,6 +20,10 @@
 			<url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
 		</repository>
 		<repository>
+			<id>mythiccraft-repo</id>
+			<url>https://mvn.lumine.io/repository/maven-public/</url>
+		</repository>
+		<repository>
 			<id>devoted-repo</id>
 			<url>https://build.devotedmc.com/plugin/repository/everything/</url>
 		</repository>
@@ -56,6 +60,12 @@
 			<groupId>com.onarandombox.multiversecore</groupId>
 			<artifactId>Multiverse-Core</artifactId>
 			<version>4.1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.lumine.xikage</groupId>
+			<artifactId>MythicMobs</artifactId>
+			<version>4.8.0</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
