@@ -27,10 +27,7 @@ public class CaveTracker {
 	private final CaveStyle style;
 	private final List<UUID> players = new ArrayList<>();
 	private int totalPollution;
-	private final Map<String, Integer> perMobPollutions = new HashMap<>();
-	private final Map<UUID, Map<String, Integer>> playerMobPollutions = new HashMap<>();
-	private final Map<String, Integer> packSpawnThreshold = new HashMap<>();
-	private final Map<String, Boolean> spawningPack = new HashMap<>();
+	private final Map<MobSpawnEntry, MobEntry> mobEntries = new HashMap<>();
 	private final Team team;
 	private int spawnCooldown;
 
@@ -40,11 +37,6 @@ public class CaveTracker {
 		this.start = start;
 		this.style = style;
 		this.team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
-
-		Random rand = new Random();
-		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
-			packSpawnThreshold.put(spawnEntry.getName(), spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1));
-		}
 	}
 
 	public int getId() {
@@ -75,7 +67,7 @@ public class CaveTracker {
 	}
 
 	public void removePlayer(UUID player) {
-		playerMobPollutions.remove(player);
+		mobEntries.values().forEach(entry -> entry.playerPollutions.remove(player));
 		this.players.remove(player);
 		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
 			team.removeEntry(getPollutionScore(player, spawnEntry).getEntry());
@@ -83,43 +75,14 @@ public class CaveTracker {
 		}
 	}
 
-	public int getPlayerPollution(UUID player, MobSpawnEntry spawnEntry) {
-		Map<String, Integer> spawnEntries = playerMobPollutions.get(player);
-		if (spawnEntries == null) {
-			return 0;
-		}
-		Integer pollution = spawnEntries.get(spawnEntry.getName());
-		return pollution == null ? 0 : pollution;
+	public MobEntry getMobEntry(MobSpawnEntry spawnEntry) {
+		return mobEntries.computeIfAbsent(spawnEntry, MobEntry::new);
 	}
 
 	public void addPlayerMobPollution(UUID player, MobSpawnEntry spawnEntry, int amt) {
-		int newPlayerPollution = playerMobPollutions.computeIfAbsent(player, k -> new HashMap<>()).merge(spawnEntry.getName(), amt, Integer::sum);
-		perMobPollutions.merge(spawnEntry.getName(), amt, Integer::sum);
+		int newPlayerPollution = getMobEntry(spawnEntry).addPlayerPollution(player, amt);
 		totalPollution += amt;
 		getPollutionScore(player, spawnEntry).setScore(newPlayerPollution);
-	}
-
-	public boolean isSpawningPack(MobSpawnEntry spawnEntry) {
-		Boolean spawningPack = this.spawningPack.get(spawnEntry.getName());
-		return spawningPack != null && spawningPack;
-	}
-
-	public void setSpawningPack(MobSpawnEntry spawnEntry, boolean spawningPack) {
-		this.spawningPack.put(spawnEntry.getName(), spawningPack);
-	}
-
-	public int getPackSpawnThreshold(MobSpawnEntry spawnEntry) {
-		Integer threshold = packSpawnThreshold.get(spawnEntry.getName());
-		return threshold == null ? 0 : threshold;
-	}
-
-	public void setPackSpawnThreshold(MobSpawnEntry spawnEntry, int threshold) {
-		packSpawnThreshold.put(spawnEntry.getName(), threshold);
-	}
-
-	public int getMobPollution(MobSpawnEntry spawnEntry) {
-		Integer mobPollution = perMobPollutions.get(spawnEntry.getName());
-		return mobPollution == null ? 0 : mobPollution;
 	}
 
 	public int getTotalPollution() {
@@ -144,5 +107,53 @@ public class CaveTracker {
 
 	public void setSpawnCooldown(int spawnCooldown) {
 		this.spawnCooldown = spawnCooldown;
+	}
+
+	public static class MobEntry {
+		private final MobSpawnEntry spawnEntry;
+		private int totalPollution;
+		private final Map<UUID, Integer> playerPollutions = new HashMap<>();
+		private int packSpawnThreshold;
+		private boolean spawningPack;
+
+		public MobEntry(MobSpawnEntry spawnEntry) {
+			this.spawnEntry = spawnEntry;
+			Random rand = new Random();
+			packSpawnThreshold = spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1);
+		}
+
+		public MobSpawnEntry getSpawnEntry() {
+			return spawnEntry;
+		}
+
+		public int getTotalPollution() {
+			return totalPollution;
+		}
+
+		public int getPlayerPollution(UUID player) {
+			Integer pollution = playerPollutions.get(player);
+			return pollution == null ? 0 : pollution;
+		}
+
+		public int addPlayerPollution(UUID player, int amt) {
+			totalPollution += amt;
+			return playerPollutions.merge(player, amt, Integer::sum);
+		}
+
+		public int getPackSpawnThreshold() {
+			return packSpawnThreshold;
+		}
+
+		public void setPackSpawnThreshold(int packSpawnThreshold) {
+			this.packSpawnThreshold = packSpawnThreshold;
+		}
+
+		public boolean isSpawningPack() {
+			return spawningPack;
+		}
+
+		public void setSpawningPack(boolean spawningPack) {
+			this.spawningPack = spawningPack;
+		}
 	}
 }

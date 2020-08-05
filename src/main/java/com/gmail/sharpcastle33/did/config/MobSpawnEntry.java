@@ -2,7 +2,7 @@ package com.gmail.sharpcastle33.did.config;
 
 import org.bukkit.entity.EntityType;
 
-public class MobSpawnEntry {
+public final class MobSpawnEntry {
 	private final String name;
 	private final EntityType mob; // TODO: allow mythic mobs type
 	private final int singleMobCost;
@@ -13,7 +13,17 @@ public class MobSpawnEntry {
 	private final int maxDistance;
 	private final int cooldown;
 
-	public MobSpawnEntry(String name, EntityType mob, int singleMobCost, int minPackCost, int maxPackCost, int weight, int minDistance, int maxDistance, int cooldown) {
+	public MobSpawnEntry(
+			String name,
+			EntityType mob,
+			int singleMobCost,
+			int minPackCost,
+			int maxPackCost,
+			int weight,
+			int minDistance,
+			int maxDistance,
+			int cooldown
+	) {
 		this.name = name;
 		this.mob = mob;
 		this.singleMobCost = singleMobCost;
@@ -59,5 +69,18 @@ public class MobSpawnEntry {
 
 	public int getCooldown() {
 		return cooldown;
+	}
+
+	@Override
+	public int hashCode() {
+		return name.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == this) return true;
+		if (obj == null) return false;
+		if (obj.getClass() != MobSpawnEntry.class) return false;
+		return name.equals(((MobSpawnEntry) obj).name);
 	}
 }

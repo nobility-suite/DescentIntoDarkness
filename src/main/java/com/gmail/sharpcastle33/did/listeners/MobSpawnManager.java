@@ -62,13 +62,14 @@ public class MobSpawnManager implements Runnable {
 		if (spawnEntry == null) {
 			return false;
 		}
-		if (!cave.isSpawningPack(spawnEntry) && cave.getPackSpawnThreshold(spawnEntry) > cave.getMobPollution(spawnEntry)) {
+		CaveTracker.MobEntry mobEntry = cave.getMobEntry(spawnEntry);
+		if (!mobEntry.isSpawningPack() && mobEntry.getPackSpawnThreshold() > mobEntry.getTotalPollution()) {
 			return false;
 		}
-		boolean spawningPack = cave.getMobPollution(spawnEntry) >= spawnEntry.getSingleMobCost();
-		cave.setSpawningPack(spawnEntry, spawningPack);
+		boolean spawningPack = mobEntry.getTotalPollution() >= spawnEntry.getSingleMobCost();
+		mobEntry.setSpawningPack(spawningPack);
 		if (!spawningPack) {
-			cave.setPackSpawnThreshold(spawnEntry, spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1));
+			mobEntry.setPackSpawnThreshold(spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1));
 		}
 
 		// try to spawn that mob next to a player with enough pollution to afford it
@@ -123,14 +124,15 @@ public class MobSpawnManager implements Runnable {
 
 	@Nullable
 	private Player getRandomPlayer(CaveTracker cave, MobSpawnEntry spawnEntry, int minPollution) {
+		CaveTracker.MobEntry mobEntry = cave.getMobEntry(spawnEntry);
 		int totalOnlinePollution = cave.getPlayers().stream()
 				.filter(this::isPlayerOnline)
-				.mapToInt(player -> cave.getPlayerPollution(player, spawnEntry))
+				.mapToInt(mobEntry::getPlayerPollution)
 				.filter(pollution -> pollution >= minPollution)
 				.sum();
 
 		if (totalOnlinePollution <= 0) {
-			List<UUID> players = cave.getPlayers().stream().filter(this::isPlayerOnline).filter(player -> cave.getPlayerPollution(player, spawnEntry) >= minPollution).collect(Collectors.toList());
+			List<UUID> players = cave.getPlayers().stream().filter(this::isPlayerOnline).filter(player -> mobEntry.getPlayerPollution(player) >= minPollution).collect(Collectors.toList());
 			if (players.isEmpty()) {
 				return null;
 			}
@@ -143,7 +145,7 @@ public class MobSpawnManager implements Runnable {
 			if (!isPlayerOnline(player)) {
 				continue;
 			}
-			int pollution = cave.getPlayerPollution(player, spawnEntry);
+			int pollution = mobEntry.getPlayerPollution(player);
 			if (pollution < minPollution) {
 				continue;
 			}
