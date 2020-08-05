@@ -8,6 +8,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.block.FuzzyBlockState;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.EntityType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,14 @@ public class CaveStyle {
 			new Ore("diamond_ore", Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 30, null, 1, 1),
 			new Ore("emerald_ore", Util.requireDefaultState(BlockTypes.EMERALD_ORE), 30, null, 1, 1)
 	);
+	private final List<MobSpawnEntry> spawnEntries = Lists.newArrayList(
+			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 100, 300, 10, 10, 20, 20),
+			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 100, 300, 10, 15, 25, 20),
+			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 100, 300, 20, 15, 25, 20)
+	);
+	private float naturalPollutionIncrease = 0.1f;
+	private int spawnAttemptsPerTick = 10;
+	private int sprintingPenalty = 5;
 
 	// cave generation
 	private final List<PainterStep> painterSteps = Lists.newArrayList(
@@ -53,6 +62,13 @@ public class CaveStyle {
 		for (Ore ore : ores) {
 			ore.serialize(oresSection.createSection(ore.getName()));
 		}
+		ConfigurationSection spawnEntriesSection = map.createSection("spawnEntries");
+		for (MobSpawnEntry spawnEntry : spawnEntries) {
+			spawnEntry.serialize(spawnEntriesSection.createSection(spawnEntry.getName()));
+		}
+		map.set("naturalPollutionIncrease", (double)naturalPollutionIncrease);
+		map.set("spawnAttemptsPerTick", spawnAttemptsPerTick);
+		map.set("sprintingPenalty", sprintingPenalty);
 
 		map.set("painterSteps", painterSteps.stream().map(PainterStep::serialize).collect(Collectors.toCollection(ArrayList::new)));
 		ConfigurationSection structuresSection = map.createSection("structures");
@@ -86,6 +102,19 @@ public class CaveStyle {
 				}
 			}
 		}
+		ConfigurationSection spawnEntriesSection = map.getConfigurationSection("spawnEntries");
+		if (spawnEntriesSection != null) {
+			style.spawnEntries.clear();
+			for (String key : spawnEntriesSection.getKeys(false)) {
+				ConfigurationSection spawnEntrySection = spawnEntriesSection.getConfigurationSection(key);
+				if (spawnEntrySection != null) {
+					style.spawnEntries.add(MobSpawnEntry.deserialize(key, spawnEntrySection));
+				}
+			}
+		}
+		style.naturalPollutionIncrease = (float)map.getDouble("naturalPollutionIncrease", 0.1);
+		style.spawnAttemptsPerTick = map.getInt("spawnAttemptsPerTick", 10);
+		style.sprintingPenalty = map.getInt("sprintingPenalty", 5);
 
 
 		List<?> painterSteps = map.getList("painterSteps");
@@ -128,6 +157,22 @@ public class CaveStyle {
 
 	public List<Ore> getOres() {
 		return ores;
+	}
+
+	public List<MobSpawnEntry> getSpawnEntries() {
+		return spawnEntries;
+	}
+
+	public float getNaturalPollutionIncrease() {
+		return naturalPollutionIncrease;
+	}
+
+	public int getSpawnAttemptsPerTick() {
+		return spawnAttemptsPerTick;
+	}
+
+	public int getSprintingPenalty() {
+		return sprintingPenalty;
 	}
 
 	public List<PainterStep> getPainterSteps() {

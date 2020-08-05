@@ -61,7 +61,7 @@ public class CaveTracker {
 
 	public void addPlayer(UUID player) {
 		this.players.add(player);
-		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
+		for (MobSpawnEntry spawnEntry : style.getSpawnEntries()) {
 			team.addEntry(getPollutionScore(player, spawnEntry).getEntry());
 		}
 	}
@@ -69,7 +69,7 @@ public class CaveTracker {
 	public void removePlayer(UUID player) {
 		mobEntries.values().forEach(entry -> entry.playerPollutions.remove(player));
 		this.players.remove(player);
-		for (MobSpawnEntry spawnEntry : MobSpawnManager.MOB_SPAWN_ENTRIES) {
+		for (MobSpawnEntry spawnEntry : style.getSpawnEntries()) {
 			team.removeEntry(getPollutionScore(player, spawnEntry).getEntry());
 			Util.resetScore(getPollutionScore(player, spawnEntry));
 		}

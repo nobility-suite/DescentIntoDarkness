@@ -29,7 +29,7 @@ public class OreListener implements Listener {
 		BlockStateHolder<?> block = BukkitAdapter.adapt(event.getBlock().getBlockData());
 		for (Ore ore : cave.getStyle().getOres()) {
 			if (ore.getBlock().equalsFuzzy(block)) {
-				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry();
+				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
 				if (spawnEntry != null) {
 					cave.addPlayerMobPollution(p.getUniqueId(), spawnEntry, ore.getPollution());
 				}

@@ -60,11 +60,7 @@ public class Ore {
 	}
 
 	public static Ore deserialize(String name, ConfigurationSection map) {
-		String blockVal = map.getString("block");
-		if (blockVal == null) {
-			throw new InvalidConfigException("Missing \"block\"");
-		}
-		BlockStateHolder<?> block = ConfigUtil.parseBlock(blockVal);
+		BlockStateHolder<?> block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
 		int pollution = map.getInt("pollution", 0);
 		Object dropItemVal = map.get("dropItem");
 		ItemStack dropItem;

@@ -1,5 +1,7 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
 
 public final class MobSpawnEntry {
@@ -82,5 +84,28 @@ public final class MobSpawnEntry {
 		if (obj == null) return false;
 		if (obj.getClass() != MobSpawnEntry.class) return false;
 		return name.equals(((MobSpawnEntry) obj).name);
+	}
+
+	public void serialize(ConfigurationSection map) {
+		map.set("mob", mob.getKey().toString());
+		map.set("singleMobCost", singleMobCost);
+		map.set("minPackCost", minPackCost);
+		map.set("maxPackCost", maxPackCost);
+		map.set("weight", weight);
+		map.set("minDistance", minDistance);
+		map.set("maxDistance", maxDistance);
+		map.set("cooldown", cooldown);
+	}
+
+	public static MobSpawnEntry deserialize(String name, ConfigurationSection map) {
+		EntityType mob = BukkitAdapter.adapt(com.sk89q.worldedit.world.entity.EntityType.REGISTRY.get(ConfigUtil.requireString(map, "mob")));
+		int singleMobCost = map.getInt("singleMobCost", 50);
+		int minPackCost = map.getInt("minPackCost", 100);
+		int maxPackCost = map.getInt("maxPackCost", 300);
+		int weight = map.getInt("weight", 10);
+		int minDistance = map.getInt("minDistance", 15);
+		int maxDistance = map.getInt("maxDistance", 25);
+		int cooldown = map.getInt("cooldown", 20);
+		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown);
 	}
 }

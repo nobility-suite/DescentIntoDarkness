@@ -101,10 +101,7 @@ public abstract class Structure {
 	protected abstract void serialize0(ConfigurationSection map);
 
 	public static Structure deserialize(String name, ConfigurationSection map) {
-		if (!map.contains("type")) {
-			throw new InvalidConfigException("Structure missing type");
-		}
-		Type type = ConfigUtil.parseEnum(Type.class, map.getString("type"));
+		Type type = ConfigUtil.parseEnum(Type.class, ConfigUtil.requireString(map, "type"));
 		return type.deserialize(name, map);
 	}
 
@@ -136,16 +133,13 @@ public abstract class Structure {
 
 		public SchematicStructure(String name, ConfigurationSection map) {
 			super(name, Type.SCHEMATIC, map);
-			this.schematics = ConfigUtil.deserializeSingleableList(map.get("schematics"), schematicName -> {
+			this.schematics = ConfigUtil.deserializeSingleableList(ConfigUtil.require(map, "schematics"), schematicName -> {
 				Clipboard data = DescentIntoDarkness.plugin.getSchematic(schematicName);
 				if (data == null) {
 					throw new InvalidConfigException("Unknown schematic: " + schematicName);
 				}
 				return new SchematicStructure.Schematic(schematicName, data);
 			}, () -> null);
-			if (schematics == null) {
-				throw new InvalidConfigException("Missing \"schematics\"");
-			}
 			String originSideVal = map.getString("originSide");
 			if (originSideVal == null) {
 				this.originSide = Direction.DOWN;
@@ -257,11 +251,7 @@ public abstract class Structure {
 
 		public VeinStructure(String name, ConfigurationSection map) {
 			super(name, Type.VEIN, map);
-			String oreVal = map.getString("ore");
-			if (oreVal == null) {
-				throw new InvalidConfigException("Vein missing \"ore\"");
-			}
-			this.ore = ConfigUtil.parseBlock(oreVal);
+			this.ore = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "ore"));
 			this.radius = map.getInt("radius", 4);
 		}
 
@@ -292,7 +282,7 @@ public abstract class Structure {
 
 		protected PatchStructure(String name, ConfigurationSection map) {
 			super(name, Type.PATCH, map);
-			this.block = ConfigUtil.parseBlock(map.getString("block"));
+			this.block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
 			this.spreadX = map.getInt("spreadX", 8);
 			this.spreadY = map.getInt("spreadY", 4);
 			this.spreadZ = map.getInt("spreadZ", 8);

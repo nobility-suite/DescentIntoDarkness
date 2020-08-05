@@ -3,11 +3,9 @@ package com.gmail.sharpcastle33.did.listeners;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
-import com.google.common.collect.ImmutableList;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
@@ -18,14 +16,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class MobSpawnManager implements Runnable {
-	private static final float NATURAL_POLLUTION_INCREASE = 0.1f;
-	private static final int ATTEMPTS_PER_TICK = 10;
-	public static final List<MobSpawnEntry> MOB_SPAWN_ENTRIES = ImmutableList.of(
-			new MobSpawnEntry("zombie", EntityType.ZOMBIE, 50, 100, 300, 1, 10, 20, 20),
-			new MobSpawnEntry("skeleton", EntityType.SKELETON, 70, 100, 300, 1, 15, 25, 20),
-			new MobSpawnEntry("creeper", EntityType.CREEPER, 100, 100, 300, 2, 15, 25, 20)
-	);
-
 	private final Random rand = new Random();
 
 	private void spawnMobs(CaveTracker cave) {
@@ -39,17 +29,17 @@ public class MobSpawnManager implements Runnable {
 		}
 
 		// Prevent lack of mob spawning due to idleness
-		if (rand.nextFloat() < NATURAL_POLLUTION_INCREASE) {
-			MobSpawnEntry mobType = getRandomSpawnEntry();
+		if (rand.nextFloat() < cave.getStyle().getNaturalPollutionIncrease()) {
+			MobSpawnEntry mobType = getRandomSpawnEntry(cave);
 			if (mobType != null) {
 				Player victim = getRandomPlayer(cave, mobType, Integer.MIN_VALUE);
 				if (victim != null) {
-					cave.addPlayerMobPollution(victim.getUniqueId(), mobType, victim.isSprinting() ? 5 : 1);
+					cave.addPlayerMobPollution(victim.getUniqueId(), mobType, victim.isSprinting() ? cave.getStyle().getSprintingPenalty() : 1);
 				}
 			}
 		}
 
-		for (int i = 0; i < ATTEMPTS_PER_TICK; i++) {
+		for (int i = 0; i < cave.getStyle().getSpawnAttemptsPerTick(); i++) {
 			if (spawnMob(cave)) {
 				break;
 			}
@@ -58,7 +48,7 @@ public class MobSpawnManager implements Runnable {
 
 	private boolean spawnMob(CaveTracker cave) {
 		// pick random type of mob to spawn and check if the cave has enough total pollution to spawn it
-		MobSpawnEntry spawnEntry = getRandomSpawnEntry();
+		MobSpawnEntry spawnEntry = getRandomSpawnEntry(cave);
 		if (spawnEntry == null) {
 			return false;
 		}
@@ -159,10 +149,11 @@ public class MobSpawnManager implements Runnable {
 	}
 
 	@Nullable
-	public MobSpawnEntry getRandomSpawnEntry() {
-		int totalWeight = MOB_SPAWN_ENTRIES.stream().mapToInt(MobSpawnEntry::getWeight).sum();
+	public MobSpawnEntry getRandomSpawnEntry(CaveTracker cave) {
+		List<MobSpawnEntry> spawnEntries = cave.getStyle().getSpawnEntries();
+		int totalWeight = spawnEntries.stream().mapToInt(MobSpawnEntry::getWeight).sum();
 		int index = rand.nextInt(totalWeight);
-		for (MobSpawnEntry entry : MOB_SPAWN_ENTRIES) {
+		for (MobSpawnEntry entry : spawnEntries) {
 			index -= entry.getWeight();
 			if (index <= 0) {
 				return entry;
