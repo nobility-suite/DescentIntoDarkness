@@ -6,6 +6,7 @@ import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -17,6 +18,22 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ConfigUtil {
+	public static Object require(ConfigurationSection map, String key) {
+		Object value = map.get(key);
+		if (value == null) {
+			throw new InvalidConfigException("Missing \"" + key + "\"");
+		}
+		return value;
+	}
+
+	public static String requireString(ConfigurationSection map, String key) {
+		String value = map.getString(key);
+		if (value == null) {
+			throw new InvalidConfigException("Missing \"" + key + "\"");
+		}
+		return value;
+	}
+
 	public static BlockStateHolder<?> parseBlock(String val) {
 		try {
 			ParserContext context = new ParserContext();

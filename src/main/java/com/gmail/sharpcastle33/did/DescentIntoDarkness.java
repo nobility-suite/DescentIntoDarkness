@@ -4,6 +4,7 @@ import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
+import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -27,6 +28,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,6 +53,8 @@ import java.util.stream.Collectors;
 public class DescentIntoDarkness extends JavaPlugin {
 
 	private CaveTrackerManager caveTrackerManager;
+	private MobSpawnManager mobSpawnManager;
+	private Scoreboard scoreboard;
 
 	private FileConfiguration config = getConfig();
 	private FileConfiguration caveStylesConfig;
@@ -109,6 +114,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 		caveTrackerManager = new CaveTrackerManager();
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
+		mobSpawnManager = new MobSpawnManager();
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
+		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);
 	}
 
 	@Override
@@ -214,6 +222,21 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	public CaveTrackerManager getCaveTrackerManager() {
 		return caveTrackerManager;
+	}
+
+	public MobSpawnManager getMobSpawnManager() {
+		return mobSpawnManager;
+	}
+
+	public Scoreboard getScoreboard() {
+		if (scoreboard == null) {
+			ScoreboardManager scoreboardManager = Bukkit.getScoreboardManager();
+			if (scoreboardManager == null) {
+				throw new IllegalStateException("Accessed DescentIntoDarkness.getScoreboard too early");
+			}
+			scoreboard = scoreboardManager.getMainScoreboard();
+		}
+		return scoreboard;
 	}
 
 	public void runSyncNow(Runnable task) {

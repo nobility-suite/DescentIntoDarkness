@@ -14,12 +14,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.scoreboard.Score;
+import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -129,6 +133,20 @@ public class Util {
 		}
 
 		return true;
+	}
+
+	// because Bukkit is stupid and doesn't allow you to remove a single score from a player
+	public static void resetScore(Score score) {
+		Scoreboard scoreboard = score.getScoreboard();
+		if (scoreboard == null) {
+			return;
+		}
+		Set<Score> otherScores = new HashSet<>(scoreboard.getScores(score.getEntry()));
+		otherScores.remove(score);
+		scoreboard.resetScores(score.getEntry());
+		for (Score otherScore : otherScores) {
+			otherScore.getObjective().getScore(otherScore.getEntry()).setScore(otherScore.getScore());
+		}
 	}
 
 }
