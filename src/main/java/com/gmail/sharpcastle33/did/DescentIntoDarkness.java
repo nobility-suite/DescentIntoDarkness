@@ -180,7 +180,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 					if (value == null) {
 						throw new InvalidConfigException("Cave style \"" + styleName + "\" has invalid type");
 					}
-					caveStyles.put(styleName, CaveStyle.deserialize(value));
+					caveStyles.put(styleName, CaveStyle.deserialize(styleName, value));
 				} catch (InvalidConfigException e) {
 					getLogger().log(Level.SEVERE, "Failed to load cave style " + styleName, e);
 				}

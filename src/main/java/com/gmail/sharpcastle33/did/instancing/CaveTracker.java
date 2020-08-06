@@ -11,7 +11,6 @@ import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
-import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -36,7 +35,12 @@ public class CaveTracker {
 		this.world = world;
 		this.start = start;
 		this.style = style;
-		this.team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
+
+		Team team = DescentIntoDarkness.plugin.getScoreboard().getTeam("cave_" + id);
+		if (team == null) {
+			team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
+		}
+		this.team = team;
 	}
 
 	public int getId() {

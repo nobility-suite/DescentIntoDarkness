@@ -5,6 +5,8 @@ import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.instancing.CaveTracker;
+import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.google.common.collect.Iterators;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
@@ -28,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -43,11 +47,23 @@ public class CommandListener implements TabExecutor {
 		Player p = (Player) sender;
 
 		switch (args[0]) {
+			case "create":
+				create(p, args);
+				break;
+			case "delete":
+				delete(p, args);
+				break;
 			case "generate":
 				generate(p, args);
 				break;
-			case "teleport":
-				teleport(p, args);
+			case "join":
+				join(p, args);
+				break;
+			case "leave":
+				leave(p, args);
+				break;
+			case "list":
+				list(p);
 				break;
 			case "reload":
 				DescentIntoDarkness.plugin.reload();
@@ -58,19 +74,7 @@ public class CommandListener implements TabExecutor {
 		return true;
 	}
 
-	private void generate(Player p, String[] args) {
-		if (args.length == 1) {
-			return;
-		}
-
-		if (args[1].equals("cave")) {
-			generateCave(p, args);
-		} else if (args[1].equals("blank")) {
-			generateBlank(p, args);
-		}
-	}
-
-	private void teleport(Player p, String[] args) {
+	private void create(Player p, String[] args) {
 		NavigableMap<String, CaveStyle> caveStyles = DescentIntoDarkness.plugin.getCaveStyles();
 		CaveStyle style = args.length < 2 ? Iterators.get(caveStyles.values().iterator(), new Random().nextInt(caveStyles.size())) : caveStyles.get(args[1]);
 		if (style == null) {
@@ -94,17 +98,120 @@ public class CommandListener implements TabExecutor {
 		});
 	}
 
+	private void delete(Player p, String[] args) {
+		if (args.length == 1) {
+			return;
+		}
+		OptionalInt caveId = parseInt(p, args[1]);
+		if (!caveId.isPresent()) return;
+
+		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
+
+		CaveTracker cave = caveTrackerManager.getCaveById(caveId.getAsInt());
+		if (cave == null) {
+			p.sendMessage(ChatColor.RED + "Cave " + caveId.getAsInt() + " not found");
+			return;
+		}
+
+		caveTrackerManager.deleteCave(cave);
+		p.sendMessage(ChatColor.GREEN + "Deleted cave " + caveId.getAsInt());
+	}
+
+	private void generate(Player p, String[] args) {
+		if (args.length == 1) {
+			return;
+		}
+
+		if (args[1].equals("cave")) {
+			generateCave(p, args);
+		} else if (args[1].equals("blank")) {
+			generateBlank(p, args);
+		}
+	}
+
+	private void join(Player p, String[] args) {
+		if (args.length == 1) {
+			return;
+		}
+		OptionalInt caveId = parseInt(p, args[1]);
+		if (!caveId.isPresent()) return;
+
+		Player target;
+		if (args.length > 2) {
+			target = Bukkit.getPlayer(args[2]);
+			if (target == null) {
+				p.sendMessage(ChatColor.RED + "Player not found");
+				return;
+			}
+		} else {
+			target = p;
+		}
+
+		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
+		CaveTracker cave = caveTrackerManager.getCaveById(caveId.getAsInt());
+		if (cave == null) {
+			p.sendMessage(ChatColor.RED + "Cave " + caveId.getAsInt() + " not found");
+			return;
+		}
+
+		if (caveTrackerManager.teleportPlayerTo(target, cave)) {
+			p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
+		} else {
+			p.sendMessage(ChatColor.RED + "Failed to teleport player");
+		}
+	}
+
+	private void leave(Player p, String[] args) {
+		Player target;
+		if (args.length > 1) {
+			target = Bukkit.getPlayer(args[1]);
+			if (target == null) {
+				p.sendMessage(ChatColor.RED + "Player not found");
+				return;
+			}
+		} else {
+			target = p;
+		}
+
+		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
+		if (!caveTrackerManager.isInCave(target)) {
+			p.sendMessage(ChatColor.RED + "Player is not in a cave");
+			return;
+		}
+
+		if (caveTrackerManager.teleportPlayerTo(target, null)) {
+			p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
+		} else {
+			p.sendMessage(ChatColor.RED + "Failed to teleport player");
+		}
+	}
+
+	private void list(Player p) {
+		List<CaveTracker> caves = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves();
+		if (caves.isEmpty()) {
+			p.sendMessage(ChatColor.RED + "0 active caves");
+		} else {
+			p.sendMessage(ChatColor.GREEN + String.format("%d active caves", caves.size()));
+			for (CaveTracker cave : caves) {
+				p.sendMessage(ChatColor.YELLOW + String.format("%d: %s", cave.getId(), cave.getStyle().getName()));
+			}
+		}
+
+	}
+
 	private void generateBlank(Player p, String[] args) {
 		BlockStateHolder<?> base = args.length <= 2 ? Util.requireDefaultState(BlockTypes.STONE) : ConfigUtil.parseBlock(args[2]);
-		int radius = args.length <= 3 ? 200 : Integer.parseInt(args[3]);
-		int yRadius = args.length <= 4 ? 120 : Integer.parseInt(args[4]);
+		OptionalInt radius = args.length <= 3 ? OptionalInt.of(200) : parseInt(p, args[3]);
+		if (!radius.isPresent()) return;
+		OptionalInt yRadius = args.length <= 4 ? OptionalInt.of(120) : parseInt(p, args[4]);
+		if (!yRadius.isPresent()) return;
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating...");
 
 		Location pos = p.getLocation();
 		DescentIntoDarkness.plugin.runAsync(() -> {
 			try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(p.getWorld()), -1)) {
-				CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius, yRadius);
+				CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius.getAsInt(), yRadius.getAsInt());
 			}
 		}).whenComplete((v, throwable) -> {
 			if (throwable != null) {
@@ -118,8 +225,10 @@ public class CommandListener implements TabExecutor {
 
 	private void generateCave(Player p, String[] args) {
 		String styleName = args.length <= 2 ? "default" : args[2];
-		int size = args.length <= 3 ? 9 : Integer.parseInt(args[3]);
-		long seed = args.length <= 4 ? new Random().nextLong() : Long.parseLong(args[4]);
+		OptionalInt size = args.length <= 3 ? OptionalInt.of(9) : parseInt(p, args[3]);
+		if (!size.isPresent()) return;
+		OptionalLong seed = args.length <= 4 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[4]);
+		if (!seed.isPresent()) return;
 		boolean debug = args.length > 5 && Boolean.parseBoolean(args[5]);
 
 		CaveStyle style = DescentIntoDarkness.plugin.getCaveStyles().get(styleName);
@@ -130,8 +239,8 @@ public class CommandListener implements TabExecutor {
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
 		DescentIntoDarkness.plugin.supplyAsync(() -> {
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed)).setDebug(debug)) {
-				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size);
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed.getAsLong())).setDebug(debug)) {
+				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size.getAsInt());
 			}
 		}).whenComplete((s, throwable) -> {
 			if (throwable != null) {
@@ -148,31 +257,63 @@ public class CommandListener implements TabExecutor {
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {
-			return StringUtil.copyPartialMatches(args[0], Arrays.asList("generate", "teleport", "reload"), new ArrayList<>());
+			return StringUtil.copyPartialMatches(args[0], Arrays.asList("create", "delete", "generate", "join", "leave", "list", "reload"), new ArrayList<>());
 		} else {
-			if (args[0].equals("generate")) {
-				if (args.length == 2) {
-					return StringUtil.copyPartialMatches(args[1], Arrays.asList("cave", "blank"), new ArrayList<>());
-				} else {
-					if (args[1].equals("cave")) {
-						if (args.length == 3) {
-							return StringUtil.copyPartialMatches(args[2], DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
-						} else if (args.length == 6) {
-							return StringUtil.copyPartialMatches(args[5], Arrays.asList("false", "true"), new ArrayList<>());
-						}
-					} else if (args[1].equals("blank")) {
-						if (args.length == 3) {
-							return StringUtil.copyPartialMatches(args[2], DescentIntoDarkness.getAllMaterials().stream().map(material -> material.getKey().getKey()).collect(Collectors.toList()), new ArrayList<>());
+			switch (args[0]) {
+				case "create":
+					if (args.length == 2) {
+						return StringUtil.copyPartialMatches(args[1], DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
+					}
+					break;
+				case "generate":
+					if (args.length == 2) {
+						return StringUtil.copyPartialMatches(args[1], Arrays.asList("cave", "blank"), new ArrayList<>());
+					} else {
+						if (args[1].equals("cave")) {
+							if (args.length == 3) {
+								return StringUtil.copyPartialMatches(args[2],
+										DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
+							} else if (args.length == 6) {
+								return StringUtil.copyPartialMatches(args[5], Arrays.asList("false", "true"), new ArrayList<>());
+							}
+						} else if (args[1].equals("blank")) {
+							if (args.length == 3) {
+								return StringUtil.copyPartialMatches(args[2], DescentIntoDarkness.getAllMaterials().stream().map(material -> material.getKey().getKey()).collect(Collectors.toList()), new ArrayList<>());
+							}
 						}
 					}
-				}
-			} else if (args[0].equals("teleport")) {
-				if (args.length == 2) {
-					return StringUtil.copyPartialMatches(args[1], DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
-				}
+					break;
+				case "join":
+					if (args.length == 3) {
+						return StringUtil.copyPartialMatches(args[2], Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), new ArrayList<>());
+					}
+					break;
+				case "leave":
+					if (args.length == 2) {
+						return StringUtil.copyPartialMatches(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), new ArrayList<>());
+					}
+					break;
 			}
 		}
 
 		return Collections.emptyList();
+	}
+
+	private static OptionalInt parseInt(Player p, String arg) {
+		try {
+			return OptionalInt.of(Integer.parseInt(arg));
+		} catch (NumberFormatException e) {
+			p.sendMessage(ChatColor.RED + "Invalid integer: " + arg);
+			return OptionalInt.empty();
+		}
+	}
+
+	private static OptionalLong parseLong(Player p, String arg) {
+		try {
+			return OptionalLong.of(Long.parseLong(arg));
+		} catch (NumberFormatException e) {
+			p.sendMessage(ChatColor.RED + "Invalid long: " + arg);
+			return OptionalLong.empty();
+		}
 	}
 }

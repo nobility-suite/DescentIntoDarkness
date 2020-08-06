@@ -15,7 +15,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CaveStyle {
-	public static final CaveStyle DEFAULT = new CaveStyle();
+	public static final CaveStyle DEFAULT = new CaveStyle("default");
+
+	private final String name;
 
 	// block properties
 	private BlockStateHolder<?> airBlock = Util.requireDefaultState(BlockTypes.AIR);
@@ -53,6 +55,10 @@ public class CaveStyle {
 			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
 	);
 
+	public CaveStyle(String name) {
+		this.name = name;
+	}
+
 	public void serialize(ConfigurationSection map) {
 		map.set("airBlock", airBlock.getAsString());
 		map.set("baseBlock", baseBlock.getAsString());
@@ -76,8 +82,8 @@ public class CaveStyle {
 		}
 	}
 
-	public static CaveStyle deserialize(ConfigurationSection map) {
-		CaveStyle style = new CaveStyle();
+	public static CaveStyle deserialize(String name, ConfigurationSection map) {
+		CaveStyle style = new CaveStyle(name);
 		String airBlock = map.getString("airBlock");
 		if (airBlock != null) {
 			style.airBlock = ConfigUtil.parseBlock(airBlock);
@@ -132,6 +138,10 @@ public class CaveStyle {
 			}
 		}
 		return style;
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public BlockStateHolder<?> getAirBlock() {

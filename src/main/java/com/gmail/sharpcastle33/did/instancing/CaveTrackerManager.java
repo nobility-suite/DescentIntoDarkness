@@ -147,11 +147,21 @@ public class CaveTrackerManager {
 	}
 
 	@Nullable
+	public CaveTracker getCaveById(int id) {
+		for (CaveTracker cave : caveTrackers) {
+			if (cave.getId() == id) {
+				return cave;
+			}
+		}
+		return null;
+	}
+
+	@Nullable
 	public CaveTracker getCave(Player p) {
-		for(CaveTracker i : caveTrackers) {
-			List<UUID> members = i.getPlayers();
+		for(CaveTracker cave : caveTrackers) {
+			List<UUID> members = cave.getPlayers();
 			if(members.contains(p.getUniqueId())) {
-				return i;
+				return cave;
 			}
 		}
 		return null;
@@ -180,6 +190,12 @@ public class CaveTrackerManager {
 	private World createFlatWorld(int id, CaveStyle style, World.Environment environment) {
 		MVWorldManager worldManager = DescentIntoDarkness.multiverseCore.getMVWorldManager();
 		String worldName = getWorldName(id);
+
+		// Sometimes worlds can linger after a server crash
+		if (worldManager.isMVWorld(worldName)) {
+			worldManager.deleteWorld(worldName);
+		}
+
 		String generator = "DescentIntoDarkness:full_" + style.getBaseBlock().getAsString();
 		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
 			return null;
