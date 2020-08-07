@@ -7,7 +7,6 @@ import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
-import com.google.common.collect.Iterators;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -29,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Random;
@@ -47,9 +45,6 @@ public class CommandListener implements TabExecutor {
 		Player p = (Player) sender;
 
 		switch (args[0]) {
-			case "create":
-				create(p, args);
-				break;
 			case "delete":
 				delete(p, args);
 				break;
@@ -72,30 +67,6 @@ public class CommandListener implements TabExecutor {
 		}
 
 		return true;
-	}
-
-	private void create(Player p, String[] args) {
-		NavigableMap<String, CaveStyle> caveStyles = DescentIntoDarkness.plugin.getCaveStyles();
-		CaveStyle style = args.length < 2 ? Iterators.get(caveStyles.values().iterator(), new Random().nextInt(caveStyles.size())) : caveStyles.get(args[1]);
-		if (style == null) {
-			p.sendMessage(ChatColor.DARK_RED + "No such cave style " + args[1]);
-			return;
-		}
-		p.sendMessage(ChatColor.DARK_RED + "Creating instance...");
-		DescentIntoDarkness.plugin.getCaveTrackerManager().createCave(style).whenComplete((instance, throwable) -> {
-			if (throwable != null) {
-				Bukkit.getLogger().log(Level.SEVERE, "Failed to create instance", throwable);
-				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed to create instance"));
-			} else {
-				DescentIntoDarkness.plugin.runSyncLater(() -> {
-					if (!DescentIntoDarkness.plugin.getCaveTrackerManager().teleportPlayerTo(p, instance)) {
-						p.sendMessage(ChatColor.DARK_RED + "Failed to teleport you to the cave");
-					} else {
-						p.sendMessage(ChatColor.GREEN + "Done!");
-					}
-				});
-			}
-		});
 	}
 
 	private void delete(Player p, String[] args) {
@@ -257,14 +228,9 @@ public class CommandListener implements TabExecutor {
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {
-			return StringUtil.copyPartialMatches(args[0], Arrays.asList("create", "delete", "generate", "join", "leave", "list", "reload"), new ArrayList<>());
+			return StringUtil.copyPartialMatches(args[0], Arrays.asList("delete", "generate", "join", "leave", "list", "reload"), new ArrayList<>());
 		} else {
 			switch (args[0]) {
-				case "create":
-					if (args.length == 2) {
-						return StringUtil.copyPartialMatches(args[1], DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
-					}
-					break;
 				case "generate":
 					if (args.length == 2) {
 						return StringUtil.copyPartialMatches(args[1], Arrays.asList("cave", "blank"), new ArrayList<>());

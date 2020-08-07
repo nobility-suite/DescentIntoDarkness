@@ -21,6 +21,8 @@ import org.bukkit.scoreboard.Team;
 public class CaveTracker {
 
 	private final int id;
+	private boolean hasBeenJoined;
+	private long joinTime;
 	private final World world;
 	private final Location start;
 	private final CaveStyle style;
@@ -47,6 +49,14 @@ public class CaveTracker {
 		return id;
 	}
 
+	public boolean hasBeenJoined() {
+		return hasBeenJoined;
+	}
+
+	public long getJoinTime() {
+		return joinTime;
+	}
+
 	public World getWorld() {
 		return world;
 	}
@@ -64,6 +74,10 @@ public class CaveTracker {
 	}
 
 	public void addPlayer(UUID player) {
+		if (!hasBeenJoined) {
+			hasBeenJoined = true;
+			joinTime = world.getFullTime();
+		}
 		this.players.add(player);
 		for (MobSpawnEntry spawnEntry : style.getSpawnEntries()) {
 			team.addEntry(getPollutionScore(player, spawnEntry).getEntry());

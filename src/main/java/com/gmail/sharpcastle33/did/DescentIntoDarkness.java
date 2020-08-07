@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -57,9 +58,10 @@ public class DescentIntoDarkness extends JavaPlugin {
 	private Scoreboard scoreboard;
 
 	private FileConfiguration config = getConfig();
+	private LinkedHashMap<String, Integer> caveStyleWeights = null;
 	private FileConfiguration caveStylesConfig;
 	private NavigableMap<String, CaveStyle> caveStyles = null;
-	private Map<String, Clipboard> schematics = new HashMap<>();
+	private final Map<String, Clipboard> schematics = new HashMap<>();
 
 	public static DescentIntoDarkness plugin;
 	public static Core multiverseCore;
@@ -111,12 +113,17 @@ public class DescentIntoDarkness extends JavaPlugin {
 		if (caveTrackerManager != null) {
 			caveTrackerManager.destroy();
 		}
-		caveTrackerManager = new CaveTrackerManager();
+		int instanceLimit = config.getInt("instanceLimit", 32);
+		if (instanceLimit <= 0) {
+			instanceLimit = 32;
+		}
+		caveTrackerManager = new CaveTrackerManager(instanceLimit);
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
 		mobSpawnManager = new MobSpawnManager();
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
 		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, caveTrackerManager::update, 0, 20);
 	}
 
 	@Override
@@ -134,7 +141,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 	}
 
 	private void setupConfig() {
-		//config.addDefault("caveStyles", Lists.newArrayList("default"));
+		config.addDefault("instanceLimit", 32);
+		config.addDefault("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
+		config.createSection("caveStyles").set("default", 10);
 		config.options().copyDefaults(true);
 		saveConfig();
 
@@ -152,6 +161,16 @@ public class DescentIntoDarkness extends JavaPlugin {
 	public void reload() {
 		schematics.clear();
 		reloadConfig();
+		config = getConfig();
+
+		caveStyleWeights = new LinkedHashMap<>();
+		ConfigurationSection caveStylesSection = config.getConfigurationSection("caveStyles");
+		if (caveStylesSection != null) {
+			for (String style : caveStylesSection.getKeys(false)) {
+				caveStyleWeights.put(style, caveStylesSection.getInt(style, 10));
+			}
+		}
+
 		caveStylesConfig = reloadConfig("caveStyles");
 		caveStyles = null;
 		getCaveStyles(); // for error messages TODO: reload this lazily?
@@ -169,6 +188,14 @@ public class DescentIntoDarkness extends JavaPlugin {
 		} catch (IOException e) {
 			getLogger().log(Level.SEVERE, "Could not save " + configName + ".yml", e);
 		}
+	}
+
+	public int getCaveTimeLimit() {
+		return config.getInt("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
+	}
+
+	public LinkedHashMap<String, Integer> getCaveStyleWeights() {
+		return caveStyleWeights;
 	}
 
 	public NavigableMap<String, CaveStyle> getCaveStyles() {
