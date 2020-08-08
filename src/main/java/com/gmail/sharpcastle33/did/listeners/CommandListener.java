@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -101,11 +102,22 @@ public class CommandListener implements TabExecutor {
 	}
 
 	private void join(Player p, String[] args) {
-		if (args.length == 1) {
-			return;
+		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
+		CompletableFuture<CaveTracker> cave;
+
+		if (args.length > 1) {
+			OptionalInt caveId = parseInt(p, args[1]);
+			if (!caveId.isPresent()) return;
+
+			CaveTracker c = caveTrackerManager.getCaveById(caveId.getAsInt());
+			if (c == null) {
+				p.sendMessage(ChatColor.RED + "Cave " + caveId.getAsInt() + " not found");
+				return;
+			}
+			cave = CompletableFuture.completedFuture(c);
+		} else {
+			cave = caveTrackerManager.findFreeCave();
 		}
-		OptionalInt caveId = parseInt(p, args[1]);
-		if (!caveId.isPresent()) return;
 
 		Player target;
 		if (args.length > 2) {
@@ -118,18 +130,19 @@ public class CommandListener implements TabExecutor {
 			target = p;
 		}
 
-		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
-		CaveTracker cave = caveTrackerManager.getCaveById(caveId.getAsInt());
-		if (cave == null) {
-			p.sendMessage(ChatColor.RED + "Cave " + caveId.getAsInt() + " not found");
-			return;
-		}
-
-		if (caveTrackerManager.teleportPlayerTo(target, cave)) {
-			p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
-		} else {
-			p.sendMessage(ChatColor.RED + "Failed to teleport player");
-		}
+		cave.whenComplete((c, throwable) -> {
+			if (throwable != null) {
+				p.sendMessage(ChatColor.RED + "Could not find free cave");
+			} else {
+				DescentIntoDarkness.plugin.runSyncLater(() -> {
+					if (caveTrackerManager.teleportPlayerTo(target, c)) {
+						p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
+					} else {
+						p.sendMessage(ChatColor.RED + "Failed to teleport player");
+					}
+				});
+			}
+		});
 	}
 
 	private void leave(Player p, String[] args) {

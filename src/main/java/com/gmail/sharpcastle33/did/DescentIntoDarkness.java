@@ -275,6 +275,10 @@ public class DescentIntoDarkness extends JavaPlugin {
 	}
 
 	public <T> T supplySyncNow(Supplier<T> task) {
+		if (Bukkit.isPrimaryThread()) {
+			Bukkit.getLogger().log(Level.SEVERE, "Calling supplySyncNow from main thread, causing a deadlock!");
+			Thread.dumpStack();
+		}
 		try {
 			return supplySyncLater(task).get();
 		} catch (InterruptedException | ExecutionException e) {

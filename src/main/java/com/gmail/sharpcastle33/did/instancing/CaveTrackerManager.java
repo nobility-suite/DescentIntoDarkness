@@ -20,14 +20,9 @@ import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.onarandombox.MultiverseCore.api.MVDestination;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.enums.TeleportResult;
-import com.sk89q.worldedit.EditSession;
-import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
@@ -103,6 +98,7 @@ public class CaveTrackerManager {
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
 			}
 			generatingCave.set(false);
+			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
 		});
 	}
 
@@ -149,34 +145,44 @@ public class CaveTrackerManager {
 
 	public CompletableFuture<CaveTracker> createCave(CaveStyle style) {
 		int oldInstanceId = nextInstanceId;
-		do {
+		while (getCaveById(nextInstanceId) != null) {
 			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
 			if (nextInstanceId == oldInstanceId) {
 				return Util.completeExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
 			}
-		} while (getCaveById(nextInstanceId) != null);
+		}
 
 		int id = nextInstanceId;
+
+		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
+
 		String name = getWorldName(id);
-		return getOrCreateFlatWorld(id, style.getBaseBlock(), World.Environment.THE_END)
-			.thenApply(world -> {
-				Random rand = new Random();
-				try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
-					CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969), rand.nextInt(5) + 7);
-				} catch (WorldEditException e) {
-					DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
-					throw new RuntimeException("Could not generate cave", e);
-				}
-				Location spawnPoint = new Location(world, 6969, 210, 6969);
-				while (style.isTransparentBlock(BukkitAdapter.adapt(spawnPoint.getBlock().getBlockData()))) {
-					spawnPoint.add(0, -1, 0);
-				}
-				spawnPoint.add(0, 1, 0);
-				return DescentIntoDarkness.plugin.supplySyncNow(() -> {
-					CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
-					caveTrackers.add(caveTracker);
-					return caveTracker;
-				});
+
+		World world;
+		try {
+			world = getOrCreateFlatWorld(id, style.getBaseBlock(), World.Environment.THE_END).get();
+		} catch (InterruptedException | ExecutionException e) {
+			return Util.completeExceptionally(e);
+		}
+
+		return DescentIntoDarkness.plugin.supplyAsync(() -> {
+			Random rand = new Random();
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
+				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969), rand.nextInt(5) + 7);
+			} catch (WorldEditException e) {
+				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
+				throw new RuntimeException("Could not generate cave", e);
+			}
+			Location spawnPoint = new Location(world, 6969, 210, 6969);
+			while (style.isTransparentBlock(BukkitAdapter.adapt(spawnPoint.getBlock().getBlockData()))) {
+				spawnPoint.add(0, -1, 0);
+			}
+			spawnPoint.add(0, 1, 0);
+			return DescentIntoDarkness.plugin.supplySyncNow(() -> {
+				CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
+				caveTrackers.add(caveTracker);
+				return caveTracker;
+			});
 		});
 	}
 
@@ -309,18 +315,7 @@ public class CaveTrackerManager {
 		// Sometimes worlds can linger after a server crash
 		if (worldManager.isMVWorld(worldName)) {
 			World world = worldManager.getMVWorld(worldName).getCBWorld();
-			return DescentIntoDarkness.plugin.supplyAsync(() -> {
-				for (int x = -1024; x < 1024; x += 256) {
-					for (int z = -1024; z < 1024; z += 256) {
-						Bukkit.getLogger().log(Level.INFO, "Filling base area " + x + ", " + z);
-						try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(world), -1)) {
-							session.setBlocks((Region)new CuboidRegion(BlockVector3.at(x, 1, z), BlockVector3.at(x + 255, 254, z + 255)), baseBlock);
-						}
-					}
-				}
-
-				return world;
-			});
+			return CompletableFuture.completedFuture(world);
 		}
 
 		String generator = "DescentIntoDarkness:full_" + baseBlock.getAsString();
