@@ -143,7 +143,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 	private void setupConfig() {
 		config.addDefault("instanceLimit", 32);
 		config.addDefault("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
-		config.createSection("caveStyles").set("default", 10);
+		config.addDefault("caveStyles.default", 10);
 		config.options().copyDefaults(true);
 		saveConfig();
 

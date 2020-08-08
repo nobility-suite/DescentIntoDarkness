@@ -54,6 +54,7 @@ public class CaveStyle {
 			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
 			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
 	);
+	private final List<Structure> portals = Lists.newArrayList();
 
 	public CaveStyle(String name) {
 		this.name = name;
@@ -79,6 +80,10 @@ public class CaveStyle {
 		ConfigurationSection structuresSection = map.createSection("structures");
 		for (Structure structure : structures) {
 			structure.serialize(structuresSection.createSection(structure.getName()));
+		}
+		ConfigurationSection portalsSection = map.createSection("portals");
+		for (Structure portal : portals) {
+			portal.serialize(portalsSection.createSection(portal.getName()));
 		}
 	}
 
@@ -137,6 +142,16 @@ public class CaveStyle {
 				}
 			}
 		}
+		ConfigurationSection portalsSection = map.getConfigurationSection("portals");
+		if (portalsSection != null) {
+			style.portals.clear();
+			for (String key : portalsSection.getKeys(false)) {
+				ConfigurationSection portalSection = portalsSection.getConfigurationSection(key);
+				if (portalSection != null) {
+					style.portals.add(Structure.deserialize(key, portalSection));
+				}
+			}
+		}
 		return style;
 	}
 
@@ -190,5 +205,9 @@ public class CaveStyle {
 
 	public List<Structure> getStructures() {
 		return structures;
+	}
+
+	public List<Structure> getPortals() {
+		return portals;
 	}
 }
