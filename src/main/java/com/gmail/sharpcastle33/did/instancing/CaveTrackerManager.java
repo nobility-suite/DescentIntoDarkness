@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
@@ -21,6 +23,8 @@ import com.onarandombox.MultiverseCore.enums.TeleportResult;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
@@ -36,18 +40,131 @@ import org.jetbrains.annotations.Nullable;
 
 public class CaveTrackerManager {
 
+	private boolean hasInitialized = false;
+	private final int instanceLimit;
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
 	private final Map<UUID, Location> overworldPlayerLocations = new HashMap<>();
 	private int nextInstanceId;
 	private Objective pollutionObjective;
+	private final AtomicBoolean generatingCave = new AtomicBoolean(false);
+
+	public CaveTrackerManager(int instanceLimit) {
+		this.instanceLimit = instanceLimit;
+	}
+
+	public void initialize() {
+		Bukkit.getLogger().log(Level.INFO, "Creating " + instanceLimit + " cave worlds...");
+		for (int i = 0; i < instanceLimit; i++) {
+			if (!DescentIntoDarkness.multiverseCore.getMVWorldManager().isMVWorld(getWorldName(i))) {
+				Bukkit.getLogger().log(Level.INFO, "Cave world " + (i + 1) + " / " + instanceLimit);
+				try {
+					getOrCreateFlatWorld(i, Util.requireDefaultState(BlockTypes.STONE), World.Environment.THE_END).get();
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	public void update() {
+		if (!hasInitialized) {
+			initialize();
+			hasInitialized = true;
+		}
+
+		if (!generatingCave.compareAndSet(false, true)) {
+			return;
+		}
+		for (CaveTracker cave : caveTrackers) {
+			if (cave.hasBeenJoined()) {
+				long aliveTime = cave.getWorld().getFullTime() - cave.getJoinTime();
+				if (aliveTime > DescentIntoDarkness.plugin.getCaveTimeLimit()) {
+					deleteCave(cave);
+					break;
+				}
+			}
+		}
+		if (caveTrackers.size() >= instanceLimit) {
+			generatingCave.set(false);
+			return;
+		}
+		CaveStyle style = getRandomStyle();
+		if (style == null) {
+			generatingCave.set(false);
+			return;
+		}
+		createCave(style).whenComplete((cave, throwable) -> {
+			if (throwable != null) {
+				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
+			}
+			generatingCave.set(false);
+			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
+		});
+	}
+
+	private CaveStyle getRandomStyle() {
+		if (DescentIntoDarkness.plugin.getCaveStyleWeights().isEmpty()) {
+			return null;
+		}
+
+		int totalWeight = DescentIntoDarkness.plugin.getCaveStyleWeights().values().stream().mapToInt(Integer::intValue).sum();
+		int randVal = new Random().nextInt(totalWeight);
+		String chosenStyle = null;
+		for (Map.Entry<String, Integer> entry : DescentIntoDarkness.plugin.getCaveStyleWeights().entrySet()) {
+			randVal -= entry.getValue();
+			if (randVal < 0) {
+				chosenStyle = entry.getKey();
+			}
+		}
+
+		CaveStyle caveStyle = DescentIntoDarkness.plugin.getCaveStyles().get(chosenStyle);
+		if (caveStyle == null) {
+			Bukkit.getLogger().log(Level.SEVERE, "No such cave style: " + chosenStyle);
+			DescentIntoDarkness.plugin.getCaveStyleWeights().remove(chosenStyle);
+			return getRandomStyle();
+		}
+		return caveStyle;
+	}
+
+	public CompletableFuture<CaveTracker> findFreeCave() {
+		int caveId = nextInstanceId;
+		do {
+			CaveTracker cave = getCaveById(caveId);
+			if (cave != null && !cave.hasBeenJoined()) {
+				return CompletableFuture.completedFuture(cave);
+			}
+			caveId = (caveId + 1) % instanceLimit;
+		} while (caveId != nextInstanceId);
+
+		CaveStyle randomStyle = getRandomStyle();
+		if (randomStyle == null) {
+			return Util.completeExceptionally(new RuntimeException("No cave styles to choose from"));
+		}
+		return createCave(randomStyle);
+	}
 
 	public CompletableFuture<CaveTracker> createCave(CaveStyle style) {
-		int id = nextInstanceId++;
-		String name = getWorldName(id);
-		World world = createFlatWorld(id, style, World.Environment.THE_END);
-		if (world == null) {
-			return Util.completeExceptionally(new RuntimeException("Could not create world"));
+		int oldInstanceId = nextInstanceId;
+		while (getCaveById(nextInstanceId) != null) {
+			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
+			if (nextInstanceId == oldInstanceId) {
+				return Util.completeExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
+			}
 		}
+
+		int id = nextInstanceId;
+
+		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
+
+		String name = getWorldName(id);
+
+		World world;
+		try {
+			world = getOrCreateFlatWorld(id, style.getBaseBlock(), World.Environment.THE_END).get();
+		} catch (InterruptedException | ExecutionException e) {
+			return Util.completeExceptionally(e);
+		}
+
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			Random rand = new Random();
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
@@ -70,6 +187,8 @@ public class CaveTrackerManager {
 	}
 
 	public void deleteCave(CaveTracker caveTracker) {
+		Bukkit.getLogger().log(Level.INFO, "Deleting cave " + caveTracker.getId());
+
 		List<UUID> members = caveTracker.getPlayers();
 		for (int i = members.size() - 1; i >= 0; i--) {
 			UUID player = members.get(i);
@@ -96,7 +215,6 @@ public class CaveTrackerManager {
 
 		caveTracker.getTeam().unregister();
 		caveTrackers.remove(caveTracker);
-		DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(getWorldName(caveTracker.getId()));
 	}
 
 	public void destroy() {
@@ -120,6 +238,9 @@ public class CaveTrackerManager {
 			overworldPlayerLocations.put(p.getUniqueId(), p.getLocation());
 		} else {
 			existingCave.removePlayer(p.getUniqueId());
+			if (existingCave.getPlayers().isEmpty()) {
+				deleteCave(existingCave);
+			}
 		}
 
 		if (newCave == null) {
@@ -147,11 +268,21 @@ public class CaveTrackerManager {
 	}
 
 	@Nullable
+	public CaveTracker getCaveById(int id) {
+		for (CaveTracker cave : caveTrackers) {
+			if (cave.getId() == id) {
+				return cave;
+			}
+		}
+		return null;
+	}
+
+	@Nullable
 	public CaveTracker getCave(Player p) {
-		for(CaveTracker i : caveTrackers) {
-			List<UUID> members = i.getPlayers();
+		for(CaveTracker cave : caveTrackers) {
+			List<UUID> members = cave.getPlayers();
 			if(members.contains(p.getUniqueId())) {
-				return i;
+				return cave;
 			}
 		}
 		return null;
@@ -177,12 +308,19 @@ public class CaveTrackerManager {
 		return "did_cave_" + id;
 	}
 
-	private World createFlatWorld(int id, CaveStyle style, World.Environment environment) {
+	private CompletableFuture<World> getOrCreateFlatWorld(int id, BlockStateHolder<?> baseBlock, World.Environment environment) {
 		MVWorldManager worldManager = DescentIntoDarkness.multiverseCore.getMVWorldManager();
 		String worldName = getWorldName(id);
-		String generator = "DescentIntoDarkness:full_" + style.getBaseBlock().getAsString();
+
+		// Sometimes worlds can linger after a server crash
+		if (worldManager.isMVWorld(worldName)) {
+			World world = worldManager.getMVWorld(worldName).getCBWorld();
+			return CompletableFuture.completedFuture(world);
+		}
+
+		String generator = "DescentIntoDarkness:full_" + baseBlock.getAsString();
 		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
-			return null;
+			return Util.completeExceptionally(new RuntimeException("Could not create world"));
 		}
 		World world = worldManager.getMVWorld(worldName).getCBWorld();
 		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
@@ -190,7 +328,7 @@ public class CaveTrackerManager {
 		// this is not what players are coming here to do...
 		world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove);
 
-		return world;
+		return CompletableFuture.completedFuture(world);
 	}
 
 }

@@ -35,6 +35,10 @@ public class PostProcessor {
 		for (Structure structure : ctx.style.getStructures()) {
 			generateStructure(ctx, centroids, 100, structure);
 		}
+
+		if (!centroids.isEmpty()) {
+			generatePortal(ctx, centroids.get(0).pos.toBlockPoint(), 100);
+		}
 	}
 
 	public static void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
@@ -98,6 +102,20 @@ public class PostProcessor {
 					structure.place(ctx, pos, dir);
 				}
 			}
+		}
+	}
+
+	private static void generatePortal(CaveGenContext ctx, BlockVector3 firstCentroid, int caveRadius) {
+		if (ctx.style.getPortals().isEmpty()) {
+			return;
+		}
+		Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
+		if (ctx.rand.nextDouble() >= portal.getChance()) {
+			return;
+		}
+		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid, caveRadius);
+		if (portal.canPlaceOn(ctx, ctx.getBlock(pos))) {
+			portal.place(ctx, pos, Direction.DOWN);
 		}
 	}
 

@@ -11,7 +11,6 @@ import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
-import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -22,6 +21,8 @@ import org.bukkit.scoreboard.Team;
 public class CaveTracker {
 
 	private final int id;
+	private boolean hasBeenJoined;
+	private long joinTime;
 	private final World world;
 	private final Location start;
 	private final CaveStyle style;
@@ -36,11 +37,24 @@ public class CaveTracker {
 		this.world = world;
 		this.start = start;
 		this.style = style;
-		this.team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
+
+		Team team = DescentIntoDarkness.plugin.getScoreboard().getTeam("cave_" + id);
+		if (team == null) {
+			team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
+		}
+		this.team = team;
 	}
 
 	public int getId() {
 		return id;
+	}
+
+	public boolean hasBeenJoined() {
+		return hasBeenJoined;
+	}
+
+	public long getJoinTime() {
+		return joinTime;
 	}
 
 	public World getWorld() {
@@ -60,6 +74,10 @@ public class CaveTracker {
 	}
 
 	public void addPlayer(UUID player) {
+		if (!hasBeenJoined) {
+			hasBeenJoined = true;
+			joinTime = world.getFullTime();
+		}
 		this.players.add(player);
 		for (MobSpawnEntry spawnEntry : style.getSpawnEntries()) {
 			team.addEntry(getPollutionScore(player, spawnEntry).getEntry());
