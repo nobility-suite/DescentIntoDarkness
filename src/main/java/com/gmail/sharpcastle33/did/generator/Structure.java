@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiFunction;
 
 public abstract class Structure {
 	private final String name;
@@ -335,28 +336,94 @@ public abstract class Structure {
 		}
 	}
 
+	public static class GlowstoneStructure extends Structure {
+		private final int density;
+		private final int spreadX;
+		private final int height;
+		private final int spreadZ;
+		private final BlockStateHolder<?> block;
+
+		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
+			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace);
+			this.density = density;
+			this.spreadX = spreadX;
+			this.height = height;
+			this.spreadZ = spreadZ;
+			this.block = block;
+		}
+
+		public GlowstoneStructure(String name, ConfigurationSection map) {
+			super(name, Type.GLOWSTONE, map);
+			this.density = map.getInt("density", 1500);
+			this.spreadX = map.getInt("spreadX", 8);
+			this.height = map.getInt("height", 12);
+			this.spreadZ = map.getInt("spreadZ", 8);
+			if (spreadX <= 0 || height <= 0 || spreadZ <= 0) {
+				throw new InvalidConfigException("spreadX, height and spreadZ must be positive");
+			}
+			String blockVal = map.getString("block");
+			if (blockVal == null) {
+				this.block = Util.requireDefaultState(BlockTypes.GLOWSTONE);
+			} else {
+				this.block = ConfigUtil.parseBlock(blockVal);
+			}
+		}
+
+		@Override
+		protected void serialize0(ConfigurationSection map) {
+			map.set("density", density);
+			map.set("spreadX", spreadX);
+			map.set("height", height);
+			map.set("spreadZ", spreadZ);
+			map.set("block", block.getAsString());
+		}
+
+		@Override
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+			Direction xAxis = side.isUpright() ? Direction.EAST : side.getRight();
+			Direction zAxis = Direction.findClosest(side.toVector().cross(xAxis.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert zAxis != null;
+
+			ctx.setBlock(pos, block);
+			for (int i = 0; i < density; i++) {
+				BlockVector3 offsetPos = pos.add(
+						xAxis.toBlockVector().multiply(ctx.rand.nextInt(spreadX) - ctx.rand.nextInt(spreadX)),
+						side.toBlockVector().multiply(-ctx.rand.nextInt(height)),
+						zAxis.toBlockVector().multiply(ctx.rand.nextInt(spreadZ) - ctx.rand.nextInt(spreadZ))
+				);
+
+				int neighboringGlowstone = 0;
+				for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {
+					if (block.equalsFuzzy(ctx.getBlock(offsetPos.add(dir.toBlockVector())))) {
+						neighboringGlowstone++;
+						if (neighboringGlowstone > 1) {
+							break;
+						}
+					}
+				}
+
+				if (neighboringGlowstone == 1 && canReplace(ctx, ctx.getBlock(offsetPos))) {
+					ctx.setBlock(offsetPos, block);
+				}
+			}
+		}
+	}
+
 	public enum Type {
-		SCHEMATIC {
-			@Override
-			public Structure deserialize(String name, ConfigurationSection map) {
-				return new SchematicStructure(name, map);
-			}
-		},
-		VEIN {
-			@Override
-			public Structure deserialize(String name, ConfigurationSection map) {
-				return new VeinStructure(name, map);
-			}
-		},
-		PATCH {
-			@Override
-			public Structure deserialize(String name, ConfigurationSection map) {
-				return new PatchStructure(name, map);
-			}
-		},
+		SCHEMATIC(SchematicStructure::new),
+		VEIN(VeinStructure::new),
+		PATCH(PatchStructure::new),
+		GLOWSTONE(GlowstoneStructure::new),
 		;
 
-		public abstract Structure deserialize(String name, ConfigurationSection map);
+		private final BiFunction<String, ConfigurationSection, Structure> deserializer;
+		Type(BiFunction<String, ConfigurationSection, Structure> deserializer) {
+			this.deserializer = deserializer;
+		}
+
+		public Structure deserialize(String name, ConfigurationSection map) {
+			return deserializer.apply(name, map);
+		}
 	}
 
 	public enum Edge {
