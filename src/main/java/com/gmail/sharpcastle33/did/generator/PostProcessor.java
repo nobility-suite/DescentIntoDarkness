@@ -209,6 +209,56 @@ public class PostProcessor {
 
 	}
 
+	public static void floorLayer(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+
+		for(int tx=-r; tx< r+1; tx++){
+			for(int ty=-r; ty< -2; ty++){
+				for(int tz=-r; tz< r+1; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+							continue;
+						}
+						if(ty+y > 0) {
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isFloor(ctx, pos))
+								ctx.setBlock(pos.add(0, 1, 0), m);
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	public static void ceilingLayer(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+
+		for(int tx=-r; tx< r+1; tx++){
+			for(int ty=r; ty >2; ty--){
+				for(int tz=-r; tz< r+1; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+							continue;
+						}
+						if(ty+y > 0) {
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isRoof(ctx, pos))
+								ctx.setBlock(pos.add(0, -1, 0), m);
+						}
+					}
+				}
+			}
+		}
+
+	}
+
 	public static void chanceReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();

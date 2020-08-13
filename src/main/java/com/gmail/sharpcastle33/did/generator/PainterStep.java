@@ -97,6 +97,20 @@ public abstract class PainterStep {
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
 					return new ReplaceFloor(tags, old, _new);
 				}
+				case FLOOR_LAYER: {
+					if (args.length < 2) {
+						throw new InvalidConfigException(line);
+					}
+					BlockStateHolder<?> block = ConfigUtil.parseBlock(args[1]);
+					return new FloorLayer(tags, block);
+				}
+				case CEILING_LAYER: {
+					if (args.length < 2) {
+						throw new InvalidConfigException(line);
+					}
+					BlockStateHolder<?> block = ConfigUtil.parseBlock(args[1]);
+					return new CeilingLayer(tags, block);
+				}
 				default: {
 					throw new InvalidConfigException(line);
 				}
@@ -194,11 +208,51 @@ public abstract class PainterStep {
 		}
 	}
 
+	public static class CeilingLayer extends PainterStep {
+		private final BlockStateHolder<?> block;
+
+		public CeilingLayer(List<String> tags, BlockStateHolder<?> block) {
+			super(Type.CEILING_LAYER, tags);
+			this.block = block;
+		}
+
+		@Override
+		public Object serialize() {
+			return getSerializationPrefix() + " " + block.getAsString();
+		}
+
+		@Override
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			PostProcessor.ceilingLayer(ctx, loc, r, block);
+		}
+	}
+
+	public static class FloorLayer extends PainterStep {
+		private final BlockStateHolder<?> block;
+
+		public FloorLayer(List<String> tags, BlockStateHolder<?> block) {
+			super(Type.FLOOR_LAYER, tags);
+			this.block = block;
+		}
+
+		@Override
+		public Object serialize() {
+			return getSerializationPrefix() + " " + block.getAsString();
+		}
+
+		@Override
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			PostProcessor.floorLayer(ctx, loc, r, block);
+		}
+	}
+
 	public enum Type {
 		CHANCE_REPLACE("chance_replace"),
 		RADIUS_REPLACE("radius_replace"),
 		REPLACE_CEILING("replace_ceiling"),
 		REPLACE_FLOOR("replace_floor"),
+		CEILING_LAYER("ceiling_layer"),
+		FLOOR_LAYER("floor_layer"),
 		;
 		private final String name;
 		Type(String name) {
