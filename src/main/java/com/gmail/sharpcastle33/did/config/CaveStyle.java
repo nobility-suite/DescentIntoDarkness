@@ -48,21 +48,21 @@ public class CaveStyle {
 	private int sprintingPenalty = 5;
 
 	// cave generation
-	private int minLength;
-	private int maxLength;
-	private int minSize;
-	private int maxSize;
+	private int minLength = 90;
+	private int maxLength = 90;
+	private int minSize = 7;
+	private int maxSize = 11;
 	private final List<Room> rooms = Lists.newArrayList(
-			new Room.SimpleRoom('w', new ArrayList<>()),
-			new Room.TurnRoom('a', new ArrayList<>(), 15, 30),
-			new Room.TurnRoom('d', new ArrayList<>(), -30, -15),
-			new Room.BranchRoom('x', new ArrayList<>(), 90, 90, 1, 1, 20, 39),
-			new Room.BranchRoom('y', new ArrayList<>(), 45, 180, 2, 6, 20, 39),
-			new Room.DropshaftRoom('o', new ArrayList<>(), 8, 11, 2, 3),
-			new Room.CavernRoom('l', new ArrayList<>(), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2),
-			new Room.CavernRoom('r', new ArrayList<>(), 4, 7, 4, Integer.MAX_VALUE, 0, 1, 3),
-			new Room.ShelfRoom('h', new ArrayList<>(), 6, 10, 3, 3),
-			new Room.CavernRoom('c', new ArrayList<>(), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2) // TODO: chasm
+			new Room.SimpleRoom('w', Lists.newArrayList("forward")),
+			new Room.TurnRoom('a', Lists.newArrayList("turn_left"), 15, 30),
+			new Room.TurnRoom('d', Lists.newArrayList("turn_right"), -30, -15),
+			new Room.BranchRoom('x', Lists.newArrayList("branch"), 90, 90, 1, 1, 20, 39),
+			new Room.BranchRoom('y', Lists.newArrayList("small_branch"), 45, 180, 2, 6, 20, 39),
+			new Room.DropshaftRoom('o', Lists.newArrayList("dropshaft"), 8, 11, 2, 3),
+			new Room.CavernRoom('l', Lists.newArrayList("large_cavern"), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2),
+			new Room.CavernRoom('r', Lists.newArrayList("cavern"), 4, 7, 4, Integer.MAX_VALUE, 0, 1, 3),
+			new Room.ShelfRoom('h', Lists.newArrayList("shelf"), 6, 10, 3, 3),
+			new Room.CavernRoom('c', Lists.newArrayList("ravine"), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2) // TODO: chasm
 	);
 	private GrammarGraph grammar;
 	{
@@ -116,15 +116,15 @@ public class CaveStyle {
 		grammar.validate(rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
 	}
 	private final List<PainterStep> painterSteps = Lists.newArrayList(
-			new PainterStep.ReplaceFloor(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
-			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
-			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
-			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
+			new PainterStep.ReplaceFloor(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
+			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
+			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
+			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
 	);
 	private final List<Structure> structures = Lists.newArrayList(
-			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
-			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
-			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
+			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
+			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
+			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
 	);
 	private final List<Structure> portals = Lists.newArrayList();
 

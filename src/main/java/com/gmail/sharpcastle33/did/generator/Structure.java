@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public abstract class Structure {
 	private final String name;
@@ -32,6 +33,7 @@ public abstract class Structure {
 	protected final List<BlockStateHolder<?>> canPlaceOn;
 	protected final List<BlockStateHolder<?>> canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
+	private final List<String> tags;
 
 	protected Structure(String name, Type type, ConfigurationSection map) {
 		this.name = name;
@@ -40,16 +42,18 @@ public abstract class Structure {
 		this.chance = map.getDouble("chance", 1);
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
+		this.tags = ConfigUtil.deserializeSingleableList(map.get("tags"), Function.identity(), ArrayList::new);
 		computeValidDirections();
 	}
 
-	protected Structure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace) {
+	protected Structure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags) {
 		this.name = name;
 		this.type = type;
 		this.edges = edges;
 		this.chance = chance;
 		this.canPlaceOn = canPlaceOn;
 		this.canReplace = canReplace;
+		this.tags = tags;
 		computeValidDirections();
 	}
 
@@ -86,6 +90,10 @@ public abstract class Structure {
 		}
 	}
 
+	public List<String> getTags() {
+		return tags;
+	}
+
 	public void serialize(ConfigurationSection map) {
 		map.set("type", ConfigUtil.enumToString(type));
 		map.set("edges", ConfigUtil.serializeSingleableList(edges, ConfigUtil::enumToString));
@@ -95,6 +103,9 @@ public abstract class Structure {
 		}
 		if (canReplace != null) {
 			map.set("canReplace", ConfigUtil.serializeSingleableList(canReplace, BlockStateHolder::getAsString));
+		}
+		if (!tags.isEmpty()) {
+			map.set("tags", ConfigUtil.serializeSingleableList(tags, Function.identity()));
 		}
 		serialize0(map);
 	}
@@ -152,8 +163,8 @@ public abstract class Structure {
 			}
 		}
 
-		public SchematicStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<Schematic> schematics, Direction originSide) {
-			super(name, Type.SCHEMATIC, edges, chance, canPlaceOn, canReplace);
+		public SchematicStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, List<Schematic> schematics, Direction originSide) {
+			super(name, Type.SCHEMATIC, edges, chance, canPlaceOn, canReplace, tags);
 			this.schematics = schematics;
 			this.originSide = originSide;
 		}
@@ -256,8 +267,8 @@ public abstract class Structure {
 			this.radius = map.getInt("radius", 4);
 		}
 
-		public VeinStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, BlockStateHolder<?> ore, int radius) {
-			super(name, Type.VEIN, edges, chance, canPlaceOn, canReplace);
+		public VeinStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, BlockStateHolder<?> ore, int radius) {
+			super(name, Type.VEIN, edges, chance, canPlaceOn, canReplace, tags);
 			this.ore = ore;
 			this.radius = radius;
 		}
@@ -293,8 +304,8 @@ public abstract class Structure {
 			this.tries = map.getInt("tries", 64);
 		}
 
-		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
-			super(name, type, edges, chance, canPlaceOn, canReplace);
+		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
+			super(name, type, edges, chance, canPlaceOn, canReplace, tags);
 			this.block = block;
 			this.spreadX = spreadX;
 			this.spreadY = spreadY;
@@ -343,8 +354,8 @@ public abstract class Structure {
 		private final int spreadZ;
 		private final BlockStateHolder<?> block;
 
-		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
-			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace);
+		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
+			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace, tags);
 			this.density = density;
 			this.spreadX = spreadX;
 			this.height = height;

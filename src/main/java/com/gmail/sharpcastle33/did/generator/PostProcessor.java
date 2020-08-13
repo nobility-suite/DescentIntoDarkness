@@ -26,7 +26,9 @@ public class PostProcessor {
 
 		for(Centroid centroid : centroids) {
 			for (PainterStep painterStep : ctx.style.getPainterSteps()) {
-				painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+2);
+				if (painterStep.getTags().isEmpty() || painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
+					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+2);
+				}
 			}
 		}
 
@@ -87,19 +89,21 @@ public class PostProcessor {
 
 
 	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, int caveRadius, Structure structure) throws WorldEditException {
-		for(Centroid centroid : centroids) {
-			if(ctx.rand.nextDouble() < structure.getChance()) {
-				Direction dir = structure.getRandomDirection(ctx.rand);
-				BlockVector3 pos;
-				if (dir == Direction.DOWN) {
-					pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), caveRadius);
-				} else if (dir == Direction.UP) {
-					pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), caveRadius);
-				} else {
-					pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), caveRadius, dir.toBlockVector());
-				}
-				if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-					structure.place(ctx, pos, dir);
+		for (Centroid centroid : centroids) {
+			if (ctx.rand.nextDouble() < structure.getChance()) {
+				if (structure.getTags().isEmpty() || structure.getTags().stream().anyMatch(centroid.tags::contains)) {
+					Direction dir = structure.getRandomDirection(ctx.rand);
+					BlockVector3 pos;
+					if (dir == Direction.DOWN) {
+						pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), caveRadius);
+					} else if (dir == Direction.UP) {
+						pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), caveRadius);
+					} else {
+						pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), caveRadius, dir.toBlockVector());
+					}
+					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
+						structure.place(ctx, pos, dir);
+					}
 				}
 			}
 		}

@@ -6,33 +6,61 @@ import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class PainterStep {
 	private final Type type;
+	private final List<String> tags;
 
-	public PainterStep(Type type) {
+	public PainterStep(Type type, List<String> tags) {
 		this.type = type;
+		this.tags = tags;
 	}
 
 	public final Type getType() {
 		return type;
 	}
 
+	public final List<String> getTags() {
+		return tags;
+	}
+
 	public abstract Object serialize();
+
+	protected final String getSerializationPrefix() {
+		String prefix = "";
+		if (!tags.isEmpty()) {
+			prefix = "<" + String.join(" ", tags) + "> ";
+		}
+		return prefix + type.getName();
+	}
 
 	public static PainterStep deserialize(Object value) {
 		if (value instanceof String) {
-			String[] args = ((String) value).split("\\s+");
+			String line = (String) value;
+			line = line.trim();
+			List<String> tags = new ArrayList<>();
+			if (line.startsWith("<")) {
+				int closeIndex = line.indexOf('>');
+				if (closeIndex >= 0) {
+					Collections.addAll(tags, line.substring(1, closeIndex).split(" "));
+					line = line.substring(closeIndex + 1).trim();
+				}
+			}
+
+			String[] args = line.split("\\s+");
 			Type type = Type.byName(args[0]);
 			if (type == null) {
-				throw new InvalidConfigException((String) value);
+				throw new InvalidConfigException(line);
 			}
 			switch (type) {
 				case CHANCE_REPLACE: {
 					if (args.length < 4) {
-						throw new InvalidConfigException((String) value);
+						throw new InvalidConfigException(line);
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
@@ -42,35 +70,35 @@ public abstract class PainterStep {
 					} else if (chance > 1) {
 						chance = 1;
 					}
-					return new ChanceReplace(old, _new, chance);
+					return new ChanceReplace(tags, old, _new, chance);
 
 				}
 				case RADIUS_REPLACE: {
 					if (args.length < 3) {
-						throw new InvalidConfigException((String) value);
+						throw new InvalidConfigException(line);
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new RadiusReplace(old, _new);
+					return new RadiusReplace(tags, old, _new);
 				}
 				case REPLACE_CEILING: {
 					if (args.length < 3) {
-						throw new InvalidConfigException((String) value);
+						throw new InvalidConfigException(line);
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceCeiling(old, _new);
+					return new ReplaceCeiling(tags, old, _new);
 				}
 				case REPLACE_FLOOR: {
 					if (args.length < 3) {
-						throw new InvalidConfigException((String) value);
+						throw new InvalidConfigException(line);
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceFloor(old, _new);
+					return new ReplaceFloor(tags, old, _new);
 				}
 				default: {
-					throw new InvalidConfigException((String) value);
+					throw new InvalidConfigException(line);
 				}
 			}
 		}
@@ -85,8 +113,8 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> _new;
 		private final double chance;
 
-		public ChanceReplace(BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
-			super(Type.CHANCE_REPLACE);
+		public ChanceReplace(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
+			super(Type.CHANCE_REPLACE, tags);
 			this.old = old;
 			this._new = _new;
 			this.chance = chance;
@@ -94,7 +122,7 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString() + " " + chance;
+			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString() + " " + chance;
 		}
 
 		@Override
@@ -107,15 +135,15 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public RadiusReplace(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.RADIUS_REPLACE);
+		public RadiusReplace(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.RADIUS_REPLACE, tags);
 			this.old = old;
 			this._new = _new;
 		}
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
+			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
@@ -128,15 +156,15 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public ReplaceCeiling(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.REPLACE_CEILING);
+		public ReplaceCeiling(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.REPLACE_CEILING, tags);
 			this.old = old;
 			this._new = _new;
 		}
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
+			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
@@ -149,15 +177,15 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public ReplaceFloor(BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.REPLACE_FLOOR);
+		public ReplaceFloor(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.REPLACE_FLOOR, tags);
 			this.old = old;
 			this._new = _new;
 		}
 
 		@Override
 		public Object serialize() {
-			return getType().getName() + " " + old.getAsString() + " " + _new.getAsString();
+			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
 		}
 
 		@Override
