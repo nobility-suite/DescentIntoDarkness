@@ -113,9 +113,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 		if (caveTrackerManager != null) {
 			caveTrackerManager.destroy();
 		}
-		int instanceLimit = config.getInt("instanceLimit", 32);
+		int instanceLimit = config.getInt("instanceLimit", 8);
 		if (instanceLimit <= 0) {
-			instanceLimit = 32;
+			instanceLimit = 8;
 		}
 		caveTrackerManager = new CaveTrackerManager(instanceLimit);
 		registerCommand("did", new CommandListener());
@@ -141,7 +141,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 	}
 
 	private void setupConfig() {
-		config.addDefault("instanceLimit", 32);
+		config.addDefault("instanceLimit", 8);
 		config.addDefault("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
 		config.addDefault("caveStyles.default", 10);
 		config.options().copyDefaults(true);
