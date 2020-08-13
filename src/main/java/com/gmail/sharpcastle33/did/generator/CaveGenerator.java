@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -25,22 +26,27 @@ public class CaveGenerator {
 	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
 		Bukkit.getLogger().log(Level.INFO, "Generating cave of size " + size);
 		ArrayList<Centroid> centroids = new ArrayList<>();
-		String caveString = generateBranch(ctx, size, pos, 90, true, Vector3.UNIT_X, centroids);
+		Vector3 startingDir = Util.rotateAroundY(Vector3.UNIT_X, ctx.rand.nextDouble() * 2 * Math.PI);
+		String caveString = generateBranch(ctx, size, pos, 90, true, startingDir, centroids);
 		PostProcessor.postProcess(ctx, centroids);
 		return caveString;
 	}
 
 	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids) throws WorldEditException {
-		String s = LayoutGenerator.generateCave(ctx, length, 0);
+		String s = LayoutGenerator.generateCave(ctx, length);
 
 		if(!moreBranches) {
-			s = s.replace("X", "W");
-			s = s.replace("x", "W");
+			Room simpleRoom = ctx.style.getRooms().stream().filter(room -> room instanceof Room.SimpleRoom).findFirst().orElse(null);
+			String branchReplacement = simpleRoom == null ? "" : String.valueOf(simpleRoom.getSymbol());
+			for (Room room : ctx.style.getRooms()) {
+				if (room.isBranch()) {
+					s = s.replace(String.valueOf(room.getSymbol()), branchReplacement);
+				}
+			}
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
 		}
 
-		ModuleGenerator gen = new ModuleGenerator(centroids, size);
-		gen.read(ctx, s, pos ,dir);
+		ModuleGenerator.read(ctx, s, pos, dir, size, centroids);
 		return s;
 	}
 

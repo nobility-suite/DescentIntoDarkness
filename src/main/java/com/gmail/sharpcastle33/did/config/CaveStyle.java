@@ -1,16 +1,21 @@
 package com.gmail.sharpcastle33.did.config;
 
 import com.gmail.sharpcastle33.did.Util;
+import com.gmail.sharpcastle33.did.generator.GrammarGraph;
 import com.gmail.sharpcastle33.did.generator.PainterStep;
+import com.gmail.sharpcastle33.did.generator.Room;
 import com.gmail.sharpcastle33.did.generator.Structure;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.block.FuzzyBlockState;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -43,6 +48,69 @@ public class CaveStyle {
 	private int sprintingPenalty = 5;
 
 	// cave generation
+	private final List<Room> rooms = Lists.newArrayList(
+			new Room.SimpleRoom('w', new ArrayList<>()),
+			new Room.TurnRoom('a', new ArrayList<>(), 15, 30),
+			new Room.TurnRoom('d', new ArrayList<>(), -30, -15),
+			new Room.BranchRoom('x', new ArrayList<>(), 90, 90, 1, 1, 20, 39),
+			new Room.BranchRoom('y', new ArrayList<>(), 45, 180, 2, 6, 20, 39),
+			new Room.DropshaftRoom('o', new ArrayList<>(), 8, 11, 2, 3),
+			new Room.CavernRoom('l', new ArrayList<>(), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2),
+			new Room.CavernRoom('r', new ArrayList<>(), 4, 7, 4, Integer.MAX_VALUE, 0, 1, 3),
+			new Room.ShelfRoom('h', new ArrayList<>(), 6, 10, 3, 3),
+			new Room.CavernRoom('c', new ArrayList<>(), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2) // TODO: chasm
+	);
+	private GrammarGraph grammar;
+	{
+		Map<Character, GrammarGraph.RuleSet> rules = new HashMap<>();
+		rules.put('C', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(1, "SSS"),
+				Pair.of(1, "SSSS"),
+				Pair.of(1, "SSSSS"),
+				Pair.of(1, "SSSSSS")
+		)));
+		rules.put('S', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(1, "XY")
+		)));
+		rules.put('X', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(1, "AAAA"),
+				Pair.of(1, "AAAAA"),
+				Pair.of(1, "AAAAAA"),
+				Pair.of(1, "AAAAAAA"),
+				Pair.of(1, "AAAAAAAA"),
+				Pair.of(1, "AAAAAAAAA"),
+				Pair.of(1, "AAAAAAAAAA")
+		)));
+		rules.put('Y', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(1, "BBBBB"),
+				Pair.of(1, "BBBBBB"),
+				Pair.of(1, "BBBBBBB"),
+				Pair.of(1, "BBBBBBBB"),
+				Pair.of(1, "BBBBBBBBB")
+		)));
+		rules.put('A', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(60, "w"),
+				Pair.of(15, "a"),
+				Pair.of(15, "d"),
+				Pair.of(2, "x"),
+				Pair.of(2, "o"),
+				Pair.of(7, "r"),
+				Pair.of(2, "yr")
+		)));
+		rules.put('B', new GrammarGraph.RuleSet(Lists.newArrayList(
+				Pair.of(80, "w"),
+				Pair.of(20, "a"),
+				Pair.of(20, "d"),
+				Pair.of(5, "x"),
+				Pair.of(2, "o"),
+				Pair.of(2, "c"),
+				Pair.of(19, "r"),
+				Pair.of(29, "l"),
+				Pair.of(8, "h")
+		)));
+		grammar = new GrammarGraph(rules);
+		grammar.validate(rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
+	}
 	private final List<PainterStep> painterSteps = Lists.newArrayList(
 			new PainterStep.ReplaceFloor(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
 			new PainterStep.ChanceReplace(Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
@@ -76,6 +144,11 @@ public class CaveStyle {
 		map.set("spawnAttemptsPerTick", spawnAttemptsPerTick);
 		map.set("sprintingPenalty", sprintingPenalty);
 
+		grammar.serialize(map.createSection("grammar"));
+		ConfigurationSection roomsSection = map.createSection("rooms");
+		for (Room room : rooms) {
+			room.serialize(roomsSection.createSection(String.valueOf(room.getSymbol())));
+		}
 		map.set("painterSteps", painterSteps.stream().map(PainterStep::serialize).collect(Collectors.toCollection(ArrayList::new)));
 		ConfigurationSection structuresSection = map.createSection("structures");
 		for (Structure structure : structures) {
@@ -126,6 +199,25 @@ public class CaveStyle {
 		style.spawnAttemptsPerTick = map.getInt("spawnAttemptsPerTick", 10);
 		style.sprintingPenalty = map.getInt("sprintingPenalty", 5);
 
+
+		ConfigurationSection grammarSection = map.getConfigurationSection("grammar");
+		if (grammarSection != null) {
+			style.grammar = GrammarGraph.deserialize(grammarSection);
+		}
+		ConfigurationSection roomsSection = map.getConfigurationSection("rooms");
+		if (roomsSection != null) {
+			style.rooms.clear();
+			for (String key : roomsSection.getKeys(false)) {
+				if (key.length() != 1) {
+					throw new InvalidConfigException("Room symbol must be a single character");
+				}
+				ConfigurationSection roomSection = roomsSection.getConfigurationSection(key);
+				if (roomSection != null) {
+					style.rooms.add(Room.deserialize(key.charAt(0), roomSection));
+				}
+			}
+		}
+		style.grammar.validate(style.rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
 
 		List<?> painterSteps = map.getList("painterSteps");
 		if (painterSteps != null) {
@@ -197,6 +289,14 @@ public class CaveStyle {
 
 	public int getSprintingPenalty() {
 		return sprintingPenalty;
+	}
+
+	public List<Room> getRooms() {
+		return rooms;
+	}
+
+	public GrammarGraph getGrammar() {
+		return grammar;
 	}
 
 	public List<PainterStep> getPainterSteps() {
