@@ -5,11 +5,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class GrammarGraph {
 	private final Map<Character, RuleSet> ruleSets;
@@ -28,7 +30,11 @@ public class GrammarGraph {
 
 	public void serialize(ConfigurationSection map) {
 		ruleSets.forEach((symbol, ruleSet) -> {
-			ConfigurationSection ruleSection = map.createSection(String.valueOf(symbol));
+			StringBuilder key = new StringBuilder(String.valueOf(symbol));
+			for (String tag : ruleSet.getTags()) {
+				key.append(" ").append(tag);
+			}
+			ConfigurationSection ruleSection = map.createSection(key.toString());
 			for (Pair<Integer, String> entry : ruleSet.getEntries()) {
 				ruleSection.set(entry.getRight(), entry.getLeft());
 			}
@@ -38,12 +44,14 @@ public class GrammarGraph {
 	public static GrammarGraph deserialize(ConfigurationSection map) {
 		Map<Character, RuleSet> ruleSets = new HashMap<>();
 
-		for (String symbolStr : map.getKeys(false)) {
+		for (String key : map.getKeys(false)) {
+			String[] parts = key.split(" ");
+			String symbolStr = parts[0];
 			if (symbolStr.length() != 1) {
 				throw new InvalidConfigException("Symbol must be a single character");
 			}
 			char symbol = symbolStr.charAt(0);
-			ConfigurationSection ruleSection = map.getConfigurationSection(symbolStr);
+			ConfigurationSection ruleSection = map.getConfigurationSection(key);
 			if (ruleSection != null) {
 				List<Pair<Integer, String>> entries = new ArrayList<>();
 				for (String substitution : ruleSection.getKeys(false)) {
@@ -56,7 +64,8 @@ public class GrammarGraph {
 				if (entries.isEmpty()) {
 					throw new InvalidConfigException("Rule has no substitutions");
 				}
-				ruleSets.put(symbol, new RuleSet(entries));
+				List<String> tags = Arrays.stream(parts).skip(1).collect(Collectors.toCollection(ArrayList::new));
+				ruleSets.put(symbol, new RuleSet(entries, tags));
 			}
 		}
 
@@ -108,6 +117,7 @@ public class GrammarGraph {
 		recursionStack.add(fromSymbol);
 
 		RuleSet ruleSet = ruleSets.get(fromSymbol);
+		boolean foundNonSelfReferential = false;
 		for (Pair<Integer, String> entry : ruleSet.getEntries()) {
 			String substitution = entry.getRight();
 			for (int i = 0; i < substitution.length(); i++) {
@@ -122,6 +132,10 @@ public class GrammarGraph {
 					}
 				}
 			}
+			foundNonSelfReferential |= substitution.isEmpty() || substitution.charAt(substitution.length() - 1) != fromSymbol;
+		}
+		if (!foundNonSelfReferential) {
+			throw new InvalidConfigException("Rule is made up of entirely self-referential substitutions");
 		}
 
 		recursionStack.remove(fromSymbol);
@@ -130,10 +144,12 @@ public class GrammarGraph {
 	public static class RuleSet {
 		// A list of strings that this character may be replaced with, each with a weight attached
 		private final List<Pair<Integer, String>> entries;
+		private final List<String> tags;
 		private final int totalWeight;
 
-		public RuleSet(List<Pair<Integer, String>> entries) {
+		public RuleSet(List<Pair<Integer, String>> entries, List<String> tags) {
 			this.entries = entries;
+			this.tags = tags;
 			int totalWeight = 0;
 			for (Pair<Integer, String> entry : entries) {
 				totalWeight += entry.getLeft();
@@ -143,6 +159,10 @@ public class GrammarGraph {
 
 		public List<Pair<Integer, String>> getEntries() {
 			return entries;
+		}
+
+		public List<String> getTags() {
+			return tags;
 		}
 
 		public String getRandomSubstitution(CaveGenContext ctx) {

@@ -48,6 +48,10 @@ public class CaveStyle {
 	private int sprintingPenalty = 5;
 
 	// cave generation
+	private int minLength;
+	private int maxLength;
+	private int minSize;
+	private int maxSize;
 	private final List<Room> rooms = Lists.newArrayList(
 			new Room.SimpleRoom('w', new ArrayList<>()),
 			new Room.TurnRoom('a', new ArrayList<>(), 15, 30),
@@ -68,10 +72,10 @@ public class CaveStyle {
 				Pair.of(1, "SSSS"),
 				Pair.of(1, "SSSSS"),
 				Pair.of(1, "SSSSSS")
-		)));
+		), new ArrayList<>()));
 		rules.put('S', new GrammarGraph.RuleSet(Lists.newArrayList(
 				Pair.of(1, "XY")
-		)));
+		), new ArrayList<>()));
 		rules.put('X', new GrammarGraph.RuleSet(Lists.newArrayList(
 				Pair.of(1, "AAAA"),
 				Pair.of(1, "AAAAA"),
@@ -80,14 +84,14 @@ public class CaveStyle {
 				Pair.of(1, "AAAAAAAA"),
 				Pair.of(1, "AAAAAAAAA"),
 				Pair.of(1, "AAAAAAAAAA")
-		)));
+		), new ArrayList<>()));
 		rules.put('Y', new GrammarGraph.RuleSet(Lists.newArrayList(
 				Pair.of(1, "BBBBB"),
 				Pair.of(1, "BBBBBB"),
 				Pair.of(1, "BBBBBBB"),
 				Pair.of(1, "BBBBBBBB"),
 				Pair.of(1, "BBBBBBBBB")
-		)));
+		), new ArrayList<>()));
 		rules.put('A', new GrammarGraph.RuleSet(Lists.newArrayList(
 				Pair.of(60, "w"),
 				Pair.of(15, "a"),
@@ -96,7 +100,7 @@ public class CaveStyle {
 				Pair.of(2, "o"),
 				Pair.of(7, "r"),
 				Pair.of(2, "yr")
-		)));
+		), new ArrayList<>()));
 		rules.put('B', new GrammarGraph.RuleSet(Lists.newArrayList(
 				Pair.of(80, "w"),
 				Pair.of(20, "a"),
@@ -107,7 +111,7 @@ public class CaveStyle {
 				Pair.of(19, "r"),
 				Pair.of(29, "l"),
 				Pair.of(8, "h")
-		)));
+		), new ArrayList<>()));
 		grammar = new GrammarGraph(rules);
 		grammar.validate(rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
 	}
@@ -144,6 +148,10 @@ public class CaveStyle {
 		map.set("spawnAttemptsPerTick", spawnAttemptsPerTick);
 		map.set("sprintingPenalty", sprintingPenalty);
 
+		map.set("minLength", minLength);
+		map.set("maxLength", maxLength);
+		map.set("minSize", minSize);
+		map.set("maxSize", maxSize);
 		grammar.serialize(map.createSection("grammar"));
 		ConfigurationSection roomsSection = map.createSection("rooms");
 		for (Room room : rooms) {
@@ -200,6 +208,16 @@ public class CaveStyle {
 		style.sprintingPenalty = map.getInt("sprintingPenalty", 5);
 
 
+		style.minLength = map.getInt("minLength", 90);
+		style.maxLength = map.getInt("maxLength", 90);
+		if (style.minLength <= 0 || style.maxLength < style.minLength) {
+			throw new InvalidConfigException("Illegal length range");
+		}
+		style.minSize = map.getInt("minSize", 7);
+		style.maxSize = map.getInt("maxSize", 11);
+		if (style.minSize < 1 || style.maxSize < style.minSize) {
+			throw new InvalidConfigException("Illegal size range");
+		}
 		ConfigurationSection grammarSection = map.getConfigurationSection("grammar");
 		if (grammarSection != null) {
 			style.grammar = GrammarGraph.deserialize(grammarSection);
@@ -289,6 +307,22 @@ public class CaveStyle {
 
 	public int getSprintingPenalty() {
 		return sprintingPenalty;
+	}
+
+	public int getMinLength() {
+		return minLength;
+	}
+
+	public int getMaxLength() {
+		return maxLength;
+	}
+
+	public int getMinSize() {
+		return minSize;
+	}
+
+	public int getMaxSize() {
+		return maxSize;
 	}
 
 	public List<Room> getRooms() {

@@ -168,7 +168,7 @@ public class CaveTrackerManager {
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			Random rand = new Random();
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
-				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969), rand.nextInt(5) + 7);
+				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969));
 			} catch (WorldEditException e) {
 				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);

@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -14,7 +15,8 @@ import org.bukkit.Bukkit;
 
 public class ModuleGenerator {
 
-	public static void read(CaveGenContext ctx, String cave, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids) {
+	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids) {
+		String cave = layout.getValue();
 		Bukkit.getLogger().log(Level.INFO, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.INFO, "Cave string: " + cave);
 
@@ -26,8 +28,10 @@ public class ModuleGenerator {
 		Vector3 location = start;
 		for (int i = 0; i < cave.length(); i++) {
 			Room room = rooms.get(cave.charAt(i));
-			Object[] userData = room.createUserData(ctx, location, dir, caveRadius);
-			room.addCentroids(ctx, location, dir, caveRadius, userData, centroids);
+			List<String> tags = new ArrayList<>(layout.getTags().get(i));
+			tags.addAll(room.getTags());
+			Object[] userData = room.createUserData(ctx, location, dir, caveRadius, tags);
+			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids);
 			dir = room.adjustDirection(ctx, dir, userData);
 			location = room.adjustLocation(ctx, location, dir, caveRadius, userData);
 		}
