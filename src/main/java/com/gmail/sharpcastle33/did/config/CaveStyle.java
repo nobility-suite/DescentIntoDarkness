@@ -62,7 +62,7 @@ public class CaveStyle {
 			new Room.CavernRoom('l', Lists.newArrayList("large_cavern"), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2),
 			new Room.CavernRoom('r', Lists.newArrayList("cavern"), 4, 7, 4, Integer.MAX_VALUE, 0, 1, 3),
 			new Room.ShelfRoom('h', Lists.newArrayList("shelf"), 6, 10, 3, 3),
-			new Room.CavernRoom('c', Lists.newArrayList("ravine"), 3, 7, 3, Integer.MAX_VALUE, 1, 2, 2) // TODO: chasm
+			new Room.RavineRoom('c', Lists.newArrayList("ravine"), 70, 100, 80, 120, 10, 20, 0, 30, 0.2)
 	);
 	private GrammarGraph grammar;
 	{

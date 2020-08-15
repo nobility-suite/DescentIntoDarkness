@@ -41,6 +41,12 @@ public class PostProcessor {
 		if (!centroids.isEmpty()) {
 			generatePortal(ctx, centroids.get(0).pos.toBlockPoint(), 100);
 		}
+
+		if (ctx.isDebug()) {
+			for (Centroid centroid : centroids) {
+				ctx.setBlock(centroid.pos.toBlockPoint(), Util.requireDefaultState(BlockTypes.EMERALD_BLOCK));
+			}
+		}
 	}
 
 	public static void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
