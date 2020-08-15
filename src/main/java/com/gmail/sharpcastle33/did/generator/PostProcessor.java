@@ -230,7 +230,7 @@ public class PostProcessor {
 						}
 						if(ty+y > 0) {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-							if(isFloor(ctx, pos))
+							if(isFloor(ctx, pos) && !m.equalsFuzzy(ctx.getBlock(pos)))
 								ctx.setBlock(pos.add(0, 1, 0), m);
 						}
 					}
@@ -255,7 +255,7 @@ public class PostProcessor {
 						}
 						if(ty+y > 0) {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-							if(isRoof(ctx, pos))
+							if(isRoof(ctx, pos) && !m.equalsFuzzy(ctx.getBlock(pos)))
 								ctx.setBlock(pos.add(0, -1, 0), m);
 						}
 					}
