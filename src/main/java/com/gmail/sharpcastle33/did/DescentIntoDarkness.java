@@ -38,6 +38,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -168,7 +171,17 @@ public class DescentIntoDarkness extends JavaPlugin {
 			}
 		}
 
-		File[] caveStyleFiles = new File(getDataFolder(), "caveStyles").listFiles((dir, name) -> name.endsWith(".yml"));
+		File caveStylesDir = new File(getDataFolder(), "caveStyles");
+		//noinspection ResultOfMethodCallIgnored
+		caveStylesDir.mkdirs();
+
+		try {
+			Files.copy(Objects.requireNonNull(getResource("defaultCaveStyles.yml")), new File(caveStylesDir, "default.yml").toPath(), StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			getLogger().log(Level.SEVERE, "Failed to write default cave style", e);
+		}
+
+		File[] caveStyleFiles = caveStylesDir.listFiles((dir, name) -> name.endsWith(".yml"));
 		caveStylesConfig = new MemoryConfiguration();
 		if (caveStyleFiles != null) {
 			for (File caveStyleFile : caveStyleFiles) {
@@ -180,7 +193,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 				}
 			}
 		}
-		caveStyles = null;
+		this.caveStyles = null;
 		getCaveStyles();
 	}
 
@@ -251,12 +264,16 @@ public class DescentIntoDarkness extends JavaPlugin {
 			throw new InvalidConfigException("Tried to inherit from cave style \"" + styleName + "\" which does not exist");
 		}
 
-		for (String parent : caveStyle.getStringList("inherit")) {
+		List<String> parents = caveStyle.getStringList("inherit");
+		if (!caveStyle.contains("__builtin_no_default_inherit") && !parents.contains("default")) {
+			parents.add("default");
+		}
+		for (String parent : parents) {
 			inlineCaveStyleInheritance(parent, styleStack, processedStyles);
 			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent);
 			assert parentStyle != null;
 			parentStyle.getValues(false).forEach((key, val) -> {
-				if (!"inherit".equals(key)) {
+				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key)) {
 					if (!caveStyle.contains(key)) {
 						caveStyle.set(key, val);
 					}

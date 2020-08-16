@@ -118,8 +118,8 @@ public class CaveTrackerManager {
 		}
 
 		CaveStyle caveStyle = DescentIntoDarkness.plugin.getCaveStyles().get(chosenStyle);
-		if (caveStyle == null) {
-			Bukkit.getLogger().log(Level.SEVERE, "No such cave style: " + chosenStyle);
+		if (caveStyle == null || caveStyle.isAbstract()) {
+			Bukkit.getLogger().log(Level.SEVERE, "Cannot instantiate cave style: " + chosenStyle);
 			DescentIntoDarkness.plugin.getCaveStyleWeights().remove(chosenStyle);
 			return getRandomStyle();
 		}
