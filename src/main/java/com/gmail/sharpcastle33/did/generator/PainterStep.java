@@ -15,10 +15,12 @@ import java.util.Map;
 public abstract class PainterStep {
 	private final Type type;
 	private final List<String> tags;
+	private final boolean tagsInverted;
 
-	public PainterStep(Type type, List<String> tags) {
+	public PainterStep(Type type, List<String> tags, boolean tagsInverted) {
 		this.type = type;
 		this.tags = tags;
+		this.tagsInverted = tagsInverted;
 	}
 
 	public final Type getType() {
@@ -29,12 +31,20 @@ public abstract class PainterStep {
 		return tags;
 	}
 
+	public boolean areTagsInverted() {
+		return tagsInverted;
+	}
+
 	public abstract Object serialize();
 
 	protected final String getSerializationPrefix() {
 		String prefix = "";
-		if (!tags.isEmpty()) {
-			prefix = "<" + String.join(" ", tags) + "> ";
+		if (!tags.isEmpty() || !tagsInverted) {
+			prefix = "<";
+			if (tagsInverted) {
+				prefix += "!";
+			}
+			prefix += String.join(" ", tags) + "> ";
 		}
 		return prefix + type.getName();
 	}
@@ -44,10 +54,12 @@ public abstract class PainterStep {
 			String line = (String) value;
 			line = line.trim();
 			List<String> tags = new ArrayList<>();
+			boolean tagsInverted = true;
 			if (line.startsWith("<")) {
 				int closeIndex = line.indexOf('>');
 				if (closeIndex >= 0) {
-					Collections.addAll(tags, line.substring(1, closeIndex).split(" "));
+					tagsInverted = line.startsWith("<!");
+					Collections.addAll(tags, line.substring(tagsInverted ? 2 : 1, closeIndex).split(" "));
 					line = line.substring(closeIndex + 1).trim();
 				}
 			}
@@ -70,7 +82,7 @@ public abstract class PainterStep {
 					} else if (chance > 1) {
 						chance = 1;
 					}
-					return new ChanceReplace(tags, old, _new, chance);
+					return new ChanceReplace(tags, tagsInverted, old, _new, chance);
 
 				}
 				case RADIUS_REPLACE: {
@@ -79,7 +91,7 @@ public abstract class PainterStep {
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new RadiusReplace(tags, old, _new);
+					return new RadiusReplace(tags, tagsInverted, old, _new);
 				}
 				case REPLACE_CEILING: {
 					if (args.length < 3) {
@@ -87,7 +99,7 @@ public abstract class PainterStep {
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceCeiling(tags, old, _new);
+					return new ReplaceCeiling(tags, tagsInverted, old, _new);
 				}
 				case REPLACE_FLOOR: {
 					if (args.length < 3) {
@@ -95,21 +107,21 @@ public abstract class PainterStep {
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceFloor(tags, old, _new);
+					return new ReplaceFloor(tags, tagsInverted, old, _new);
 				}
 				case FLOOR_LAYER: {
 					if (args.length < 2) {
 						throw new InvalidConfigException(line);
 					}
 					BlockStateHolder<?> block = ConfigUtil.parseBlock(args[1]);
-					return new FloorLayer(tags, block);
+					return new FloorLayer(tags, tagsInverted, block);
 				}
 				case CEILING_LAYER: {
 					if (args.length < 2) {
 						throw new InvalidConfigException(line);
 					}
 					BlockStateHolder<?> block = ConfigUtil.parseBlock(args[1]);
-					return new CeilingLayer(tags, block);
+					return new CeilingLayer(tags, tagsInverted, block);
 				}
 				default: {
 					throw new InvalidConfigException(line);
@@ -127,8 +139,8 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> _new;
 		private final double chance;
 
-		public ChanceReplace(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
-			super(Type.CHANCE_REPLACE, tags);
+		public ChanceReplace(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
+			super(Type.CHANCE_REPLACE, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
 			this.chance = chance;
@@ -149,8 +161,8 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public RadiusReplace(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.RADIUS_REPLACE, tags);
+		public RadiusReplace(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.RADIUS_REPLACE, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
 		}
@@ -170,8 +182,8 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public ReplaceCeiling(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.REPLACE_CEILING, tags);
+		public ReplaceCeiling(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.REPLACE_CEILING, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
 		}
@@ -191,8 +203,8 @@ public abstract class PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 
-		public ReplaceFloor(List<String> tags, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.REPLACE_FLOOR, tags);
+		public ReplaceFloor(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+			super(Type.REPLACE_FLOOR, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
 		}
@@ -211,8 +223,8 @@ public abstract class PainterStep {
 	public static class CeilingLayer extends PainterStep {
 		private final BlockStateHolder<?> block;
 
-		public CeilingLayer(List<String> tags, BlockStateHolder<?> block) {
-			super(Type.CEILING_LAYER, tags);
+		public CeilingLayer(List<String> tags, boolean tagsInverted, BlockStateHolder<?> block) {
+			super(Type.CEILING_LAYER, tags, tagsInverted);
 			this.block = block;
 		}
 
@@ -230,8 +242,8 @@ public abstract class PainterStep {
 	public static class FloorLayer extends PainterStep {
 		private final BlockStateHolder<?> block;
 
-		public FloorLayer(List<String> tags, BlockStateHolder<?> block) {
-			super(Type.FLOOR_LAYER, tags);
+		public FloorLayer(List<String> tags, boolean tagsInverted, BlockStateHolder<?> block) {
+			super(Type.FLOOR_LAYER, tags, tagsInverted);
 			this.block = block;
 		}
 

@@ -116,15 +116,15 @@ public class CaveStyle {
 		grammar.validate(rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
 	}
 	private final List<PainterStep> painterSteps = Lists.newArrayList(
-			new PainterStep.ReplaceFloor(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
-			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
-			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
-			new PainterStep.ChanceReplace(new ArrayList<>(), Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
+			new PainterStep.ReplaceFloor(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
+			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
+			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
+			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
 	);
 	private final List<Structure> structures = Lists.newArrayList(
-			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
-			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
-			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
+			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
+			new Structure.VeinStructure("diamond_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.DIAMOND_ORE), 4),
+			new Structure.VeinStructure("emerald_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.EMERALD_ORE), 3)
 	);
 	private final List<Structure> portals = Lists.newArrayList();
 

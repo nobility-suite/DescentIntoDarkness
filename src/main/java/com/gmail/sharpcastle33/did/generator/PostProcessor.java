@@ -26,7 +26,9 @@ public class PostProcessor {
 
 		for(Centroid centroid : centroids) {
 			for (PainterStep painterStep : ctx.style.getPainterSteps()) {
-				if (painterStep.getTags().isEmpty() || painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
+				if (painterStep.areTagsInverted()
+						? painterStep.getTags().stream().noneMatch(centroid.tags::contains)
+						: painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
 					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+2);
 				}
 			}
@@ -97,7 +99,9 @@ public class PostProcessor {
 	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, int caveRadius, Structure structure) throws WorldEditException {
 		for (Centroid centroid : centroids) {
 			if (ctx.rand.nextDouble() < structure.getChance()) {
-				if (structure.getTags().isEmpty() || structure.getTags().stream().anyMatch(centroid.tags::contains)) {
+				if (structure.areTagsInverted()
+						? structure.getTags().stream().noneMatch(centroid.tags::contains)
+						: structure.getTags().stream().anyMatch(centroid.tags::contains)) {
 					Direction dir = structure.getRandomDirection(ctx.rand);
 					BlockVector3 pos;
 					if (dir == Direction.DOWN) {

@@ -34,6 +34,7 @@ public abstract class Structure {
 	protected final List<BlockStateHolder<?>> canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
 	private final List<String> tags;
+	private final boolean tagsInverted;
 
 	protected Structure(String name, Type type, ConfigurationSection map) {
 		this.name = name;
@@ -43,10 +44,11 @@ public abstract class Structure {
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
 		this.tags = ConfigUtil.deserializeSingleableList(map.get("tags"), Function.identity(), ArrayList::new);
+		this.tagsInverted = map.getBoolean("tagsInverted", !map.contains("tags"));
 		computeValidDirections();
 	}
 
-	protected Structure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags) {
+	protected Structure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
 		this.name = name;
 		this.type = type;
 		this.edges = edges;
@@ -54,6 +56,7 @@ public abstract class Structure {
 		this.canPlaceOn = canPlaceOn;
 		this.canReplace = canReplace;
 		this.tags = tags;
+		this.tagsInverted = tagsInverted;
 		computeValidDirections();
 	}
 
@@ -92,6 +95,10 @@ public abstract class Structure {
 
 	public List<String> getTags() {
 		return tags;
+	}
+
+	public boolean areTagsInverted() {
+		return tagsInverted;
 	}
 
 	public void serialize(ConfigurationSection map) {
@@ -163,8 +170,8 @@ public abstract class Structure {
 			}
 		}
 
-		public SchematicStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, List<Schematic> schematics, Direction originSide) {
-			super(name, Type.SCHEMATIC, edges, chance, canPlaceOn, canReplace, tags);
+		public SchematicStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide) {
+			super(name, Type.SCHEMATIC, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
 			this.schematics = schematics;
 			this.originSide = originSide;
 		}
@@ -267,8 +274,8 @@ public abstract class Structure {
 			this.radius = map.getInt("radius", 4);
 		}
 
-		public VeinStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, BlockStateHolder<?> ore, int radius) {
-			super(name, Type.VEIN, edges, chance, canPlaceOn, canReplace, tags);
+		public VeinStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> ore, int radius) {
+			super(name, Type.VEIN, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
 			this.ore = ore;
 			this.radius = radius;
 		}
@@ -304,8 +311,8 @@ public abstract class Structure {
 			this.tries = map.getInt("tries", 64);
 		}
 
-		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
-			super(name, type, edges, chance, canPlaceOn, canReplace, tags);
+		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
+			super(name, type, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
 			this.block = block;
 			this.spreadX = spreadX;
 			this.spreadY = spreadY;
@@ -354,8 +361,8 @@ public abstract class Structure {
 		private final int spreadZ;
 		private final BlockStateHolder<?> block;
 
-		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
-			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace, tags);
+		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
+			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
 			this.density = density;
 			this.spreadX = spreadX;
 			this.height = height;
