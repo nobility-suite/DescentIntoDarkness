@@ -210,7 +210,7 @@ public class CommandListener implements TabExecutor {
 
 	private void generateCave(Player p, String[] args) {
 		String styleName = args.length <= 2 ? "default" : args[2];
-		OptionalInt size = args.length <= 3 ? OptionalInt.of(9) : parseInt(p, args[3]);
+		OptionalInt size = args.length <= 3 ? OptionalInt.of(7) : parseInt(p, args[3]);
 		if (!size.isPresent()) return;
 		OptionalLong seed = args.length <= 4 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[4]);
 		if (!seed.isPresent()) return;

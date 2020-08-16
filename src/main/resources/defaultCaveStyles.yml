@@ -14,8 +14,8 @@ default:
 
   maxLength: 90
   minLength: 90
-  maxSize: 11
-  minSize: 7
+  maxSize: 9
+  minSize: 5
 
   portals: {}
 
@@ -122,7 +122,7 @@ defaultRooms:
       tags: large_cavern
       minCentroids: 3
       maxCentroids: 7
-      minSpread: 3
+      minSpread: 1
       maxSpread: 2147483647
       centroidSizeVariance: 1
       nextLocationScale: 2
@@ -132,7 +132,7 @@ defaultRooms:
       tags: cavern
       minCentroids: 4
       maxCentroids: 7
-      minSpread: 4
+      minSpread: 2
       maxSpread: 2147483647
       centroidSizeVariance: 0
       nextLocationScale: 1

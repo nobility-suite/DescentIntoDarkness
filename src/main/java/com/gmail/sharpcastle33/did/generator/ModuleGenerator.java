@@ -47,12 +47,12 @@ public class ModuleGenerator {
 		double y = loc.getY();
 		double z = loc.getZ();
 
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+		for(int tx=-r; tx <= r; tx++){
+			for(int ty=-r; ty <= r; ty++){
+				for(int tz=-r; tz <= r; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
 						//delete(tx+x, ty+y, tz+z);
-						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r)) {
 							continue;
 						}
 						if(ty+y > 0) {

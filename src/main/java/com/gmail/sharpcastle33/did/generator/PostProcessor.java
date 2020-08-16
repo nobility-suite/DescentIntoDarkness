@@ -29,7 +29,7 @@ public class PostProcessor {
 				if (painterStep.areTagsInverted()
 						? painterStep.getTags().stream().noneMatch(centroid.tags::contains)
 						: painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
-					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+2);
+					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+4);
 				}
 			}
 		}
@@ -37,7 +37,7 @@ public class PostProcessor {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning structure pass...");
 
 		for (Structure structure : ctx.style.getStructures()) {
-			generateStructure(ctx, centroids, 100, structure);
+			generateStructure(ctx, centroids, structure);
 		}
 
 		if (!centroids.isEmpty()) {
@@ -56,10 +56,10 @@ public class PostProcessor {
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
 
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+		for(int tx=-r; tx <= r; tx++){
+			for(int ty=-r; ty <= r; ty++){
+				for(int tz=-r; tz <= r; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
 						//delete(tx+x, ty+y, tz+z);
 						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
@@ -96,7 +96,7 @@ public class PostProcessor {
 
 
 
-	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, int caveRadius, Structure structure) throws WorldEditException {
+	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, Structure structure) throws WorldEditException {
 		for (Centroid centroid : centroids) {
 			if (ctx.rand.nextDouble() < structure.getChance()) {
 				if (structure.areTagsInverted()
@@ -105,11 +105,11 @@ public class PostProcessor {
 					Direction dir = structure.getRandomDirection(ctx.rand);
 					BlockVector3 pos;
 					if (dir == Direction.DOWN) {
-						pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), caveRadius);
+						pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
 					} else if (dir == Direction.UP) {
-						pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), caveRadius);
+						pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
 					} else {
-						pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), caveRadius, dir.toBlockVector());
+						pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), centroid.size + 2, dir.toBlockVector());
 					}
 					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
 						structure.place(ctx, pos, dir);

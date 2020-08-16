@@ -45,7 +45,7 @@ public abstract class Room {
 	}
 
 	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, Object[] userData) {
-		return ModuleGenerator.vary(ctx, location).add(direction.multiply(caveRadius - 2));
+		return ModuleGenerator.vary(ctx, location).add(direction.multiply(caveRadius));
 	}
 
 	public abstract void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids);
@@ -221,7 +221,7 @@ public abstract class Room {
 		@Override
 		public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, Object[] userData) {
 			int depth = (Integer) userData[0];
-			if (caveRadius <= 7) {
+			if (caveRadius <= 5) {
 				return location.add(0, -(depth - 4), 0);
 			} else {
 				return location.add(0, -(depth - 2), 0);
@@ -232,7 +232,7 @@ public abstract class Room {
 		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
 			int depth = (Integer) userData[0];
 			int i = 0;
-			int radius = caveRadius >= 6 ? caveRadius - 1 : caveRadius;
+			int radius = caveRadius >= 4 ? caveRadius - 1 : caveRadius;
 			Vector3 loc = location;
 			while (i < depth) {
 				centroids.add(new Centroid(loc, radius, tags));
@@ -279,9 +279,9 @@ public abstract class Room {
 			if (minCentroids <= 0 || maxCentroids < minCentroids) {
 				throw new InvalidConfigException("Invalid centroid count range");
 			}
-			this.minSpread = map.getInt("minSpread", 3);
-			this.maxSpread = map.getInt("maxSpread", 4);
-			if (minSpread < 3 || maxSpread < minSpread) {
+			this.minSpread = map.getInt("minSpread", 1);
+			this.maxSpread = map.getInt("maxSpread", 2);
+			if (minSpread < 1 || maxSpread < minSpread) {
 				throw new InvalidConfigException("Invalid spread range");
 			}
 			this.centroidSizeVariance = map.getInt("centroidSizeVariance", 0);
@@ -320,9 +320,9 @@ public abstract class Room {
 			}
 
 			for (int i = 0; i < count; i++) {
-				int tx = ctx.rand.nextInt(spread - 2) + 2;
-				int ty = ctx.rand.nextInt(spread);
-				int tz = ctx.rand.nextInt(spread - 2) + 2;
+				int tx = ctx.rand.nextInt(spread) + 2;
+				int ty = ctx.rand.nextInt(spread + 2);
+				int tz = ctx.rand.nextInt(spread) + 2;
 
 				if (ctx.rand.nextBoolean()) {
 					tx = -tx;
@@ -462,7 +462,7 @@ public abstract class Room {
 								Vector3 centroidPos = localPosition.add(
 										horizontalVector.multiply(-localWidth * 0.5 + gap * 0.5 + x * localWidth / numCentroidsAcross)
 								).add(0, gap * 0.5 + (double)y * height / numCentroidsVertically, 0);
-								centroids.add(new Centroid(centroidPos, centroidRadius + 2, tags));
+								centroids.add(new Centroid(centroidPos, centroidRadius, tags));
 							}
 						}
 					}
@@ -573,7 +573,7 @@ public abstract class Room {
 			int dir = ctx.rand.nextBoolean() ? 1 : -1;
 			shelf = shelf.add(Util.rotateAroundY(direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
 
-			int shelfRadius = Math.max(caveRadius - 2, 5);
+			int shelfRadius = Math.max(caveRadius, 5);
 			int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 			for (int i = 0; i < shelfSize; i++) {
 				shelf = generateRoom(smallRoom, ctx, shelf, direction, shelfRadius, tags, centroids);
@@ -589,7 +589,7 @@ public abstract class Room {
 			int dir = ctx.rand.nextBoolean() ? 1 : -1;
 			shelf = shelf.add(Util.rotateAroundY(direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
 
-			int shelfRadius = Math.max(caveRadius - 2, 5);
+			int shelfRadius = Math.max(caveRadius, 5);
 			int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 			Vector3 next = location;
 			for (int i = 0; i < shelfSize; i++) {
