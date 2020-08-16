@@ -19,6 +19,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -35,15 +36,20 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -59,7 +65,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	private FileConfiguration config = getConfig();
 	private LinkedHashMap<String, Integer> caveStyleWeights = null;
-	private FileConfiguration caveStylesConfig;
+	private Configuration caveStylesConfig;
 	private NavigableMap<String, CaveStyle> caveStyles = null;
 	private final Map<String, Clipboard> schematics = new HashMap<>();
 
@@ -146,15 +152,6 @@ public class DescentIntoDarkness extends JavaPlugin {
 		config.addDefault("caveStyles.default", 10);
 		config.options().copyDefaults(true);
 		saveConfig();
-
-		caveStylesConfig = reloadConfig("caveStyles");
-		ConfigurationSection defaultConfig = new MemoryConfiguration();
-		CaveStyle.DEFAULT.serialize(defaultConfig);
-		caveStylesConfig.addDefaults(defaultConfig.getValues(false).entrySet().stream()
-				.map(entry -> new AbstractMap.SimpleEntry<>("default." + entry.getKey(), entry.getValue()))
-				.collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue, (a, b) -> a, (Supplier<HashMap<String, Object>>)HashMap::new)));
-		caveStylesConfig.options().copyDefaults(true);
-		saveConfig("caveStyles", caveStylesConfig);
 		reload();
 	}
 
@@ -171,9 +168,20 @@ public class DescentIntoDarkness extends JavaPlugin {
 			}
 		}
 
-		caveStylesConfig = reloadConfig("caveStyles");
+		File[] caveStyleFiles = new File(getDataFolder(), "caveStyles").listFiles((dir, name) -> name.endsWith(".yml"));
+		caveStylesConfig = new MemoryConfiguration();
+		if (caveStyleFiles != null) {
+			for (File caveStyleFile : caveStyleFiles) {
+				YamlConfiguration localConfig = YamlConfiguration.loadConfiguration(caveStyleFile);
+				if (localConfig.getKeys(false).stream().anyMatch(caveStylesConfig::contains)) {
+					Bukkit.getLogger().log(Level.SEVERE, "Failed to load config file " + caveStyleFile.getName() + " because it contains keys already present in a previously loaded file");
+				} else {
+					localConfig.getValues(true).forEach(caveStylesConfig::set);
+				}
+			}
+		}
 		caveStyles = null;
-		getCaveStyles(); // for error messages TODO: reload this lazily?
+		getCaveStyles();
 	}
 
 	private FileConfiguration reloadConfig(String configName) {
@@ -201,6 +209,18 @@ public class DescentIntoDarkness extends JavaPlugin {
 	public NavigableMap<String, CaveStyle> getCaveStyles() {
 		if (caveStyles == null) {
 			caveStyles = new TreeMap<>();
+
+			try {
+				Set<String> styleStack = new HashSet<>();
+				Set<String> processedStyles = new HashSet<>();
+				for (String styleName : caveStylesConfig.getKeys(false)) {
+					inlineCaveStyleInheritance(styleName, styleStack, processedStyles);
+				}
+			} catch (InvalidConfigException e) {
+				getLogger().log(Level.SEVERE, "Failed to load cave styles", e);
+				return caveStyles;
+			}
+
 			for (String styleName : caveStylesConfig.getKeys(false)) {
 				try {
 					ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
@@ -214,6 +234,37 @@ public class DescentIntoDarkness extends JavaPlugin {
 			}
 		}
 		return caveStyles;
+	}
+
+	private void inlineCaveStyleInheritance(String styleName, Set<String> styleStack, Set<String> processedStyles) {
+		if (styleStack.contains(styleName)) {
+			throw new InvalidConfigException("Detected cyclic cave style inheritance");
+		}
+		if (processedStyles.contains(styleName)) {
+			return;
+		}
+		styleStack.add(styleName);
+		processedStyles.add(styleName);
+
+		ConfigurationSection caveStyle = caveStylesConfig.getConfigurationSection(styleName);
+		if (caveStyle == null) {
+			throw new InvalidConfigException("Tried to inherit from cave style \"" + styleName + "\" which does not exist");
+		}
+
+		for (String parent : caveStyle.getStringList("inherit")) {
+			inlineCaveStyleInheritance(parent, styleStack, processedStyles);
+			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent);
+			assert parentStyle != null;
+			parentStyle.getValues(false).forEach((key, val) -> {
+				if (!"inherit".equals(key)) {
+					if (!caveStyle.contains(key)) {
+						caveStyle.set(key, val);
+					}
+				}
+			});
+		}
+
+		styleStack.remove(styleName);
 	}
 
 	public Clipboard getSchematic(String name) {
