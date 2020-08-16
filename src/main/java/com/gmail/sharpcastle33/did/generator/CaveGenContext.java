@@ -67,7 +67,7 @@ public class CaveGenContext implements AutoCloseable {
 	}
 
 	public boolean setBlock(BlockVector3 pos, BlockStateHolder<?> block) throws MaxChangedBlocksException {
-		if (pos.getBlockY() < 0 || pos.getBlockY() > 255) {
+		if (pos.getBlockY() <= 0 || pos.getBlockY() >= 255) {
 			return false;
 		}
 		ensureChunkGenerated(pos);
@@ -82,6 +82,9 @@ public class CaveGenContext implements AutoCloseable {
 	public BlockState getBlock(BlockVector3 pos) {
 		if (pos.getBlockY() < 0 || pos.getBlockY() > 255) {
 			return Util.requireDefaultState(BlockTypes.AIR);
+		}
+		if (pos.getBlockY() == 0 || pos.getBlockY() == 255) {
+			return Util.requireDefaultState(BlockTypes.BEDROCK);
 		}
 		ensureChunkGenerated(pos);
 		return blockCache.getOrDefault(pos, style.getBaseBlock().toImmutableState());
