@@ -163,7 +163,7 @@ public class PostProcessor {
 		return !ctx.style.isTransparentBlock(ctx.getBlock(pos));
 	}
 
-	public static void replaceFloor(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+	public static void chanceReplaceFloor(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
@@ -180,7 +180,9 @@ public class PostProcessor {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 							if(isFloor(ctx, pos))
 								if(ctx.getBlock(pos).equalsFuzzy(old)) {
-									ctx.setBlock(pos, m);
+									if (ctx.rand.nextDouble() < chance) {
+										ctx.setBlock(pos, m);
+									}
 								}
 
 						}
@@ -191,7 +193,7 @@ public class PostProcessor {
 
 	}
 
-	public static void replaceCeiling(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+	public static void chanceReplaceCeiling(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
@@ -208,7 +210,9 @@ public class PostProcessor {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 							if(isRoof(ctx, pos))
 								if(ctx.getBlock(pos).equalsFuzzy(old)) {
-									ctx.setBlock(pos, m);
+									if (ctx.rand.nextDouble() < chance) {
+										ctx.setBlock(pos, m);
+									}
 								}
 
 						}
@@ -269,15 +273,10 @@ public class PostProcessor {
 
 	}
 
-	public static void chanceReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
+	public static void chanceReplaceAll(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
-
-		if(chance >= 1) {
-			radiusReplace(ctx,loc,r,old,m);
-			return;
-		}
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
@@ -301,27 +300,7 @@ public class PostProcessor {
 	}
 
 	public static void radiusReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
-						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
-							continue;
-						}
-						if(ty+y > 0) {
-							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-							if(ctx.getBlock(pos).equalsFuzzy(old)) {
-								ctx.setBlock(pos, m);
-							}
-						}
-					}
-				}
-			}
-		}
+		chanceReplaceAll(ctx, loc, r, old, m, 1);
 	}
 
 	public static BlockVector3 getWall(CaveGenContext ctx, BlockVector3 loc, int r, BlockVector3 direction) {

@@ -49,6 +49,7 @@ public abstract class PainterStep {
 		return prefix + type.getName();
 	}
 
+	/** @noinspection DuplicatedCode */
 	public static PainterStep deserialize(Object value) {
 		if (value instanceof String) {
 			String line = (String) value;
@@ -70,28 +71,20 @@ public abstract class PainterStep {
 				throw new InvalidConfigException(line);
 			}
 			switch (type) {
-				case CHANCE_REPLACE: {
-					if (args.length < 4) {
-						throw new InvalidConfigException(line);
-					}
-                    BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
-                    BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					double chance = ConfigUtil.parseDouble(args[3]);
-					if (chance < 0) {
-						chance = 0;
-					} else if (chance > 1) {
-						chance = 1;
-					}
-					return new ChanceReplace(tags, tagsInverted, old, _new, chance);
-
-				}
-				case RADIUS_REPLACE: {
+				case REPLACE_ALL: {
 					if (args.length < 3) {
 						throw new InvalidConfigException(line);
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new RadiusReplace(tags, tagsInverted, old, _new);
+					double chance = args.length <= 3 ? 1 : ConfigUtil.parseDouble(args[3]);
+					if (chance < 0) {
+						chance = 0;
+					} else if (chance > 1) {
+						chance = 1;
+					}
+					return new ReplaceAll(tags, tagsInverted, old, _new, chance);
+
 				}
 				case REPLACE_CEILING: {
 					if (args.length < 3) {
@@ -99,7 +92,13 @@ public abstract class PainterStep {
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceCeiling(tags, tagsInverted, old, _new);
+                    double chance = args.length <= 3 ? 1 : ConfigUtil.parseDouble(args[3]);
+					if (chance < 0) {
+						chance = 0;
+					} else if (chance > 1) {
+						chance = 1;
+					}
+					return new ReplaceCeiling(tags, tagsInverted, old, _new, chance);
 				}
 				case REPLACE_FLOOR: {
 					if (args.length < 3) {
@@ -107,7 +106,13 @@ public abstract class PainterStep {
 					}
                     BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
                     BlockStateHolder<?> _new = ConfigUtil.parseBlock(args[2]);
-					return new ReplaceFloor(tags, tagsInverted, old, _new);
+					double chance = args.length <= 3 ? 1 : ConfigUtil.parseDouble(args[3]);
+					if (chance < 0) {
+						chance = 0;
+					} else if (chance > 1) {
+						chance = 1;
+					}
+					return new ReplaceFloor(tags, tagsInverted, old, _new, chance);
 				}
 				case FLOOR_LAYER: {
 					if (args.length < 2) {
@@ -134,13 +139,13 @@ public abstract class PainterStep {
 
 	public abstract void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException;
 
-	public static class ChanceReplace extends PainterStep {
+	public static class ReplaceAll extends PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
 		private final double chance;
 
-		public ChanceReplace(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
-			super(Type.CHANCE_REPLACE, tags, tagsInverted);
+		public ReplaceAll(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
+			super(Type.REPLACE_ALL, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
 			this.chance = chance;
@@ -148,75 +153,70 @@ public abstract class PainterStep {
 
 		@Override
 		public Object serialize() {
-			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString() + " " + chance;
+			String ret = getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+			if (chance != 1) {
+				ret += " " + chance;
+			}
+			return ret;
 		}
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			PostProcessor.chanceReplace(ctx, loc, r, old, _new, chance);
-		}
-	}
-
-	public static class RadiusReplace extends PainterStep {
-		private final BlockStateHolder<?> old;
-		private final BlockStateHolder<?> _new;
-
-		public RadiusReplace(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
-			super(Type.RADIUS_REPLACE, tags, tagsInverted);
-			this.old = old;
-			this._new = _new;
-		}
-
-		@Override
-		public Object serialize() {
-			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
-		}
-
-		@Override
-		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			PostProcessor.radiusReplace(ctx, loc, r, old, _new);
+			PostProcessor.chanceReplaceAll(ctx, loc, r, old, _new, chance);
 		}
 	}
 
 	public static class ReplaceCeiling extends PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
+		private final double chance;
 
-		public ReplaceCeiling(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+		public ReplaceCeiling(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
 			super(Type.REPLACE_CEILING, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
+			this.chance = chance;
 		}
 
 		@Override
 		public Object serialize() {
-			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+			String ret = getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+			if (chance != 1) {
+				ret += " " + chance;
+			}
+			return ret;
 		}
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			PostProcessor.replaceCeiling(ctx, loc, r, old, _new);
+			PostProcessor.chanceReplaceCeiling(ctx, loc, r, old, _new, chance);
 		}
 	}
 
 	public static class ReplaceFloor extends PainterStep {
 		private final BlockStateHolder<?> old;
 		private final BlockStateHolder<?> _new;
+		private final double chance;
 
-		public ReplaceFloor(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new) {
+		public ReplaceFloor(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockStateHolder<?> _new, double chance) {
 			super(Type.REPLACE_FLOOR, tags, tagsInverted);
 			this.old = old;
 			this._new = _new;
+			this.chance = chance;
 		}
 
 		@Override
 		public Object serialize() {
-			return getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+			String ret = getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+			if (chance != 1) {
+				ret += " " + chance;
+			}
+			return ret;
 		}
 
 		@Override
 		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-			PostProcessor.replaceFloor(ctx, loc, r, old, _new);
+			PostProcessor.chanceReplaceFloor(ctx, loc, r, old, _new, chance);
 		}
 	}
 
@@ -259,8 +259,7 @@ public abstract class PainterStep {
 	}
 
 	public enum Type {
-		CHANCE_REPLACE("chance_replace"),
-		RADIUS_REPLACE("radius_replace"),
+		REPLACE_ALL("replace_all"),
 		REPLACE_CEILING("replace_ceiling"),
 		REPLACE_FLOOR("replace_floor"),
 		CEILING_LAYER("ceiling_layer"),

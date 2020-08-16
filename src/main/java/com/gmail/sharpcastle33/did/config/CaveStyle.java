@@ -116,10 +116,10 @@ public class CaveStyle {
 		grammar.validate(rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
 	}
 	private final List<PainterStep> painterSteps = Lists.newArrayList(
-			new PainterStep.ReplaceFloor(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL)),
-			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
-			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
-			new PainterStep.ChanceReplace(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
+			new PainterStep.ReplaceFloor(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.GRAVEL), 1),
+			new PainterStep.ReplaceAll(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.ANDESITE), 0.2),
+			new PainterStep.ReplaceAll(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.COBBLESTONE), 0.2),
+			new PainterStep.ReplaceAll(new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.STONE), Util.requireDefaultState(BlockTypes.MOSSY_COBBLESTONE), 0.05)
 	);
 	private final List<Structure> structures = Lists.newArrayList(
 			new Structure.VeinStructure("coal_ore", Lists.newArrayList(Structure.Edge.values()), 0.01, null, null, new ArrayList<>(), true, Util.requireDefaultState(BlockTypes.COAL_ORE), 4),
