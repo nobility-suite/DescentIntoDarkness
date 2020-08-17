@@ -29,6 +29,8 @@ defaultBlockTypes:
     - minecraft:water
     - minecraft:lava
   airBlock: minecraft:air
+  roomAirBlocks: {}
+  tagAirBlocks: {}
   baseBlock: minecraft:stone
 
 defaultGrammar:

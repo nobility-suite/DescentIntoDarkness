@@ -15,11 +15,16 @@ import java.util.logging.Level;
 
 public class PostProcessor {
 
-	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids) throws WorldEditException {
+	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
-		for(Centroid centroid : centroids) {
-			smooth(ctx, centroid.pos.toBlockPoint(),centroid.size+2);
+		for (int i = 0; i < roomStarts.size(); i++) {
+			int roomStart = roomStarts.get(i);
+			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
+			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
+			for (Centroid centroid : roomCentroids) {
+				smooth(ctx, roomCentroids, centroid);
+			}
 		}
 
 		Bukkit.getLogger().log(Level.WARNING, "Beginning painter pass...");
@@ -51,24 +56,24 @@ public class PostProcessor {
 		}
 	}
 
-	public static void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
+	public static void smooth(CaveGenContext ctx, List<Centroid> roomCentroids, Centroid centroid) throws MaxChangedBlocksException {
+		int x = centroid.pos.getBlockX();
+		int y = centroid.pos.getBlockY();
+		int z = centroid.pos.getBlockZ();
+		int r = centroid.size + 2;
 
-		for(int tx=-r; tx <= r; tx++){
-			for(int ty=-r; ty <= r; ty++){
-				for(int tz=-r; tz <= r; tz++){
+		for(int tx = -r; tx <= r; tx++){
+			for(int ty = -r; ty <= r; ty++){
+				for(int tz = -r; tz <= r; tz++){
 					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
-						//delete(tx+x, ty+y, tz+z);
 						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
 						if(ctx.style.getBaseBlock().equalsFuzzy(ctx.getBlock(pos))) {
-							int amt = countAir(ctx, pos);
-							if(amt>=13) {
+							int amt = countTransparent(ctx, pos);
+							if(amt >= 13) {
 								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
 								if(ctx.rand.nextInt(100) < 95) {
-									ctx.setBlock(pos, ctx.style.getAirBlock());
+									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), roomCentroids, centroid));
 								}
 							}
 						}
@@ -78,20 +83,20 @@ public class PostProcessor {
 		}
 	}
 
-	public static int countAir(CaveGenContext ctx, BlockVector3 loc) {
-		int r = 1;
-		int ret = 0;
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
+	public static int countTransparent(CaveGenContext ctx, BlockVector3 loc) {
+		final int r = 1;
+		int count = 0;
+		for (int tx = -r; tx <= r; tx++) {
+			for (int ty = -r; ty <= r; ty++) {
+				for (int tz = -r; tz <= r; tz++) {
 					BlockVector3 pos = loc.add(tx, ty, tz);
-					if(ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))){
-						ret++;
+					if (ctx.style.isTransparentBlock(ctx.getBlock(pos))) {
+						count++;
 					}
 				}
 			}
 		}
-		return ret;
+		return count;
 	}
 
 

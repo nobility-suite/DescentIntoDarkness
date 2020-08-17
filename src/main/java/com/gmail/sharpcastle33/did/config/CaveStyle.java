@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.gmail.sharpcastle33.did.generator.GrammarGraph;
 import com.gmail.sharpcastle33.did.generator.PainterStep;
 import com.gmail.sharpcastle33.did.generator.Room;
@@ -8,7 +9,9 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CaveStyle {
@@ -17,7 +20,9 @@ public class CaveStyle {
 	private boolean isAbstract;
 
 	// block properties
-	private BlockStateHolder<?> airBlock;
+	private BlockTypeRange<Integer> airBlock;
+	private final Map<String, BlockTypeRange<Double>> roomAirBlocks = new LinkedHashMap<>();
+	private final Map<String, BlockTypeRange<Double>> tagAirBlocks = new LinkedHashMap<>();
 	private BlockStateHolder<?> baseBlock;
 	private final List<BlockStateHolder<?>> transparentBlocks = new ArrayList<>();
 
@@ -46,7 +51,9 @@ public class CaveStyle {
 	public void serialize(ConfigurationSection map) {
 		map.set("abstract", isAbstract);
 
-		map.set("airBlock", airBlock.getAsString());
+		airBlock.serialize(map, "airBlock");
+		serializeTagsToAirBlocks(map.createSection("roomAirBlocks"), roomAirBlocks);
+		serializeTagsToAirBlocks(map.createSection("tagAirBlocks"), tagAirBlocks);
 		map.set("baseBlock", baseBlock.getAsString());
 		map.set("transparentBlocks", transparentBlocks.stream().map(BlockStateHolder::getAsString).collect(Collectors.toCollection(ArrayList::new)));
 		ConfigurationSection oresSection = map.createSection("ores");
@@ -81,17 +88,56 @@ public class CaveStyle {
 		}
 	}
 
-	public static CaveStyle deserialize(String name, ConfigurationSection map) {
-		System.out.println("====== " + name + " ======");
-		map.getValues(true).forEach((key, val) -> System.out.println(key + ": " + val));
+	private static void serializeTagsToAirBlocks(ConfigurationSection map, Map<String, BlockTypeRange<Double>> tagsToAirBlocks) {
+		List<String> tags = new ArrayList<>();
+		BlockTypeRange<Double> lastRange = null;
 
+		for (Map.Entry<String, BlockTypeRange<Double>> entry : tagsToAirBlocks.entrySet()) {
+			String tag = entry.getKey();
+			BlockTypeRange<Double> range = entry.getValue();
+			if (lastRange != null && !range.equals(lastRange)) {
+				lastRange.serialize(map, String.join(" ", tags));
+				tags.clear();
+			}
+
+			tags.add(tag);
+			lastRange = range;
+		}
+
+		if (lastRange != null) {
+			lastRange.serialize(map, String.join(" ", tags));
+		}
+	}
+
+	public static CaveStyle deserialize(String name, ConfigurationSection map) {
 		CaveStyle style = new CaveStyle(name);
 
 		style.isAbstract = map.getBoolean("abstract", false);
 
-		String airBlock = map.getString("airBlock");
+		Object airBlock = map.get("airBlock");
 		if (airBlock != null) {
-			style.airBlock = ConfigUtil.parseBlock(airBlock);
+			style.airBlock = BlockTypeRange.deserializeInt(airBlock);
+			style.airBlock.validateRange(0, 255, i -> i - 1, i -> i + 1);
+		}
+		ConfigurationSection roomAirBlocksSection = map.getConfigurationSection("roomAirBlocks");
+		if (roomAirBlocksSection != null) {
+			style.roomAirBlocks.clear();
+			for (String key : roomAirBlocksSection.getKeys(false)) {
+				BlockTypeRange<Double> range = BlockTypeRange.deserializeDouble(roomAirBlocksSection.get(key));
+				for (String tag : key.split(" ")) {
+					style.roomAirBlocks.put(tag, range);
+				}
+			}
+		}
+		ConfigurationSection tagAirBlocksSection = map.getConfigurationSection("tagAirBlocks");
+		if (tagAirBlocksSection != null) {
+			style.tagAirBlocks.clear();
+			for (String key : tagAirBlocksSection.getKeys(false)) {
+				BlockTypeRange<Double> range = BlockTypeRange.deserializeDouble(tagAirBlocksSection.get(key));
+				for (String tag : key.split(" ")) {
+					style.tagAirBlocks.put(tag, range);
+				}
+			}
 		}
 		String baseBlock = map.getString("baseBlock");
 		if (baseBlock != null) {
@@ -194,8 +240,32 @@ public class CaveStyle {
 		return isAbstract;
 	}
 
-	public BlockStateHolder<?> getAirBlock() {
-		return airBlock;
+	public BlockStateHolder<?> getAirBlock(int y, List<Centroid> currentRoom, Centroid currentCentroid) {
+		double yInCentroid = (double) (y - currentCentroid.pos.getBlockY() + currentCentroid.size) / (currentCentroid.size + currentCentroid.size);
+		for (String tag : currentCentroid.tags) {
+			BlockTypeRange<Double> range = tagAirBlocks.get(tag);
+			if (range != null) {
+				BlockStateHolder<?> block = range.get(yInCentroid);
+				if (block != null) {
+					return block;
+				}
+			}
+		}
+
+		int minRoomY = currentRoom.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
+		int maxRoomY = currentRoom.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
+		double yInRoom = (double) (y - minRoomY) / (maxRoomY - minRoomY);
+		for (String tag : currentCentroid.tags) {
+			BlockTypeRange<Double> range = roomAirBlocks.get(tag);
+			if (range != null) {
+				BlockStateHolder<?> block = range.get(yInRoom);
+				if (block != null) {
+					return block;
+				}
+			}
+		}
+
+		return airBlock.get(y);
 	}
 
 	public BlockStateHolder<?> getBaseBlock() {
@@ -203,7 +273,7 @@ public class CaveStyle {
 	}
 
 	public boolean isTransparentBlock(BlockStateHolder<?> block) {
-		if (airBlock.equalsFuzzy(block)) {
+		if (airBlock.getBlocks().stream().anyMatch(air -> air.equalsFuzzy(block))) {
 			return true;
 		}
 		for (BlockStateHolder<?> transparentBlock : transparentBlocks) {

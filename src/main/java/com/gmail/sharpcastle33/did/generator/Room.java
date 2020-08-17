@@ -48,7 +48,7 @@ public abstract class Room {
 		return ModuleGenerator.vary(ctx, location).add(direction.multiply(caveRadius));
 	}
 
-	public abstract void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids);
+	public abstract void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts);
 
 	public final void serialize(ConfigurationSection map) {
 		map.set("type", ConfigUtil.enumToString(type));
@@ -79,7 +79,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			centroids.add(new Centroid(location, caveRadius, tags));
 		}
 
@@ -110,7 +110,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			centroids.add(new Centroid(location, caveRadius, tags));
 		}
 
@@ -161,12 +161,12 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			int dir = ctx.rand.nextBoolean() ? 1 : -1;
 			int newLength = minBranchLength + ctx.rand.nextInt(maxBranchLength - minBranchLength + 1);
 			int sizeReduction = minSizeReduction + ctx.rand.nextInt(maxSizeReduction - minSizeReduction + 1);
 			Vector3 newDir = Util.rotateAroundY(direction, Math.toRadians((minAngle + ctx.rand.nextDouble() * (maxAngle - minAngle)) * dir));
-			CaveGenerator.generateBranch(ctx, caveRadius - sizeReduction, location, newLength, false, newDir, centroids);
+			CaveGenerator.generateBranch(ctx, caveRadius - sizeReduction, location, newLength, false, newDir, centroids, roomStarts);
 		}
 
 		@Override
@@ -229,7 +229,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			int depth = (Integer) userData[0];
 			int i = 0;
 			int radius = caveRadius >= 4 ? caveRadius - 1 : caveRadius;
@@ -309,7 +309,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			int count = minCentroids + ctx.rand.nextInt(maxCentroids - minCentroids + 1);
 
 			int spread = caveRadius - 1;
@@ -430,7 +430,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			int length = (Integer) userData[0];
 			int height = (Integer) userData[1];
 			int width = (Integer) userData[2];
@@ -555,19 +555,20 @@ public abstract class Room {
 		@Override
 		public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags) {
 			List<Centroid> centroids = new ArrayList<>();
+			List<Integer> roomStarts = new ArrayList<>();
 			Vector3 newLocation;
 			if (ctx.rand.nextBoolean()) {
-				newLocation = generateFromBottom(ctx, location, direction, caveRadius, tags, centroids);
+				newLocation = generateFromBottom(ctx, location, direction, caveRadius, tags, centroids, roomStarts);
 			} else {
-				newLocation = generateFromTop(ctx, location, direction, caveRadius, tags, centroids);
+				newLocation = generateFromTop(ctx, location, direction, caveRadius, tags, centroids, roomStarts);
 			}
 			return new Object[] { newLocation, centroids };
 		}
 
-		private Vector3 generateFromBottom(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids) {
+		private Vector3 generateFromBottom(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids, List<Integer> roomStarts) {
 			Vector3 next = location;
-			next = generateRoom(largeRoom, ctx, next, direction, caveRadius, tags, centroids);
-			next = generateRoom(smallRoom, ctx, next, direction, caveRadius, tags, centroids);
+			next = generateRoom(largeRoom, ctx, next, direction, caveRadius, tags, centroids, roomStarts);
+			next = generateRoom(smallRoom, ctx, next, direction, caveRadius, tags, centroids, roomStarts);
 
 			Vector3 shelf = location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
 			int dir = ctx.rand.nextBoolean() ? 1 : -1;
@@ -576,7 +577,7 @@ public abstract class Room {
 			int shelfRadius = Math.max(caveRadius, 5);
 			int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 			for (int i = 0; i < shelfSize; i++) {
-				shelf = generateRoom(smallRoom, ctx, shelf, direction, shelfRadius, tags, centroids);
+				shelf = generateRoom(smallRoom, ctx, shelf, direction, shelfRadius, tags, centroids, roomStarts);
 				shelf = ModuleGenerator.vary(ctx, shelf);
 				shelf = shelf.add(direction.multiply(shelfRadius));
 			}
@@ -584,7 +585,7 @@ public abstract class Room {
 			return next;
 		}
 
-		private Vector3 generateFromTop(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids) {
+		private Vector3 generateFromTop(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids, List<Integer> roomStarts) {
 			Vector3 shelf = location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
 			int dir = ctx.rand.nextBoolean() ? 1 : -1;
 			shelf = shelf.add(Util.rotateAroundY(direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
@@ -593,20 +594,20 @@ public abstract class Room {
 			int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 			Vector3 next = location;
 			for (int i = 0; i < shelfSize; i++) {
-				next = generateRoom(smallRoom, ctx, next, direction, shelfRadius, tags, centroids);
+				next = generateRoom(smallRoom, ctx, next, direction, shelfRadius, tags, centroids, roomStarts);
 				next = ModuleGenerator.vary(ctx, next);
 				next = next.add(direction.multiply(shelfRadius));
 			}
 
-			shelf = generateRoom(largeRoom, ctx, shelf, direction, caveRadius, tags, centroids);
-			shelf = generateRoom(smallRoom, ctx, shelf, direction, caveRadius, tags, centroids);
+			shelf = generateRoom(largeRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts);
+			shelf = generateRoom(smallRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts);
 
 			return next;
 		}
 
-		private Vector3 generateRoom(Room room, CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids) {
+		private Vector3 generateRoom(Room room, CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<Centroid> centroids, List<Integer> roomStarts) {
 			Object[] userData = room.createUserData(ctx, location, direction, caveRadius, tags);
-			room.addCentroids(ctx, location, direction, caveRadius, tags, userData, centroids);
+			room.addCentroids(ctx, location, direction, caveRadius, tags, userData, centroids, roomStarts);
 			return room.adjustLocation(ctx, location, direction, caveRadius, userData);
 		}
 
@@ -617,7 +618,7 @@ public abstract class Room {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 			centroids.addAll((List<Centroid>) userData[1]);
 		}
 
@@ -645,7 +646,7 @@ public abstract class Room {
 		}
 
 		@Override
-		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids) {
+		public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts) {
 		}
 
 		@Override

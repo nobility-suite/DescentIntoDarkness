@@ -15,7 +15,7 @@ import org.bukkit.Bukkit;
 
 public class ModuleGenerator {
 
-	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids) {
+	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids, List<Integer> roomStarts) {
 		String cave = layout.getValue();
 		Bukkit.getLogger().log(Level.INFO, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.INFO, "Cave string: " + cave);
@@ -23,40 +23,43 @@ public class ModuleGenerator {
 		Map<Character, Room> rooms = ctx.style.getRooms().stream()
 				.collect(Collectors.groupingBy(Room::getSymbol, Collectors.reducing(null, (a, b) -> a == null ? b : a)));
 
-		int startIndex = centroids.size();
+		int roomStartIndex = roomStarts.size();
 
 		Vector3 location = start;
 		for (int i = 0; i < cave.length(); i++) {
+			roomStarts.add(centroids.size());
 			Room room = rooms.get(cave.charAt(i));
 			List<String> tags = new ArrayList<>(layout.getTags().get(i));
 			tags.addAll(room.getTags());
 			Object[] userData = room.createUserData(ctx, location, dir, caveRadius, tags);
-			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids);
+			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids, roomStarts);
 			dir = room.adjustDirection(ctx, dir, userData);
 			location = room.adjustLocation(ctx, location, dir, caveRadius, userData);
 		}
 
-		for (int i = startIndex; i < centroids.size(); i++) {
-			Centroid centroid = centroids.get(i);
-			deleteSphere(ctx, centroid.pos, centroid.size);
+		for (int i = roomStartIndex; i < roomStarts.size(); i++) {
+			int roomStart = roomStarts.get(i);
+			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
+			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
+			for (Centroid centroid : roomCentroids) {
+				deleteCentroid(ctx, roomCentroids, centroid);
+			}
 		}
 	}
 
-	private static void deleteSphere(CaveGenContext ctx, Vector3 loc, int r) {
-		double x = loc.getX();
-		double y = loc.getY();
-		double z = loc.getZ();
+	private static void deleteCentroid(CaveGenContext ctx, List<Centroid> roomCentroids, Centroid centroid) {
+		int x = centroid.pos.getBlockX();
+		int y = centroid.pos.getBlockY();
+		int z = centroid.pos.getBlockZ();
+		int r = centroid.size;
 
-		for(int tx=-r; tx <= r; tx++){
-			for(int ty=-r; ty <= r; ty++){
-				for(int tz=-r; tz <= r; tz++){
+		for(int ty = -r; ty <= r; ty++) {
+			BlockStateHolder<?> airBlock = ctx.style.getAirBlock(ty + y, roomCentroids, centroid);
+			for(int tx = -r; tx <= r; tx++){
+				for(int tz = -r; tz <= r; tz++){
 					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
-						//delete(tx+x, ty+y, tz+z);
-						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r)) {
-							continue;
-						}
-						if(ty+y > 0) {
-							ctx.setBlock(BlockVector3.at(tx + x, ty + y, tz + z), ctx.style.getAirBlock());
+						if (((tx != 0 || ty != 0) && (tx != 0 || tz != 0) && (ty != 0 || tz != 0)) || (Math.abs(tx + ty + tz) != r)) {
+							ctx.setBlock(BlockVector3.at(tx + x, ty + y, tz + z), airBlock);
 						}
 					}
 				}

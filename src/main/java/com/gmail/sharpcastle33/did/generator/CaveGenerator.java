@@ -31,15 +31,16 @@ public class CaveGenerator {
 
 	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
 		Bukkit.getLogger().log(Level.INFO, "Generating cave of size " + size);
-		ArrayList<Centroid> centroids = new ArrayList<>();
+		List<Centroid> centroids = new ArrayList<>();
+		List<Integer> roomStarts = new ArrayList<>();
 		int length = ctx.style.getMinLength() + ctx.rand.nextInt(ctx.style.getMaxLength() - ctx.style.getMinLength() + 1);
 		Vector3 startingDir = Util.rotateAroundY(Vector3.UNIT_X, ctx.rand.nextDouble() * 2 * Math.PI);
-		String caveString = generateBranch(ctx, size, pos, length, true, startingDir, centroids);
-		PostProcessor.postProcess(ctx, centroids);
+		String caveString = generateBranch(ctx, size, pos, length, true, startingDir, centroids, roomStarts);
+		PostProcessor.postProcess(ctx, centroids, roomStarts);
 		return caveString;
 	}
 
-	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids) throws WorldEditException {
+	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
 		LayoutGenerator.Layout layout = LayoutGenerator.generateCave(ctx, length);
 
 		if(!moreBranches) {
@@ -53,7 +54,7 @@ public class CaveGenerator {
 			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + layout);
 		}
 
-		ModuleGenerator.read(ctx, layout, pos, dir, size, centroids);
+		ModuleGenerator.read(ctx, layout, pos, dir, size, centroids, roomStarts);
 		return layout.getValue();
 	}
 
