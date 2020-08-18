@@ -13,12 +13,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 public class MobSpawnManager implements Runnable, Listener {
 	private final Random rand = new Random();
 	private boolean spawningMob = false;
+	private final List<MobInstance> allMobs = new ArrayList<>();
 
 	private void spawnMobs(CaveTracker cave) {
 		if (cave.getPlayers().isEmpty()) {
@@ -104,7 +108,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			return false;
 		}
 
-		if (!doSpawn(cave, spawnEntry, spawnLocation)) {
+		if (!doSpawn(cave, spawnEntry, chosenPlayer.getUniqueId(), spawnLocation)) {
 			return false;
 		}
 
@@ -115,7 +119,7 @@ public class MobSpawnManager implements Runnable, Listener {
 		return true;
 	}
 
-	private boolean doSpawn(CaveTracker cave, MobSpawnEntry spawnEntry, Vector spawnLocation) {
+	private boolean doSpawn(CaveTracker cave, MobSpawnEntry spawnEntry, UUID spawnedPlayer, Vector spawnLocation) {
 		boolean isMythicMob = MythicMobs.inst().getMobManager().getMythicMob(spawnEntry.getMob()) != null;
 		Location loc = spawnLocation.toLocation(cave.getWorld());
 
@@ -134,6 +138,7 @@ public class MobSpawnManager implements Runnable, Listener {
 				return false;
 			}
 			mob = BukkitAdapter.adapt(activeMob.getEntity());
+			allMobs.add(new MythicMobInstance(cave, spawnEntry, activeMob, spawnedPlayer));
 		} else {
 			com.sk89q.worldedit.world.entity.EntityType entityType =
 					com.sk89q.worldedit.world.entity.EntityType.REGISTRY.get(spawnEntry.getMob().toLowerCase(Locale.ROOT));
@@ -147,6 +152,10 @@ public class MobSpawnManager implements Runnable, Listener {
 				mob.remove();
 				return false;
 			}
+			if (mob instanceof LivingEntity) {
+				((LivingEntity) mob).setRemoveWhenFarAway(false);
+			}
+			allMobs.add(new VanillaMobInstance(cave, spawnEntry, mob, spawnedPlayer));
 		}
 
 		mob.setRotation(rand.nextFloat() * 360, 0);
@@ -182,7 +191,7 @@ public class MobSpawnManager implements Runnable, Listener {
 				continue;
 			}
 			index -= weightFunction.applyAsInt(player);
-			if (index <= 0) {
+			if (index < 0) {
 				chosenPlayer = Bukkit.getPlayer(player);
 				break;
 			}
@@ -216,6 +225,19 @@ public class MobSpawnManager implements Runnable, Listener {
 
 	@Override
 	public void run() {
+		if (Bukkit.getWorlds().get(0).getFullTime() % 20 == 0) {
+			Iterator<MobInstance> allMobsItr = allMobs.iterator();
+			while (allMobsItr.hasNext()) {
+				MobInstance mob = allMobsItr.next();
+				if (!mob.entity.isDead() && !mob.hasDespawned) {
+					checkForDespawn(mob);
+				}
+				if (mob.entity.isDead() || mob.hasDespawned) {
+					allMobsItr.remove();
+				}
+			}
+		}
+
 		for (CaveTracker cave : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
 			spawnMobs(cave);
 		}
@@ -246,5 +268,97 @@ public class MobSpawnManager implements Runnable, Listener {
 			}
 		}
 		return true;
+	}
+
+	private void checkForDespawn(MobInstance mob) {
+		int despawnRange = mob.spawnEntry.getDespawnRange();
+
+		// check if this mob is actually allowed to despawn
+		if (despawnRange <= 0) {
+			return;
+		}
+
+		// quick exit if cave contains no players, mob couldn't despawn anyway
+		if (mob.cave.getPlayers().isEmpty()) {
+			return;
+		}
+
+		// check if there are players within the despawn range of the mob
+		if (mob.cave.getPlayers().stream()
+				.map(Bukkit::getOfflinePlayer)
+				.filter(OfflinePlayer::isOnline)
+				.map(OfflinePlayer::getPlayer)
+				.filter(player -> player != null && player.getWorld() == mob.cave.getWorld())
+				.anyMatch(player -> player.getLocation().distanceSquared(mob.entity.getLocation()) <= despawnRange * despawnRange)) {
+			return;
+		}
+
+		// find a player to give the pollution back to, preferably the player which spawned the mob
+		UUID victimPlayer = null;
+		if (mob.cave.getPlayers().contains(mob.spawnedPlayer)) {
+			OfflinePlayer player = Bukkit.getOfflinePlayer(mob.spawnedPlayer);
+			if (player.isOnline()) {
+				assert player.getPlayer() != null;
+				if (player.getPlayer().getWorld() == mob.cave.getWorld()) {
+					victimPlayer = mob.spawnedPlayer;
+				}
+			}
+		}
+		if (victimPlayer == null) {
+			Player player = getRandomPlayer(mob.cave, mob.spawnEntry, Integer.MIN_VALUE, p -> 1);
+			if (player != null) {
+				victimPlayer = player.getUniqueId();
+			}
+		}
+		if (victimPlayer == null) {
+			// no player to give pollution to, abort
+			return;
+		}
+
+		mob.cave.getMobEntry(mob.spawnEntry).addPlayerPollution(victimPlayer, mob.spawnEntry.getSingleMobCost());
+		mob.remove();
+		mob.hasDespawned = true;
+	}
+
+	private static abstract class MobInstance {
+		protected final CaveTracker cave;
+		protected final MobSpawnEntry spawnEntry;
+		protected final Entity entity;
+		protected final UUID spawnedPlayer;
+		protected boolean hasDespawned = false;
+
+		protected MobInstance(CaveTracker cave, MobSpawnEntry spawnEntry, Entity entity, UUID spawnedPlayer) {
+			this.cave = cave;
+			this.spawnEntry = spawnEntry;
+			this.entity = entity;
+			this.spawnedPlayer = spawnedPlayer;
+		}
+
+		public abstract void remove();
+	}
+
+	private static final class VanillaMobInstance extends MobInstance {
+		protected VanillaMobInstance(CaveTracker cave, MobSpawnEntry entry, Entity entity, UUID spawnedPlayer) {
+			super(cave, entry, entity, spawnedPlayer);
+		}
+
+		@Override
+		public void remove() {
+			entity.remove();
+		}
+	}
+
+	private static final class MythicMobInstance extends MobInstance {
+		private final ActiveMob mob;
+
+		protected MythicMobInstance(CaveTracker cave, MobSpawnEntry entry, ActiveMob mob, UUID spawnedPlayer) {
+			super(cave, entry, BukkitAdapter.adapt(mob.getEntity()), spawnedPlayer);
+			this.mob = mob;
+		}
+
+		@Override
+		public void remove() {
+			mob.setDespawned();
+		}
 	}
 }

@@ -12,6 +12,7 @@ public final class MobSpawnEntry {
 	private final int minDistance;
 	private final int maxDistance;
 	private final int cooldown;
+	private final int despawnRange;
 
 	public MobSpawnEntry(
 			String name,
@@ -22,7 +23,8 @@ public final class MobSpawnEntry {
 			int weight,
 			int minDistance,
 			int maxDistance,
-			int cooldown
+			int cooldown,
+			int despawnRange
 	) {
 		this.name = name;
 		this.mob = mob;
@@ -33,6 +35,7 @@ public final class MobSpawnEntry {
 		this.minDistance = minDistance;
 		this.maxDistance = maxDistance;
 		this.cooldown = cooldown;
+		this.despawnRange = despawnRange;
 	}
 
 	public String getName() {
@@ -71,6 +74,10 @@ public final class MobSpawnEntry {
 		return cooldown;
 	}
 
+	public int getDespawnRange() {
+		return despawnRange;
+	}
+
 	@Override
 	public int hashCode() {
 		return name.hashCode();
@@ -93,6 +100,7 @@ public final class MobSpawnEntry {
 		map.set("minDistance", minDistance);
 		map.set("maxDistance", maxDistance);
 		map.set("cooldown", cooldown);
+		map.set("ddespawnRange", despawnRange);
 	}
 
 	public static MobSpawnEntry deserialize(String name, ConfigurationSection map) {
@@ -104,6 +112,7 @@ public final class MobSpawnEntry {
 		int minDistance = map.getInt("minDistance", 15);
 		int maxDistance = map.getInt("maxDistance", 25);
 		int cooldown = map.getInt("cooldown", 20);
-		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown);
+		int despawnRange = map.getInt("despawnRange", 48);
+		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown, despawnRange);
 	}
 }

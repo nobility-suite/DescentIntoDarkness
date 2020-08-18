@@ -213,6 +213,7 @@ defaultMobSpawning:
       minDistance: 10
       maxDistance: 20
       cooldown: 20
+      despawnRange: 48
     skeleton:
       mob: minecraft:skeleton
       singleMobCost: 70
@@ -222,6 +223,7 @@ defaultMobSpawning:
       minDistance: 15
       maxDistance: 25
       cooldown: 20
+      despawnRange: 48
     creeper:
       mob: minecraft:creeper
       singleMobCost: 100
@@ -231,6 +233,7 @@ defaultMobSpawning:
       minDistance: 15
       maxDistance: 25
       cooldown: 20
+      despawnRange: 48
 
   ores:
     coal_ore:
