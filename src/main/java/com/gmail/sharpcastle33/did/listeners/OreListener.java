@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Random;
@@ -20,28 +21,51 @@ public class OreListener implements Listener {
 
 	@EventHandler
 	public void oreBreak(BlockBreakEvent event) {
-		Player p = event.getPlayer();
-		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(p);
+		Player player = event.getPlayer();
+		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(player);
 		if (cave == null) {
 			return;
 		}
 
 		BlockStateHolder<?> block = BukkitAdapter.adapt(event.getBlock().getBlockData());
+		boolean isOre = false;
 		for (Ore ore : cave.getStyle().getOres()) {
 			if (ore.getBlock().equalsFuzzy(block)) {
+				isOre = true;
 				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
 				if (spawnEntry != null) {
-					cave.addPlayerMobPollution(p.getUniqueId(), spawnEntry, ore.getPollution());
+					cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, ore.getPollution());
 				}
 				if (ore.getDropItem() != null) {
 					ItemStack toDrop = new ItemStack(ore.getDropItem());
 					toDrop.setAmount(ore.getMinDropAmount() + rand.nextInt(ore.getMaxDropAmount() - ore.getMinDropAmount() + 1));
-					p.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
+					player.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
 					event.setDropItems(false);
 					event.setExpToDrop(0);
 				}
 				break;
 			}
+		}
+
+		if (!isOre) {
+			MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
+			if (spawnEntry != null) {
+				cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, cave.getStyle().getBlockBreakPollution());
+			}
+		}
+	}
+
+	@EventHandler
+	public void blockPlace(BlockPlaceEvent event) {
+		Player player = event.getPlayer();
+		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(player);
+		if (cave == null) {
+			return;
+		}
+
+		MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
+		if (spawnEntry != null) {
+			cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, cave.getStyle().getBlockPlacePollution());
 		}
 	}
 

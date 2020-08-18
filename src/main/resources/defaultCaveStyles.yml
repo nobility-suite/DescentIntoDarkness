@@ -255,6 +255,8 @@ defaultMobSpawning:
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
   sprintingPenalty: 5
+  blockPlacePollution: 10
+  blockBreakPollution: 5
 
 
 # The debug cave type

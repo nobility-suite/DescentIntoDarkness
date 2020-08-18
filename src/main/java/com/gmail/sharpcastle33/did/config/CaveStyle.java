@@ -32,6 +32,8 @@ public class CaveStyle {
 	private float naturalPollutionIncrease;
 	private int spawnAttemptsPerTick;
 	private int sprintingPenalty;
+	private int blockPlacePollution;
+	private int blockBreakPollution;
 
 	// cave generation
 	private int minLength;
@@ -56,6 +58,7 @@ public class CaveStyle {
 		serializeTagsToAirBlocks(map.createSection("tagAirBlocks"), tagAirBlocks);
 		map.set("baseBlock", baseBlock.getAsString());
 		map.set("transparentBlocks", transparentBlocks.stream().map(BlockStateHolder::getAsString).collect(Collectors.toCollection(ArrayList::new)));
+
 		ConfigurationSection oresSection = map.createSection("ores");
 		for (Ore ore : ores) {
 			ore.serialize(oresSection.createSection(ore.getName()));
@@ -67,6 +70,8 @@ public class CaveStyle {
 		map.set("naturalPollutionIncrease", (double)naturalPollutionIncrease);
 		map.set("spawnAttemptsPerTick", spawnAttemptsPerTick);
 		map.set("sprintingPenalty", sprintingPenalty);
+		map.set("blockPlacePollution", blockPlacePollution);
+		map.set("blockBreakPollution", blockBreakPollution);
 
 		map.set("minLength", minLength);
 		map.set("maxLength", maxLength);
@@ -171,6 +176,8 @@ public class CaveStyle {
 		style.naturalPollutionIncrease = (float)map.getDouble("naturalPollutionIncrease", 0.1);
 		style.spawnAttemptsPerTick = map.getInt("spawnAttemptsPerTick", 10);
 		style.sprintingPenalty = map.getInt("sprintingPenalty", 5);
+		style.blockPlacePollution = map.getInt("blockPlacePollution", 10);
+		style.blockBreakPollution = map.getInt("blockBreakPollution", 10);
 
 
 		style.minLength = map.getInt("minLength", 90);
@@ -302,6 +309,14 @@ public class CaveStyle {
 
 	public int getSprintingPenalty() {
 		return sprintingPenalty;
+	}
+
+	public int getBlockPlacePollution() {
+		return blockPlacePollution;
+	}
+
+	public int getBlockBreakPollution() {
+		return blockBreakPollution;
 	}
 
 	public int getMinLength() {
