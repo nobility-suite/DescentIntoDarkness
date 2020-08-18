@@ -192,6 +192,10 @@ public class MobSpawnManager implements Runnable, Listener {
 	@Nullable
 	public MobSpawnEntry getRandomSpawnEntry(CaveTracker cave) {
 		List<MobSpawnEntry> spawnEntries = cave.getStyle().getSpawnEntries();
+		if (spawnEntries.isEmpty()) {
+			return null;
+		}
+
 		int totalWeight = spawnEntries.stream().mapToInt(MobSpawnEntry::getWeight).sum();
 		int index = rand.nextInt(totalWeight);
 		for (MobSpawnEntry entry : spawnEntries) {

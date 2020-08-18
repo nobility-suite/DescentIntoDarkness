@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Random;
@@ -209,7 +210,7 @@ public class CommandListener implements TabExecutor {
 
 	private void generateCave(Player p, String[] args) {
 		String styleName = args.length <= 2 ? "default" : args[2];
-		OptionalInt size = args.length <= 3 ? OptionalInt.of(9) : parseInt(p, args[3]);
+		OptionalInt size = args.length <= 3 ? OptionalInt.of(7) : parseInt(p, args[3]);
 		if (!size.isPresent()) return;
 		OptionalLong seed = args.length <= 4 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[4]);
 		if (!seed.isPresent()) return;
@@ -218,6 +219,10 @@ public class CommandListener implements TabExecutor {
 		CaveStyle style = DescentIntoDarkness.plugin.getCaveStyles().get(styleName);
 		if (style == null) {
 			p.sendMessage(ChatColor.DARK_RED + "No such cave style " + styleName);
+			return;
+		}
+		if (style.isAbstract()) {
+			p.sendMessage(ChatColor.DARK_RED + "Cannot create abstract cave style " + styleName);
 			return;
 		}
 
@@ -250,8 +255,11 @@ public class CommandListener implements TabExecutor {
 					} else {
 						if (args[1].equals("cave")) {
 							if (args.length == 3) {
-								return StringUtil.copyPartialMatches(args[2],
-										DescentIntoDarkness.plugin.getCaveStyles().keySet(), new ArrayList<>());
+								return StringUtil.copyPartialMatches(
+										args[2],
+										DescentIntoDarkness.plugin.getCaveStyles().entrySet().stream().filter(entry -> !entry.getValue().isAbstract()).map(Map.Entry::getKey).collect(Collectors.toList()),
+										new ArrayList<>()
+								);
 							} else if (args.length == 6) {
 								return StringUtil.copyPartialMatches(args[5], Arrays.asList("false", "true"), new ArrayList<>());
 							}

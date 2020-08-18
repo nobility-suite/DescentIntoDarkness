@@ -1,0 +1,271 @@
+# This file is auto-generated, WILL BE OVERWRITTEN!
+# Create your own cave styles in separate files in this directory.
+
+# The default cave style. Every cave style inherits from this one.
+default:
+  __builtin_no_default_inherit: true
+  inherit:
+    - defaultBlockTypes
+    - defaultGrammar
+    - defaultRooms
+    - defaultPainterSteps
+    - defaultStructures
+    - defaultMobSpawning
+
+  maxLength: 90
+  minLength: 90
+  maxSize: 9
+  minSize: 5
+
+  portals: {}
+
+# If you want individual traits of the default cave type to inherit other things, you can also explicitly inherit these
+defaultBlockTypes:
+  __builtin_no_default_inherit: true
+  abstract: true
+  transparentBlocks:
+    - minecraft:air
+    - minecraft:glowstone
+    - minecraft:water
+    - minecraft:lava
+  airBlock: minecraft:air
+  roomAirBlocks: {}
+  tagAirBlocks: {}
+  baseBlock: minecraft:stone
+
+defaultGrammar:
+  __builtin_no_default_inherit: true
+  abstract: true
+  grammar:
+    A:
+      w: 60
+      a: 15
+      d: 15
+      x: 2
+      o: 2
+      r: 7
+      yr: 2
+    B:
+      w: 80
+      a: 20
+      d: 20
+      x: 5
+      o: 2
+      c: 2
+      r: 19
+      l: 29
+      h: 8
+    C:
+      SSS: 1
+      SSSS: 1
+      SSSSS: 1
+      SSSSSS: 1
+    S:
+      XY: 1
+    X:
+      AAAA: 1
+      AAAAA: 1
+      AAAAAA: 1
+      AAAAAAA: 1
+      AAAAAAAA: 1
+      AAAAAAAAA: 1
+      AAAAAAAAAA: 1
+    Y:
+      BBBBB: 1
+      BBBBBB: 1
+      BBBBBBB: 1
+      BBBBBBBB: 1
+      BBBBBBBBB: 1
+
+defaultRooms:
+  __builtin_no_default_inherit: true
+  abstract: true
+  rooms:
+    w:
+      type: simple
+      tags: forward
+    a:
+      type: turn
+      tags: turn_left
+      minAngle: 15.0
+      maxAngle: 30.0
+    d:
+      type: turn
+      tags: turn_right
+      minAngle: -30.0
+      maxAngle: -15.0
+    x:
+      type: branch
+      tags: branch
+      minAngle: 90.0
+      maxAngle: 90.0
+      minSizeReduction: 1
+      maxSizeReduction: 1
+      minBranchLength: 20
+      maxBranchLength: 39
+    y:
+      type: branch
+      tags: small_branch
+      minAngle: 45.0
+      maxAngle: 180.0
+      minSizeReduction: 2
+      maxSizeReduction: 6
+      minBranchLength: 20
+      maxBranchLength: 39
+    o:
+      type: dropshaft
+      tags: dropshaft
+      minDepth: 8
+      maxDepth: 11
+      minStep: 2
+      maxStep: 3
+    l:
+      type: cavern
+      tags: large_cavern
+      minCentroids: 3
+      maxCentroids: 7
+      minSpread: 1
+      maxSpread: 2147483647
+      centroidSizeVariance: 1
+      nextLocationScale: 2
+      nextLocationOffset: 2
+    r:
+      type: cavern
+      tags: cavern
+      minCentroids: 4
+      maxCentroids: 7
+      minSpread: 2
+      maxSpread: 2147483647
+      centroidSizeVariance: 0
+      nextLocationScale: 1
+      nextLocationOffset: 3
+    h:
+      type: shelf
+      tags: shelf
+      minShelfHeight: 6
+      maxShelfHeight: 10
+      minShelfSize: 3
+      maxShelfSize: 3
+    c:
+      type: ravine
+      tags: ravine
+      minLength: 80
+      maxLength: 120
+      minHeight: 80
+      maxHeight: 120
+      minWidth: 10
+      maxWidth: 20
+      minTurn: 0.0
+      maxTurn: 30.0
+      heightVaryChance: 0.2
+
+defaultPainterSteps:
+  __builtin_no_default_inherit: true
+  abstract: true
+  painterSteps:
+    - replace_floor minecraft:stone minecraft:gravel
+    - replace_all minecraft:stone minecraft:andesite 0.2
+    - replace_all minecraft:stone minecraft:cobblestone 0.2
+    - replace_all minecraft:stone minecraft:mossy_cobblestone 0.05
+
+defaultStructures:
+  __builtin_no_default_inherit: true
+  abstract: true
+  structures:
+    coal_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:coal_ore
+      radius: 4
+    diamond_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:diamond_ore
+      radius: 4
+    emerald_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:emerald_ore
+      radius: 3
+
+defaultMobSpawning:
+  __builtin_no_default_inherit: true
+  abstract: true
+  spawnEntries:
+    zombie:
+      mob: minecraft:zombie
+      singleMobCost: 50
+      minPackCost: 100
+      maxPackCost: 300
+      weight: 10
+      minDistance: 10
+      maxDistance: 20
+      cooldown: 20
+    skeleton:
+      mob: minecraft:skeleton
+      singleMobCost: 70
+      minPackCost: 100
+      maxPackCost: 300
+      weight: 10
+      minDistance: 15
+      maxDistance: 25
+      cooldown: 20
+    creeper:
+      mob: minecraft:creeper
+      singleMobCost: 100
+      minPackCost: 100
+      maxPackCost: 300
+      weight: 20
+      minDistance: 15
+      maxDistance: 25
+      cooldown: 20
+
+  ores:
+    coal_ore:
+      block: minecraft:coal_ore
+      pollution: 10
+      minDropAmount: 1
+      maxDropAmount: 1
+    diamond_ore:
+      block: minecraft:diamond_ore
+      pollution: 30
+      minDropAmount: 1
+      maxDropAmount: 1
+    emerald_ore:
+      block: minecraft:emerald_ore
+      pollution: 30
+      minDropAmount: 1
+      maxDropAmount: 1
+
+  naturalPollutionIncrease: 0.1
+  spawnAttemptsPerTick: 10
+  sprintingPenalty: 5
+
+
+# The debug cave type
+debug:
+  painterSteps:
+    - <forward> replace_all minecraft:stone minecraft:white_wool
+    - <turn_left> replace_all minecraft:stone minecraft:orange_wool
+    - <turn_right> replace_all minecraft:stone minecraft:magenta_wool
+    - <branch> replace_all minecraft:stone minecraft:light_blue_wool
+    - <small_branch> replace_all minecraft:stone minecraft:yellow_wool
+    - <dropshaft> replace_all minecraft:stone minecraft:lime_wool
+    - <large_cavern> replace_all minecraft:stone minecraft:pink_wool
+    - <cavern> replace_all minecraft:stone minecraft:gray_wool
+    - <shelf> replace_all minecraft:stone minecraft:light_gray_wool
+    - <ravine> replace_all minecraft:stone minecraft:cyan_wool
+  structures: {}
+  spawnEntries: {}

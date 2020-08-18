@@ -4,44 +4,58 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
-import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.Bukkit;
 
 public class CaveGenerator {
 
 	public static void generateBlank(EditSession session, BlockStateHolder<?> base, int x, int y, int z, int radius, int yRadius) throws WorldEditException {
-		session.setBlocks((Region)new CuboidRegion(
+		for (BlockVector3 pos : new CuboidRegion(
 				BlockVector3.at(x - radius, Math.max(0, y - yRadius), z - radius),
-				BlockVector3.at(x + radius, Math.min(255, y + yRadius), z + radius)),
-			base);
+				BlockVector3.at(x + radius, Math.min(255, y + yRadius), z + radius)
+		)) {
+			session.setBlock(pos, base);
+		}
+	}
+
+	public static String generateCave(CaveGenContext ctx, Vector3 pos) {
+		int size = ctx.style.getMinSize() + ctx.rand.nextInt(ctx.style.getMaxSize() - ctx.style.getMinSize());
+		return generateCave(ctx, pos, size);
 	}
 
 	public static String generateCave(CaveGenContext ctx, Vector3 pos, int size) throws WorldEditException {
 		Bukkit.getLogger().log(Level.INFO, "Generating cave of size " + size);
-		ArrayList<Centroid> centroids = new ArrayList<>();
-		String caveString = generateBranch(ctx, size, pos, 90, true, Vector3.UNIT_X, centroids);
-		PostProcessor.postProcess(ctx, centroids);
+		List<Centroid> centroids = new ArrayList<>();
+		List<Integer> roomStarts = new ArrayList<>();
+		int length = ctx.style.getMinLength() + ctx.rand.nextInt(ctx.style.getMaxLength() - ctx.style.getMinLength() + 1);
+		Vector3 startingDir = Util.rotateAroundY(Vector3.UNIT_X, ctx.rand.nextDouble() * 2 * Math.PI);
+		String caveString = generateBranch(ctx, size, pos, length, true, startingDir, centroids, roomStarts);
+		PostProcessor.postProcess(ctx, centroids, roomStarts);
 		return caveString;
 	}
 
-	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids) throws WorldEditException {
-		String s = LayoutGenerator.generateCave(ctx, length, 0);
+	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
+		LayoutGenerator.Layout layout = LayoutGenerator.generateCave(ctx, length);
 
 		if(!moreBranches) {
-			s = s.replace("X", "W");
-			s = s.replace("x", "W");
-			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + s);
+			Room simpleRoom = ctx.style.getRooms().stream().filter(room -> room instanceof Room.SimpleRoom).findFirst().orElse(null);
+			String branchReplacement = simpleRoom == null ? "" : String.valueOf(simpleRoom.getSymbol());
+			for (Room room : ctx.style.getRooms()) {
+				if (room.isBranch()) {
+					layout.setValue(layout.getValue().replace(String.valueOf(room.getSymbol()), branchReplacement));
+				}
+			}
+			Bukkit.getServer().getLogger().log(Level.WARNING, "New Branch: " + layout);
 		}
 
-		ModuleGenerator gen = new ModuleGenerator(centroids, size);
-		gen.read(ctx, s, pos ,dir);
-		return s;
+		ModuleGenerator.read(ctx, layout, pos, dir, size, centroids, roomStarts);
+		return layout.getValue();
 	}
 
 

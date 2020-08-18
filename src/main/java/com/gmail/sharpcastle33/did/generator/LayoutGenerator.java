@@ -1,176 +1,97 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import org.bukkit.Bukkit;
+
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class LayoutGenerator {
 
-	//TODO: Make shelf and subbranches.
-
-	/*
-	 * Copyright 2020 (@Sharpcastle33 on GitHub)
-	 *
-	 * This program generates the outline of a cave system using
-	 * a context-free grammar system.
-	 *
-	 * It is intended for generating caves in instanced zones for voxel games,
-	 * where each grammar macro can be used to execute the generation of a section of cave.
-	 *
-	 * The grammar is applied as follows:
-	 *
-	 *  --> L L
-	 *  --> V V
-	 *  --> V L
-	 *  --> B L
-	 *  --> X L
-	 *  --> L
-	 *
-	 * L ----------
-	 * W: Dig forward
-	 * A: Dig left
-	 * D: Dig right
-	 * S: Dig backward
-	 *
-	 *
-	 * V ---------
-	 * Q: Dig up
-	 * E: Dig down
-	 *
-	 *
-	 * B: Switch biome
-	 * X: Branch
-	 *
-	 *
-	 */
-
-	public static ArrayList<String> generateCaveStrings(CaveGenContext ctx, int maxLength, int maxBranches){
-		ArrayList<String> ret = new ArrayList<>();
-
-		int totalLength = 0;
-		int totalBranches = 0;
-
-		String start = generateCave(ctx, maxLength, maxBranches);
-
-		ret.add(start);
-
-		int newBranches = countBranches(start);
-		totalBranches += newBranches;
-
-		for(int i = 0; i < newBranches; i++) {
-			ret.add(generateCave(ctx, maxLength, maxBranches-totalBranches));
-		}
-
-		return ret;
-
-
-
+	public static Layout generateCave(CaveGenContext ctx, int maxLength) {
+		return generateCave(ctx, maxLength, 'C', 'Y');
 	}
 
-	public static int countBranches(String s) {
-		int count = 0;
+	public static Layout generateCave(CaveGenContext ctx, int maxLength, char startingSymbol, char continuationSymbol) {
+		Set<Character> roomSymbols = ctx.style.getRooms().stream().map(Room::getSymbol).collect(Collectors.toSet());
+		GrammarGraph grammar = ctx.style.getGrammar();
 
-		for(char c : s.toCharArray()) {
-			if(c == 'X') {
-				count++;
+		if (!grammar.hasRuleSet(startingSymbol) && !roomSymbols.contains(startingSymbol)) {
+			Bukkit.getLogger().log(Level.SEVERE, "Tried to generate a cave with undefined starting symbol '" + startingSymbol + "'");
+			return Layout.EMPTY;
+		}
+
+		StringBuilder cave = new StringBuilder(String.valueOf(startingSymbol));
+		List<List<String>> tags = new ArrayList<>();
+		tags.add(new ArrayList<>());
+
+		boolean needsMoreSubstitution = grammar.hasRuleSet(startingSymbol);
+		while (needsMoreSubstitution) {
+			needsMoreSubstitution = false;
+			for (int i = cave.length() - 1; i >= 0; i--) {
+				char symbol = cave.charAt(i);
+				if (grammar.hasRuleSet(symbol)) {
+					GrammarGraph.RuleSet ruleSet = grammar.getRuleSet(symbol);
+					String substitution = ruleSet.getRandomSubstitution(ctx);
+					cave.replace(i, i + 1, substitution);
+					List<String> prevTags = tags.remove(i);
+					prevTags.addAll(ruleSet.getTags());
+					List<List<String>> newTags = new ArrayList<>(substitution.length());
+					for (int j = 0; j < substitution.length(); j++) {
+						newTags.add(new ArrayList<>(prevTags));
+					}
+					tags.addAll(i, newTags);
+					needsMoreSubstitution = true;
+				}
 			}
 		}
 
-		return count;
-	}
-
-	public static String generateCave(CaveGenContext ctx, int maxLength, int maxBranches) {
-		StringBuilder cave = new StringBuilder();
-
-		int caverns = ctx.rand.nextInt(4)+3;
-
-		for(int i = 0; i < caverns; i++) {
-			int length = ctx.rand.nextInt(7)+4;
-			cave.append(generateCavern(ctx, length));
-			length = ctx.rand.nextInt(5)+5;
-			cave.append(generatePassage(ctx, length));
-		}
-
-		if(cave.length() < maxLength) {
-			int length = maxLength-cave.length();
-			for(int i = 0; i < length; i++) {
-				cave.append(generateNextCavern(ctx));
+		// Don't extend empty caves, could lead to an infinite loop. Only a silly cave grammar would produce an empty cave anyway.
+		if (grammar.hasRuleSet(continuationSymbol) || roomSymbols.contains(continuationSymbol)) {
+			if(cave.length() != 0 && cave.length() < maxLength) {
+				int length = maxLength-cave.length();
+				Layout layout = generateCave(ctx, length, continuationSymbol, continuationSymbol);
+				cave.append(layout.getValue());
+				tags.addAll(layout.getTags());
 			}
 		}
 
 		if(cave.length() > maxLength) {
-			cave = new StringBuilder(cave.substring(0, maxLength));
+			cave.delete(maxLength, cave.length());
+			tags.subList(maxLength, cave.length()).clear();
 		}
-		return cave.toString();
-	    
-	    
-	    
-	    
-	    
-	    /*for(int i = 0; i < maxLength; i++) {
-	      cave += generateNext();
-	    }return cave;*/
+
+		return new Layout(cave.toString(), tags);
 	}
 
-	public static String generateCavern(CaveGenContext ctx, int len) {
-		StringBuilder ret = new StringBuilder();
-		for(int i = 0; i < len; i++) {
-			ret.append(generateNextCavern(ctx));
-		}
-		return ret.toString();
-	}
+	public static class Layout {
+		public static final Layout EMPTY = new Layout("", new ArrayList<>());
 
-	public static String generatePassage(CaveGenContext ctx, int len) {
-		StringBuilder ret = new StringBuilder();
-		for(int i = 0; i < len; i++) {
-			ret.append(generateNextPassage(ctx));
-		}
-		return ret.toString();
-	}
+		private String value;
+		private final List<List<String>> tags;
 
-	public static char generateNextPassage(CaveGenContext ctx) {
-		int n = ctx.rand.nextInt(104);
-
-		if(n < 60) {
-			return 'W';
-		}else if(n < 75) {
-			return 'A';
-		}else if(n < 90) {
-			return 'D';
-		}else if(n < 92) {
-			return 'X';
-		}else if(n < 94) {
-			return 'O';
-		}else if(n < 101) {
-			return 'R';
-		}else if(n < 103) {
-			return 'x';
-		}
-		return 'W';
-	}
-
-	public static char generateNextCavern(CaveGenContext ctx) {
-		int n = ctx.rand.nextInt(186);
-
-		if(n < 80) {
-			return 'W';
-		}else if(n < 100) {
-			return 'A';
-		}else if(n < 120) {
-			return 'D';
-		}else if(n < 125) {
-			return 'X';
-		}else if(n < 127) {
-			return 'O';
-		}else if(n < 129) {
-			return 'C';
-		}else if(n < 148) {
-			return 'R';
-		}else if(n < 177) {
-			return 'L';
-		}else if(n < 185) {
-			return 'H';
+		public Layout(String value, List<List<String>> tags) {
+			this.value = value;
+			this.tags = tags;
 		}
 
-		return 'F';
+		public String getValue() {
+			return value;
+		}
+
+		public void setValue(String value) {
+			this.value = value;
+		}
+
+		public List<List<String>> getTags() {
+			return tags;
+		}
+
+		@Override
+		public String toString() {
+			return value;
+		}
 	}
 }

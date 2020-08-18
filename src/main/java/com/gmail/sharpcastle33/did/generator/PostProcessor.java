@@ -15,50 +15,65 @@ import java.util.logging.Level;
 
 public class PostProcessor {
 
-	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids) throws WorldEditException {
+	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
-		for(Centroid centroid : centroids) {
-			smooth(ctx, centroid.pos.toBlockPoint(),centroid.size+2);
+		for (int i = 0; i < roomStarts.size(); i++) {
+			int roomStart = roomStarts.get(i);
+			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
+			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
+			for (Centroid centroid : roomCentroids) {
+				smooth(ctx, roomCentroids, centroid);
+			}
 		}
 
 		Bukkit.getLogger().log(Level.WARNING, "Beginning painter pass...");
 
 		for(Centroid centroid : centroids) {
 			for (PainterStep painterStep : ctx.style.getPainterSteps()) {
-				painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+2);
+				if (painterStep.areTagsInverted()
+						? painterStep.getTags().stream().noneMatch(centroid.tags::contains)
+						: painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
+					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size+4);
+				}
 			}
 		}
 
 		Bukkit.getLogger().log(Level.WARNING, "Beginning structure pass...");
 
 		for (Structure structure : ctx.style.getStructures()) {
-			generateStructure(ctx, centroids, 100, structure);
+			generateStructure(ctx, centroids, structure);
 		}
 
 		if (!centroids.isEmpty()) {
 			generatePortal(ctx, centroids.get(0).pos.toBlockPoint(), 100);
 		}
+
+		if (ctx.isDebug()) {
+			for (Centroid centroid : centroids) {
+				ctx.setBlock(centroid.pos.toBlockPoint(), Util.requireDefaultState(BlockTypes.EMERALD_BLOCK));
+			}
+		}
 	}
 
-	public static void smooth(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
+	public static void smooth(CaveGenContext ctx, List<Centroid> roomCentroids, Centroid centroid) throws MaxChangedBlocksException {
+		int x = centroid.pos.getBlockX();
+		int y = centroid.pos.getBlockY();
+		int z = centroid.pos.getBlockZ();
+		int r = centroid.size + 2;
 
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
-						//delete(tx+x, ty+y, tz+z);
+		for(int tx = -r; tx <= r; tx++){
+			for(int ty = -r; ty <= r; ty++){
+				for(int tz = -r; tz <= r; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
 						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 
 						if(ctx.style.getBaseBlock().equalsFuzzy(ctx.getBlock(pos))) {
-							int amt = countAir(ctx, pos);
-							if(amt>=13) {
+							int amt = countTransparent(ctx, pos);
+							if(amt >= 13) {
 								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
 								if(ctx.rand.nextInt(100) < 95) {
-									ctx.setBlock(pos, ctx.style.getAirBlock());
+									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), roomCentroids, centroid));
 								}
 							}
 						}
@@ -68,38 +83,42 @@ public class PostProcessor {
 		}
 	}
 
-	public static int countAir(CaveGenContext ctx, BlockVector3 loc) {
-		int r = 1;
-		int ret = 0;
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
+	public static int countTransparent(CaveGenContext ctx, BlockVector3 loc) {
+		final int r = 1;
+		int count = 0;
+		for (int tx = -r; tx <= r; tx++) {
+			for (int ty = -r; ty <= r; ty++) {
+				for (int tz = -r; tz <= r; tz++) {
 					BlockVector3 pos = loc.add(tx, ty, tz);
-					if(ctx.style.getAirBlock().equalsFuzzy(ctx.getBlock(pos))){
-						ret++;
+					if (ctx.style.isTransparentBlock(ctx.getBlock(pos))) {
+						count++;
 					}
 				}
 			}
 		}
-		return ret;
+		return count;
 	}
 
 
 
-	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, int caveRadius, Structure structure) throws WorldEditException {
-		for(Centroid centroid : centroids) {
-			if(ctx.rand.nextDouble() < structure.getChance()) {
-				Direction dir = structure.getRandomDirection(ctx.rand);
-				BlockVector3 pos;
-				if (dir == Direction.DOWN) {
-					pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), caveRadius);
-				} else if (dir == Direction.UP) {
-					pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), caveRadius);
-				} else {
-					pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), caveRadius, dir.toBlockVector());
-				}
-				if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-					structure.place(ctx, pos, dir);
+	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, Structure structure) throws WorldEditException {
+		for (Centroid centroid : centroids) {
+			if (ctx.rand.nextDouble() < structure.getChance()) {
+				if (structure.areTagsInverted()
+						? structure.getTags().stream().noneMatch(centroid.tags::contains)
+						: structure.getTags().stream().anyMatch(centroid.tags::contains)) {
+					Direction dir = structure.getRandomDirection(ctx.rand);
+					BlockVector3 pos;
+					if (dir == Direction.DOWN) {
+						pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
+					} else if (dir == Direction.UP) {
+						pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
+					} else {
+						pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), centroid.size + 2, dir.toBlockVector());
+					}
+					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
+						structure.place(ctx, pos, dir);
+					}
 				}
 			}
 		}
@@ -149,7 +168,7 @@ public class PostProcessor {
 		return !ctx.style.isTransparentBlock(ctx.getBlock(pos));
 	}
 
-	public static void replaceFloor(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+	public static void chanceReplaceFloor(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
@@ -166,7 +185,9 @@ public class PostProcessor {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 							if(isFloor(ctx, pos))
 								if(ctx.getBlock(pos).equalsFuzzy(old)) {
-									ctx.setBlock(pos, m);
+									if (ctx.rand.nextDouble() < chance) {
+										ctx.setBlock(pos, m);
+									}
 								}
 
 						}
@@ -177,7 +198,7 @@ public class PostProcessor {
 
 	}
 
-	public static void replaceCeiling(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+	public static void chanceReplaceCeiling(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
 
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
@@ -194,7 +215,9 @@ public class PostProcessor {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 							if(isRoof(ctx, pos))
 								if(ctx.getBlock(pos).equalsFuzzy(old)) {
-									ctx.setBlock(pos, m);
+									if (ctx.rand.nextDouble() < chance) {
+										ctx.setBlock(pos, m);
+									}
 								}
 
 						}
@@ -205,15 +228,60 @@ public class PostProcessor {
 
 	}
 
-	public static void chanceReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
+	public static void floorLayer(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
 
-		if(chance >= 1) {
-			radiusReplace(ctx,loc,r,old,m);
-			return;
+		for(int tx=-r; tx< r+1; tx++){
+			for(int ty=-r; ty< -2; ty++){
+				for(int tz=-r; tz< r+1; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+							continue;
+						}
+						if(ty+y > 0) {
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isFloor(ctx, pos) && !m.equalsFuzzy(ctx.getBlock(pos)))
+								ctx.setBlock(pos.add(0, 1, 0), m);
+						}
+					}
+				}
+			}
 		}
+
+	}
+
+	public static void ceilingLayer(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> m) throws MaxChangedBlocksException {
+
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+
+		for(int tx=-r; tx< r+1; tx++){
+			for(int ty=r; ty >2; ty--){
+				for(int tz=-r; tz< r+1; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+							continue;
+						}
+						if(ty+y > 0) {
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(isRoof(ctx, pos) && !m.equalsFuzzy(ctx.getBlock(pos)))
+								ctx.setBlock(pos.add(0, -1, 0), m);
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	public static void chanceReplaceAll(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m, double chance) throws MaxChangedBlocksException {
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
 
 		for(int tx=-r; tx< r+1; tx++){
 			for(int ty=-r; ty< r+1; ty++){
@@ -237,27 +305,7 @@ public class PostProcessor {
 	}
 
 	public static void radiusReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
-		int x = loc.getBlockX();
-		int y = loc.getBlockY();
-		int z = loc.getBlockZ();
-
-		for(int tx=-r; tx< r+1; tx++){
-			for(int ty=-r; ty< r+1; ty++){
-				for(int tz=-r; tz< r+1; tz++){
-					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
-						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
-							continue;
-						}
-						if(ty+y > 0) {
-							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-							if(ctx.getBlock(pos).equalsFuzzy(old)) {
-								ctx.setBlock(pos, m);
-							}
-						}
-					}
-				}
-			}
-		}
+		chanceReplaceAll(ctx, loc, r, old, m, 1);
 	}
 
 	public static BlockVector3 getWall(CaveGenContext ctx, BlockVector3 loc, int r, BlockVector3 direction) {

@@ -118,8 +118,8 @@ public class CaveTrackerManager {
 		}
 
 		CaveStyle caveStyle = DescentIntoDarkness.plugin.getCaveStyles().get(chosenStyle);
-		if (caveStyle == null) {
-			Bukkit.getLogger().log(Level.SEVERE, "No such cave style: " + chosenStyle);
+		if (caveStyle == null || caveStyle.isAbstract()) {
+			Bukkit.getLogger().log(Level.SEVERE, "Cannot instantiate cave style: " + chosenStyle);
 			DescentIntoDarkness.plugin.getCaveStyleWeights().remove(chosenStyle);
 			return getRandomStyle();
 		}
@@ -168,7 +168,7 @@ public class CaveTrackerManager {
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			Random rand = new Random();
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
-				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969), rand.nextInt(5) + 7);
+				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969));
 			} catch (WorldEditException e) {
 				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);
