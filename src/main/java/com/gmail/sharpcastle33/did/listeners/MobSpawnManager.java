@@ -108,6 +108,16 @@ public class MobSpawnManager implements Runnable, Listener {
 			return false;
 		}
 
+		// check if we're within the radius of other players, we don't want to spawn inside them
+		if (cave.getPlayers().stream()
+				.map(Bukkit::getOfflinePlayer)
+				.filter(OfflinePlayer::isOnline)
+				.map(OfflinePlayer::getPlayer)
+				.filter(player -> player != null && player.getWorld() == cave.getWorld())
+				.anyMatch(player -> player.getLocation().toVector().distanceSquared(spawnLocation) < spawnEntry.getMinDistance() * spawnEntry.getMinDistance())) {
+			return false;
+		}
+
 		if (!doSpawn(cave, spawnEntry, chosenPlayer.getUniqueId(), spawnLocation)) {
 			return false;
 		}
