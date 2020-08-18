@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -44,7 +45,7 @@ public class MobSpawnManager implements Runnable, Listener {
 		if (rand.nextFloat() < cave.getStyle().getNaturalPollutionIncrease()) {
 			MobSpawnEntry mobType = getRandomSpawnEntry(cave);
 			if (mobType != null) {
-				Player victim = getRandomPlayer(cave, mobType, Integer.MIN_VALUE);
+				Player victim = getRandomPlayer(cave, mobType, Integer.MIN_VALUE, player -> 1);
 				if (victim != null) {
 					cave.addPlayerMobPollution(victim.getUniqueId(), mobType, victim.isSprinting() ? cave.getStyle().getSprintingPenalty() : 1);
 				}
@@ -75,9 +76,9 @@ public class MobSpawnManager implements Runnable, Listener {
 		}
 
 		// try to spawn that mob next to a player with enough pollution to afford it
-		Player chosenPlayer = getRandomPlayer(cave, spawnEntry, spawnEntry.getSingleMobCost());
+		Player chosenPlayer = getRandomPlayer(cave, spawnEntry, spawnEntry.getSingleMobCost(), player -> cave.getMobEntry(spawnEntry).getPlayerPollution(player));
 		if (chosenPlayer == null) {
-			chosenPlayer = getRandomPlayer(cave, spawnEntry, 1);
+			chosenPlayer = getRandomPlayer(cave, spawnEntry, 1, player -> cave.getMobEntry(spawnEntry).getPlayerPollution(player));
 			if (chosenPlayer == null) {
 				return false;
 			}
@@ -154,15 +155,15 @@ public class MobSpawnManager implements Runnable, Listener {
 	}
 
 	@Nullable
-	private Player getRandomPlayer(CaveTracker cave, MobSpawnEntry spawnEntry, int minPollution) {
+	private Player getRandomPlayer(CaveTracker cave, MobSpawnEntry spawnEntry, int minPollution, ToIntFunction<UUID> weightFunction) {
 		CaveTracker.MobEntry mobEntry = cave.getMobEntry(spawnEntry);
-		int totalOnlinePollution = cave.getPlayers().stream()
+		int totalOnlineWeight = cave.getPlayers().stream()
 				.filter(this::isPlayerOnline)
-				.mapToInt(mobEntry::getPlayerPollution)
-				.filter(pollution -> pollution >= minPollution)
+				.filter(player -> cave.getMobEntry(spawnEntry).getPlayerPollution(player) >= minPollution)
+				.mapToInt(weightFunction)
 				.sum();
 
-		if (totalOnlinePollution <= 0) {
+		if (totalOnlineWeight <= 0) {
 			List<UUID> players = cave.getPlayers().stream().filter(this::isPlayerOnline).filter(player -> mobEntry.getPlayerPollution(player) >= minPollution).collect(Collectors.toList());
 			if (players.isEmpty()) {
 				return null;
@@ -170,7 +171,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			return Bukkit.getPlayer(players.get(rand.nextInt(players.size())));
 		}
 
-		int index = rand.nextInt(totalOnlinePollution);
+		int index = rand.nextInt(totalOnlineWeight);
 		Player chosenPlayer = null;
 		for (UUID player : cave.getPlayers()) {
 			if (!isPlayerOnline(player)) {
@@ -180,7 +181,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			if (pollution < minPollution) {
 				continue;
 			}
-			index -= pollution;
+			index -= weightFunction.applyAsInt(player);
 			if (index <= 0) {
 				chosenPlayer = Bukkit.getPlayer(player);
 				break;
