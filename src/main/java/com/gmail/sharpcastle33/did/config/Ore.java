@@ -13,15 +13,16 @@ public class Ore {
 	private final ItemStack dropItem;
 	private final int minDropAmount;
 	private final int maxDropAmount;
+	private final int breakAmount;
 
-
-	public Ore(String name, BlockStateHolder<?> block, int pollution, @Nullable ItemStack dropItem, int minDropAmount, int maxDropAmount) {
+	public Ore(String name, BlockStateHolder<?> block, int pollution, @Nullable ItemStack dropItem, int minDropAmount, int maxDropAmount, int breakAmount) {
 		this.name = name;
 		this.block = block;
 		this.pollution = pollution;
 		this.dropItem = dropItem;
 		this.minDropAmount = minDropAmount;
 		this.maxDropAmount = maxDropAmount;
+		this.breakAmount = breakAmount;
 	}
 
 	public String getName() {
@@ -49,6 +50,10 @@ public class Ore {
 		return maxDropAmount;
 	}
 
+	public int getBreakAmount() {
+		return breakAmount;
+	}
+
 	public void serialize(ConfigurationSection map) {
 		map.set("block", block.getAsString());
 		map.set("pollution", pollution);
@@ -57,6 +62,7 @@ public class Ore {
 		}
 		map.set("minDropAmount", minDropAmount);
 		map.set("maxDropAmount", maxDropAmount);
+		map.set("breakAmount", breakAmount);
 	}
 
 	public static Ore deserialize(String name, ConfigurationSection map) {
@@ -74,6 +80,10 @@ public class Ore {
 		if (minDropAmount > maxDropAmount) {
 			throw new InvalidConfigException("minDropAmount > maxDropAmount");
 		}
-		return new Ore(name, block, pollution, dropItem, minDropAmount, maxDropAmount);
+		int breakAmount = map.getInt("breakAmount", 10);
+		if (breakAmount <= 0) {
+			throw new InvalidConfigException("Break amount must be positive");
+		}
+		return new Ore(name, block, pollution, dropItem, minDropAmount, maxDropAmount, breakAmount);
 	}
 }

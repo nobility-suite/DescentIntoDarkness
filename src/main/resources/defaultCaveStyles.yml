@@ -238,19 +238,22 @@ defaultMobSpawning:
   ores:
     coal_ore:
       block: minecraft:coal_ore
-      pollution: 10
+      pollution: 5
       minDropAmount: 1
       maxDropAmount: 1
+      breakAmount: 5
     diamond_ore:
       block: minecraft:diamond_ore
-      pollution: 30
+      pollution: 15
       minDropAmount: 1
       maxDropAmount: 1
+      breakAmount: 5
     emerald_ore:
       block: minecraft:emerald_ore
-      pollution: 30
+      pollution: 15
       minDropAmount: 1
       maxDropAmount: 1
+      breakAmount: 5
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
