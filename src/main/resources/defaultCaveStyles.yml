@@ -238,21 +238,23 @@ defaultMobSpawning:
   ores:
     coal_ore:
       block: minecraft:coal_ore
+      dropTable:
+        drop1: minecraft:coal_block
+        drop2:
+          item: minecraft:coal
+          weight: 10
+        drop3:
+          item: minecraft:charcoal
+          weight: 10
       pollution: 5
-      minDropAmount: 1
-      maxDropAmount: 1
       breakAmount: 5
     diamond_ore:
       block: minecraft:diamond_ore
       pollution: 15
-      minDropAmount: 1
-      maxDropAmount: 1
       breakAmount: 5
     emerald_ore:
       block: minecraft:emerald_ore
       pollution: 15
-      minDropAmount: 1
-      maxDropAmount: 1
       breakAmount: 5
 
   naturalPollutionIncrease: 0.1

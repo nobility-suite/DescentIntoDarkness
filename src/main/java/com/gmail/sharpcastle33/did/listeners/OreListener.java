@@ -18,6 +18,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.List;
 import java.util.Random;
 
 public class OreListener implements Listener {
@@ -56,9 +57,20 @@ public class OreListener implements Listener {
 				if (spawnEntry != null) {
 					cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, ore.getPollution());
 				}
-				if (ore.getDropItem() != null) {
-					ItemStack toDrop = new ItemStack(ore.getDropItem());
-					toDrop.setAmount(ore.getMinDropAmount() + rand.nextInt(ore.getMaxDropAmount() - ore.getMinDropAmount() + 1));
+				if (ore.getDropTable() != null) {
+					List<Ore.Drop> dropTable = ore.getDropTable();
+					int randVal = rand.nextInt(dropTable.stream().mapToInt(Ore.Drop::getWeight).sum());
+					Ore.Drop drop = null;
+					for (Ore.Drop d : dropTable) {
+						randVal -= d.getWeight();
+						if (randVal < 0) {
+							drop = d;
+							break;
+						}
+					}
+					assert drop != null;
+					ItemStack toDrop = new ItemStack(drop.getItem());
+					toDrop.setAmount(drop.getMinAmount() + rand.nextInt(drop.getMaxAmount() - drop.getMinAmount() + 1));
 					player.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
 					event.setDropItems(false);
 					event.setExpToDrop(0);

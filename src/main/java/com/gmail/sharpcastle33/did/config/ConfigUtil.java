@@ -64,6 +64,8 @@ public class ConfigUtil {
 			return new ItemStack(material, count);
 		} else if (val instanceof Map) {
 			return ItemStack.deserialize((Map<String, Object>) val);
+		} else if (val instanceof ConfigurationSection) {
+			return ItemStack.deserialize(((ConfigurationSection) val).getValues(false));
 		} else {
 			throw new InvalidConfigException("Don't know how to turn a " + val.getClass().getSimpleName() + " into an ItemStack");
 		}
