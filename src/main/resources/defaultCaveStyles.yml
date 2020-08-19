@@ -19,7 +19,7 @@ default:
 
   portals: {}
 
-# If you want individual traits of the default cave type to inherit other things, you can also explicitly inherit these
+# If you want individual traits of the default cave type to override other things you inherit, you can also explicitly inherit these
 defaultBlockTypes:
   __builtin_no_default_inherit: true
   abstract: true
