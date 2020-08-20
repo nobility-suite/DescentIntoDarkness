@@ -229,10 +229,42 @@ public class CaveTrackerManager {
 		return getCave(p) != null;
 	}
 
+	@Nullable
+	public Location respawnPlayer(Player p) {
+		CaveTracker existingCave = getCave(p);
+		if (existingCave == null) {
+			return null;
+		}
+
+		existingCave.removePlayer(p.getUniqueId());
+		if (existingCave.getPlayers().isEmpty()) {
+			deleteCave(existingCave);
+		}
+
+		Location newLocation = overworldPlayerLocations.remove(p.getUniqueId());
+		if (newLocation == null) {
+			newLocation = p.getBedSpawnLocation();
+			if (newLocation == null) {
+				newLocation = DescentIntoDarkness.multiverseCore.getMVWorldManager().getSpawnWorld().getSpawnLocation();
+			}
+		}
+		return newLocation;
+	}
+
 	public boolean teleportPlayerTo(Player p, @Nullable CaveTracker newCave) {
 		CaveTracker existingCave = getCave(p);
 		if (existingCave == newCave) {
 			return true;
+		}
+
+		if (newCave == null) {
+			Location newLocation = respawnPlayer(p);
+			if (newLocation != null) {
+				p.teleport(newLocation);
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 		if (existingCave == null) {
@@ -244,26 +276,13 @@ public class CaveTrackerManager {
 			}
 		}
 
-		if (newCave == null) {
-			Location newLocation = overworldPlayerLocations.remove(p.getUniqueId());
-			if (newLocation == null) {
-				newLocation = p.getBedSpawnLocation();
-				if (newLocation == null) {
-					newLocation = DescentIntoDarkness.multiverseCore.getMVWorldManager().getSpawnWorld().getSpawnLocation();
-				}
-			}
-			if (newLocation != null) {
-				p.teleport(newLocation);
-			}
-		} else {
-			Location start = newCave.getStart();
-			String destStr = String.format("e:%s:%f,%f,%f", getWorldName(newCave.getId()), start.getX(), start.getY(), start.getZ());
-			MVDestination dest = DescentIntoDarkness.multiverseCore.getDestFactory().getDestination(destStr);
-			if (DescentIntoDarkness.multiverseCore.getSafeTTeleporter().teleport(Bukkit.getConsoleSender(), p, dest) != TeleportResult.SUCCESS) {
-				return false;
-			}
-			newCave.addPlayer(p.getUniqueId());
+		Location start = newCave.getStart();
+		String destStr = String.format("e:%s:%f,%f,%f", getWorldName(newCave.getId()), start.getX(), start.getY(), start.getZ());
+		MVDestination dest = DescentIntoDarkness.multiverseCore.getDestFactory().getDestination(destStr);
+		if (DescentIntoDarkness.multiverseCore.getSafeTTeleporter().teleport(Bukkit.getConsoleSender(), p, dest) != TeleportResult.SUCCESS) {
+			return false;
 		}
+		newCave.addPlayer(p.getUniqueId());
 
 		return true;
 	}
