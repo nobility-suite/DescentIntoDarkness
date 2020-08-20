@@ -19,6 +19,7 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.onarandombox.MultiverseCore.api.MVDestination;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
+import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.MultiverseCore.enums.TeleportResult;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -322,7 +323,9 @@ public class CaveTrackerManager {
 		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
 			return Util.completeExceptionally(new RuntimeException("Could not create world"));
 		}
-		World world = worldManager.getMVWorld(worldName).getCBWorld();
+		MultiverseWorld mvWorld = worldManager.getMVWorld(worldName);
+		mvWorld.setRespawnToWorld(worldManager.getSpawnWorld().getName());
+		World world = mvWorld.getCBWorld();
 		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
 
 		// this is not what players are coming here to do...
