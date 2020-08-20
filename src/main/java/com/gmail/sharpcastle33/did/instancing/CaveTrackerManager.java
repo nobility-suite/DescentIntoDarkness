@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
@@ -23,8 +22,9 @@ import com.onarandombox.MultiverseCore.api.MultiverseWorld;
 import com.onarandombox.MultiverseCore.enums.TeleportResult;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.math.BlockVector2;
+import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
@@ -32,17 +32,18 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.WorldType;
-import org.bukkit.entity.EnderDragon;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.jetbrains.annotations.Nullable;
 
 public class CaveTrackerManager {
+	private static final String WORLD_NAME = "did_caves";
+	private static final int INSTANCE_WIDTH_CHUNKS = 625;
 
 	private boolean hasInitialized = false;
 	private final int instanceLimit;
+	private World theWorld;
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
 	private final Map<UUID, Location> overworldPlayerLocations = new HashMap<>();
 	private int nextInstanceId;
@@ -54,16 +55,9 @@ public class CaveTrackerManager {
 	}
 
 	public void initialize() {
-		Bukkit.getLogger().log(Level.INFO, "Creating " + instanceLimit + " cave worlds...");
-		for (int i = 0; i < instanceLimit; i++) {
-			if (!DescentIntoDarkness.multiverseCore.getMVWorldManager().isMVWorld(getWorldName(i))) {
-				Bukkit.getLogger().log(Level.INFO, "Cave world " + (i + 1) + " / " + instanceLimit);
-				try {
-					getOrCreateFlatWorld(i, Util.requireDefaultState(BlockTypes.STONE), World.Environment.THE_END).get();
-				} catch (InterruptedException | ExecutionException e) {
-					e.printStackTrace();
-				}
-			}
+		theWorld = getOrCreateFlatWorld();
+		if (theWorld == null) {
+			throw new RuntimeException("Failed to create world");
 		}
 	}
 
@@ -157,30 +151,26 @@ public class CaveTrackerManager {
 
 		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
 
-		String name = getWorldName(id);
-
-		World world;
-		try {
-			world = getOrCreateFlatWorld(id, style.getBaseBlock(), World.Environment.THE_END).get();
-		} catch (InterruptedException | ExecutionException e) {
-			return Util.completeExceptionally(e);
-		}
-
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
+			BlockVector2 caveChunkCoords = getInstanceChunkCoords(id);
+			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, 210, caveChunkCoords.getBlockZ() * 16);
 			Random rand = new Random();
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(world), style, rand)) {
-				CaveGenerator.generateCave(ctx, Vector3.at(6969, 210, 6969));
+			CuboidRegion limit = new CuboidRegion(
+					spawnPos.multiply(1, 0, 1).subtract(8 * INSTANCE_WIDTH_CHUNKS - 32, 0, 8 * INSTANCE_WIDTH_CHUNKS - 32),
+					spawnPos.multiply(1, 0, 1).add(8 * INSTANCE_WIDTH_CHUNKS - 32, 255, 8 * INSTANCE_WIDTH_CHUNKS - 32)
+			);
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, rand).limit(limit)) {
+				CaveGenerator.generateCave(ctx, spawnPos.toVector3());
 			} catch (WorldEditException e) {
-				DescentIntoDarkness.plugin.runSyncLater(() -> DescentIntoDarkness.multiverseCore.getMVWorldManager().deleteWorld(name));
 				throw new RuntimeException("Could not generate cave", e);
 			}
-			Location spawnPoint = new Location(world, 6969, 210, 6969);
+			Location spawnPoint = BukkitAdapter.adapt(theWorld, spawnPos);
 			while (style.isTransparentBlock(BukkitAdapter.adapt(spawnPoint.getBlock().getBlockData()))) {
 				spawnPoint.add(0, -1, 0);
 			}
 			spawnPoint.add(0, 1, 0);
 			return DescentIntoDarkness.plugin.supplySyncNow(() -> {
-				CaveTracker caveTracker = new CaveTracker(id, world, spawnPoint, style);
+				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
 				return caveTracker;
 			});
@@ -277,7 +267,7 @@ public class CaveTrackerManager {
 		}
 
 		Location start = newCave.getStart();
-		String destStr = String.format("e:%s:%f,%f,%f", getWorldName(newCave.getId()), start.getX(), start.getY(), start.getZ());
+		String destStr = String.format("e:%s:%f,%f,%f", WORLD_NAME, start.getX(), start.getY(), start.getZ());
 		MVDestination dest = DescentIntoDarkness.multiverseCore.getDestFactory().getDestination(destStr);
 		if (DescentIntoDarkness.multiverseCore.getSafeTTeleporter().teleport(Bukkit.getConsoleSender(), p, dest) != TeleportResult.SUCCESS) {
 			return false;
@@ -324,33 +314,38 @@ public class CaveTrackerManager {
 		return pollutionObjective;
 	}
 
-	private String getWorldName(int id) {
-		return "did_cave_" + id;
-	}
-
-	private CompletableFuture<World> getOrCreateFlatWorld(int id, BlockStateHolder<?> baseBlock, World.Environment environment) {
+	@Nullable
+	private World getOrCreateFlatWorld() {
 		MVWorldManager worldManager = DescentIntoDarkness.multiverseCore.getMVWorldManager();
-		String worldName = getWorldName(id);
-
 		// Sometimes worlds can linger after a server crash
-		if (worldManager.isMVWorld(worldName)) {
-			World world = worldManager.getMVWorld(worldName).getCBWorld();
-			return CompletableFuture.completedFuture(world);
+		if (worldManager.isMVWorld(WORLD_NAME)) {
+			return worldManager.getMVWorld(WORLD_NAME).getCBWorld();
 		}
 
-		String generator = "DescentIntoDarkness:full_" + baseBlock.getAsString();
-		if (!worldManager.addWorld(worldName, environment, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
-			return Util.completeExceptionally(new RuntimeException("Could not create world"));
+		String generator = "DescentIntoDarkness:full_" + Util.requireDefaultState(BlockTypes.STONE).getAsString();
+		if (!worldManager.addWorld(WORLD_NAME, World.Environment.THE_END, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
+			return null;
 		}
-		MultiverseWorld mvWorld = worldManager.getMVWorld(worldName);
+		MultiverseWorld mvWorld = worldManager.getMVWorld(WORLD_NAME);
 		mvWorld.setRespawnToWorld(worldManager.getSpawnWorld().getName());
 		World world = mvWorld.getCBWorld();
 		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
 
-		// this is not what players are coming here to do...
-		world.getEntitiesByClass(EnderDragon.class).forEach(Entity::remove);
+		return world;
+	}
 
-		return CompletableFuture.completedFuture(world);
+	private BlockVector2 getInstanceChunkCoords(int instanceId) {
+		int ring = (int) (0.5 * (Math.sqrt(instanceId + 1) - 1) + 0.00000001); // hopefully this addition compensates for rounding errors
+		int radius = ring + 1;
+		int instanceInRing = instanceId - 4 * (ring * ring + ring);
+		int d = instanceInRing % (radius + radius);
+		switch (instanceInRing / (radius + radius)) {
+			case 0: return BlockVector2.at(d - radius, -radius).multiply(INSTANCE_WIDTH_CHUNKS);
+			case 1: return BlockVector2.at(radius, d - radius).multiply(INSTANCE_WIDTH_CHUNKS);
+			case 2: return BlockVector2.at(radius - d, radius).multiply(INSTANCE_WIDTH_CHUNKS);
+			case 3: return BlockVector2.at(-radius, radius - d).multiply(INSTANCE_WIDTH_CHUNKS);
+			default: throw new ArithmeticException("Earth is bad at math!");
+		}
 	}
 
 }
