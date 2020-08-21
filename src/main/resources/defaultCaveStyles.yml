@@ -19,7 +19,7 @@ default:
 
   portals: {}
 
-# If you want individual traits of the default cave type to inherit other things, you can also explicitly inherit these
+# If you want individual traits of the default cave type to override other things you inherit, you can also explicitly inherit these
 defaultBlockTypes:
   __builtin_no_default_inherit: true
   abstract: true
@@ -213,6 +213,7 @@ defaultMobSpawning:
       minDistance: 10
       maxDistance: 20
       cooldown: 20
+      despawnRange: 48
     skeleton:
       mob: minecraft:skeleton
       singleMobCost: 70
@@ -222,6 +223,7 @@ defaultMobSpawning:
       minDistance: 15
       maxDistance: 25
       cooldown: 20
+      despawnRange: 48
     creeper:
       mob: minecraft:creeper
       singleMobCost: 100
@@ -231,27 +233,35 @@ defaultMobSpawning:
       minDistance: 15
       maxDistance: 25
       cooldown: 20
+      despawnRange: 48
 
   ores:
     coal_ore:
       block: minecraft:coal_ore
-      pollution: 10
-      minDropAmount: 1
-      maxDropAmount: 1
+      dropTable:
+        drop1: minecraft:coal_block
+        drop2:
+          item: minecraft:coal
+          weight: 10
+        drop3:
+          item: minecraft:charcoal
+          weight: 10
+      pollution: 5
+      breakAmount: 5
     diamond_ore:
       block: minecraft:diamond_ore
-      pollution: 30
-      minDropAmount: 1
-      maxDropAmount: 1
+      pollution: 15
+      breakAmount: 5
     emerald_ore:
       block: minecraft:emerald_ore
-      pollution: 30
-      minDropAmount: 1
-      maxDropAmount: 1
+      pollution: 15
+      breakAmount: 5
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
   sprintingPenalty: 5
+  blockPlacePollution: 10
+  blockBreakPollution: 5
 
 
 # The debug cave type

@@ -11,6 +11,7 @@ import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
+import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -31,6 +32,7 @@ public class CaveTracker {
 	private final Map<MobSpawnEntry, MobEntry> mobEntries = new HashMap<>();
 	private final Team team;
 	private int spawnCooldown;
+	private final Map<BlockVector3, Integer> blockBreakCounts = new HashMap<>();
 
 	public CaveTracker(int id, World world, Location start, CaveStyle style) {
 		this.id = id;
@@ -125,6 +127,15 @@ public class CaveTracker {
 
 	public void setSpawnCooldown(int spawnCooldown) {
 		this.spawnCooldown = spawnCooldown;
+	}
+
+	public int getBlockBreakCount(BlockVector3 pos) {
+		Integer count = blockBreakCounts.get(pos);
+		return count == null ? 0 : count;
+	}
+
+	public void setBlockBreakCount(BlockVector3 pos, int count) {
+		blockBreakCounts.put(pos, count);
 	}
 
 	public static class MobEntry {
