@@ -5,6 +5,7 @@ import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
+import com.gmail.sharpcastle33.did.listeners.PlayerListener;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -129,6 +130,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 		caveTrackerManager = new CaveTrackerManager(instanceLimit);
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
+		Bukkit.getPluginManager().registerEvents(new PlayerListener(), plugin);
 		mobSpawnManager = new MobSpawnManager();
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
 		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);

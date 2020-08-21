@@ -32,6 +32,7 @@ public class CaveGenContext implements AutoCloseable {
 	private boolean debug;
 	private final Map<BlockVector3, BlockState> blockCache = new HashMap<>();
 	private final Set<BlockVector2> accessedChunks = new HashSet<>();
+	private Region limit = null;
 
 	private CaveGenContext(EditSession session, CaveStyle style, Random rand) {
 		this.session = session;
@@ -46,6 +47,11 @@ public class CaveGenContext implements AutoCloseable {
 
 	public boolean isDebug() {
 		return debug;
+	}
+
+	public CaveGenContext limit(Region limit) {
+		this.limit = limit;
+		return this;
 	}
 
 	public static CaveGenContext create(World world, CaveStyle style, Random rand) {
@@ -70,6 +76,9 @@ public class CaveGenContext implements AutoCloseable {
 		if (pos.getBlockY() <= 0 || pos.getBlockY() >= 255) {
 			return false;
 		}
+		if (limit != null && !limit.contains(pos)) {
+			return false;
+		}
 		ensureChunkGenerated(pos);
 		if (session.setBlock(pos, block)) {
 			blockCache.put(pos, block.toImmutableState());
@@ -85,6 +94,9 @@ public class CaveGenContext implements AutoCloseable {
 		}
 		if (pos.getBlockY() == 0 || pos.getBlockY() == 255) {
 			return Util.requireDefaultState(BlockTypes.BEDROCK);
+		}
+		if (limit != null && !limit.contains(pos)) {
+			return style.getBaseBlock().toImmutableState();
 		}
 		ensureChunkGenerated(pos);
 		return blockCache.getOrDefault(pos, style.getBaseBlock().toImmutableState());
