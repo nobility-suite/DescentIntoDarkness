@@ -1,6 +1,7 @@
 package com.gmail.sharpcastle33.did.generator;
 
 import com.gmail.sharpcastle33.did.Util;
+import com.gmail.sharpcastle33.did.config.BlockTypeRange;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -306,6 +307,31 @@ public class PostProcessor {
 
 	public static void radiusReplace(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockStateHolder<?> m) throws MaxChangedBlocksException {
 		chanceReplaceAll(ctx, loc, r, old, m, 1);
+	}
+
+	public static void replaceMesa(CaveGenContext ctx, BlockVector3 loc, int r, BlockStateHolder<?> old, BlockTypeRange<Integer> mesaLayers) throws MaxChangedBlocksException {
+		int x = loc.getBlockX();
+		int y = loc.getBlockY();
+		int z = loc.getBlockZ();
+
+		for(int ty=-r; ty< r+1; ty++){
+			BlockStateHolder<?> replacement = mesaLayers.get(ty + y);
+			for(int tx=-r; tx< r+1; tx++){
+				for(int tz=-r; tz< r+1; tz++){
+					if(tx * tx  +  ty * ty  +  tz * tz <= (r-2) * (r-2)){
+						if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == r-2)) {
+							continue;
+						}
+						if(ty+y > 0) {
+							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
+							if(ctx.getBlock(pos).equalsFuzzy(old) && !isFloor(ctx, pos)) {
+								ctx.setBlock(pos, replacement);
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public static BlockVector3 getWall(CaveGenContext ctx, BlockVector3 loc, int r, BlockVector3 direction) {

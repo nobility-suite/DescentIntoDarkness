@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -104,6 +105,25 @@ public final class BlockTypeRange<T extends Comparable<T>> {
 		return new BlockTypeRange<>(entries, blocks);
 	}
 
+	public static BlockTypeRange<Integer> deserializePainter(int startArg, String[] args) {
+		List<Entry<Integer>> entries = new ArrayList<>();
+		LinkedHashSet<BlockStateHolder<?>> blocks = new LinkedHashSet<>();
+
+		for (int i = startArg; i < args.length - 1; i += 2) {
+			String[] minMax = args[i].split("(?<!^)-", 2);
+			BlockStateHolder<?> block = ConfigUtil.parseBlock(args[i + 1]);
+			if (minMax.length == 2) {
+				entries.add(new Entry<>(ConfigUtil.parseInt(minMax[0]), ConfigUtil.parseInt(minMax[1]), block));
+			} else {
+				int y = ConfigUtil.parseInt(minMax[0]);
+				entries.add(new Entry<>(y, y, block));
+			}
+			blocks.add(block);
+		}
+
+		return new BlockTypeRange<>(entries, new ArrayList<>(blocks));
+	}
+
 	public void serialize(ConfigurationSection parentSection, String key) {
 		if (entries.size() == 1) {
 			parentSection.set(key, entries.get(0).block.getAsString());
@@ -116,6 +136,16 @@ public final class BlockTypeRange<T extends Comparable<T>> {
 				.forEach((block, entries) -> section.set(block.getAsString(), entries.stream()
 						.map(entry -> entry.min.equals(entry.max) ? String.valueOf(entry.min) : (entry.min + "-" + entry.max))
 						.collect(Collectors.joining(", "))));
+	}
+
+	public String serializePainter() {
+		return entries.stream().map(entry -> {
+			if (entry.min.equals(entry.max)) {
+				return entry.min + " " + entry.block.getAsString();
+			} else {
+				return entry.min + "-" + entry.max + " " + entry.block.getAsString();
+			}
+		}).collect(Collectors.joining(" "));
 	}
 
 	@Override

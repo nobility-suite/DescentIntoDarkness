@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import com.gmail.sharpcastle33.did.config.BlockTypeRange;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -127,6 +128,15 @@ public abstract class PainterStep {
 					}
 					BlockStateHolder<?> block = ConfigUtil.parseBlock(args[1]);
 					return new CeilingLayer(tags, tagsInverted, block);
+				}
+				case REPLACE_MESA: {
+					if (args.length < 2) {
+						throw new InvalidConfigException(line);
+					}
+					BlockStateHolder<?> old = ConfigUtil.parseBlock(args[1]);
+					BlockTypeRange<Integer> mesaLayers = BlockTypeRange.deserializePainter(2, args);
+					mesaLayers.validateRange(0, 255, i -> i - 1, i -> i + 1);
+					return new ReplaceMesa(tags, tagsInverted, old, mesaLayers);
 				}
 				default: {
 					throw new InvalidConfigException(line);
@@ -258,12 +268,34 @@ public abstract class PainterStep {
 		}
 	}
 
+	public static class ReplaceMesa extends PainterStep {
+		private final BlockStateHolder<?> old;
+		private final BlockTypeRange<Integer> mesaLayers;
+
+		public ReplaceMesa(List<String> tags, boolean tagsInverted, BlockStateHolder<?> old, BlockTypeRange<Integer> mesaLayers) {
+			super(Type.REPLACE_MESA, tags, tagsInverted);
+			this.old = old;
+			this.mesaLayers = mesaLayers;
+		}
+
+		@Override
+		public Object serialize() {
+			return getSerializationPrefix() + " " + old.getAsString() + " " + mesaLayers.serializePainter();
+		}
+
+		@Override
+		public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
+			PostProcessor.replaceMesa(ctx, loc, r, old, mesaLayers);
+		}
+	}
+
 	public enum Type {
 		REPLACE_ALL("replace_all"),
 		REPLACE_CEILING("replace_ceiling"),
 		REPLACE_FLOOR("replace_floor"),
 		CEILING_LAYER("ceiling_layer"),
 		FLOOR_LAYER("floor_layer"),
+		REPLACE_MESA("replace_mesa"),
 		;
 		private final String name;
 		Type(String name) {
