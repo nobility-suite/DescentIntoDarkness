@@ -23,8 +23,10 @@ public class PostProcessor {
 			int roomStart = roomStarts.get(i);
 			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
 			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
+			int minRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
+			int maxRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
 			for (Centroid centroid : roomCentroids) {
-				smooth(ctx, roomCentroids, centroid);
+				smooth(ctx, centroid, minRoomY, maxRoomY);
 			}
 		}
 
@@ -57,7 +59,7 @@ public class PostProcessor {
 		}
 	}
 
-	public static void smooth(CaveGenContext ctx, List<Centroid> roomCentroids, Centroid centroid) throws MaxChangedBlocksException {
+	public static void smooth(CaveGenContext ctx, Centroid centroid, int minRoomY, int maxRoomY) throws MaxChangedBlocksException {
 		int x = centroid.pos.getBlockX();
 		int y = centroid.pos.getBlockY();
 		int z = centroid.pos.getBlockZ();
@@ -74,7 +76,7 @@ public class PostProcessor {
 							if(amt >= 13) {
 								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
 								if(ctx.rand.nextInt(100) < 95) {
-									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), roomCentroids, centroid));
+									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), centroid, minRoomY, maxRoomY));
 								}
 							}
 						}

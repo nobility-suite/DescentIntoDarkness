@@ -247,7 +247,7 @@ public class CaveStyle {
 		return isAbstract;
 	}
 
-	public BlockStateHolder<?> getAirBlock(int y, List<Centroid> currentRoom, Centroid currentCentroid) {
+	public BlockStateHolder<?> getAirBlock(int y, Centroid currentCentroid, int minRoomY, int maxRoomY) {
 		double yInCentroid = (double) (y - currentCentroid.pos.getBlockY() + currentCentroid.size) / (currentCentroid.size + currentCentroid.size);
 		for (String tag : currentCentroid.tags) {
 			BlockTypeRange<Double> range = tagAirBlocks.get(tag);
@@ -259,8 +259,6 @@ public class CaveStyle {
 			}
 		}
 
-		int minRoomY = currentRoom.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
-		int maxRoomY = currentRoom.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
 		double yInRoom = (double) (y - minRoomY) / (maxRoomY - minRoomY);
 		for (String tag : currentCentroid.tags) {
 			BlockTypeRange<Double> range = roomAirBlocks.get(tag);

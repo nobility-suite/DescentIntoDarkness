@@ -41,20 +41,22 @@ public class ModuleGenerator {
 			int roomStart = roomStarts.get(i);
 			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
 			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
+			int minRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
+			int maxRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
 			for (Centroid centroid : roomCentroids) {
-				deleteCentroid(ctx, roomCentroids, centroid);
+				deleteCentroid(ctx, centroid, minRoomY, maxRoomY);
 			}
 		}
 	}
 
-	private static void deleteCentroid(CaveGenContext ctx, List<Centroid> roomCentroids, Centroid centroid) {
+	private static void deleteCentroid(CaveGenContext ctx, Centroid centroid, int minRoomY, int maxRoomY) {
 		int x = centroid.pos.getBlockX();
 		int y = centroid.pos.getBlockY();
 		int z = centroid.pos.getBlockZ();
 		int r = centroid.size;
 
 		for(int ty = -r; ty <= r; ty++) {
-			BlockStateHolder<?> airBlock = ctx.style.getAirBlock(ty + y, roomCentroids, centroid);
+			BlockStateHolder<?> airBlock = ctx.style.getAirBlock(ty + y, centroid, minRoomY, maxRoomY);
 			for(int tx = -r; tx <= r; tx++){
 				for(int tz = -r; tz <= r; tz++){
 					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
