@@ -454,6 +454,16 @@ public abstract class Structure {
 
 		@Override
 		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+			int wallCount = 0;
+			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {
+				if (canPlaceOn(ctx, ctx.getBlock(pos.add(dir.toBlockVector())))) {
+					wallCount++;
+				}
+			}
+			if (wallCount != 5) {
+				return;
+			}
+
 			ctx.setBlock(pos, fluid.block);
 			simulateFluidTick(ctx, pos);
 		}
