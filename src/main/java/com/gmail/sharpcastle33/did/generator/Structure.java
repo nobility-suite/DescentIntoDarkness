@@ -34,6 +34,7 @@ public abstract class Structure {
 	private final Type type;
 	protected final List<Edge> edges;
 	private final double chance;
+	private final int count;
 	protected final List<BlockStateHolder<?>> canPlaceOn;
 	protected final List<BlockStateHolder<?>> canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
@@ -45,6 +46,7 @@ public abstract class Structure {
 		this.type = type;
 		this.edges = ConfigUtil.deserializeSingleableList(map.get("edges"), val -> ConfigUtil.parseEnum(Edge.class, val), () -> Lists.newArrayList(Edge.values()));
 		this.chance = map.getDouble("chance", 1);
+		this.count = map.getInt("count", 1);
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
 		this.tags = ConfigUtil.deserializeSingleableList(map.get("tags"), Function.identity(), ArrayList::new);
@@ -52,11 +54,12 @@ public abstract class Structure {
 		computeValidDirections();
 	}
 
-	protected Structure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
+	protected Structure(String name, Type type, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
 		this.name = name;
 		this.type = type;
 		this.edges = edges;
 		this.chance = chance;
+		this.count = count;
 		this.canPlaceOn = canPlaceOn;
 		this.canReplace = canReplace;
 		this.tags = tags;
@@ -81,12 +84,16 @@ public abstract class Structure {
 		return type;
 	}
 
-	public Direction getRandomDirection(Random rand) {
-		return validDirections.get(rand.nextInt(validDirections.size()));
+	public List<Direction> getValidDirections() {
+		return validDirections;
 	}
 
 	public double getChance() {
 		return chance;
+	}
+
+	public int getCount() {
+		return count;
 	}
 
 	public boolean canPlaceOn(CaveGenContext ctx, BlockStateHolder<?> block) {
@@ -109,6 +116,7 @@ public abstract class Structure {
 		map.set("type", ConfigUtil.enumToString(type));
 		map.set("edges", ConfigUtil.serializeSingleableList(edges, ConfigUtil::enumToString));
 		map.set("chance", chance);
+		map.set("count", count);
 		if (canPlaceOn != null) {
 			map.set("canPlaceOn", ConfigUtil.serializeSingleableList(canPlaceOn, BlockStateHolder::getAsString));
 		}
@@ -174,8 +182,8 @@ public abstract class Structure {
 			}
 		}
 
-		public SchematicStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide) {
-			super(name, Type.SCHEMATIC, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+		public SchematicStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide) {
+			super(name, Type.SCHEMATIC, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.schematics = schematics;
 			this.originSide = originSide;
 		}
@@ -278,8 +286,8 @@ public abstract class Structure {
 			this.radius = map.getInt("radius", 4);
 		}
 
-		public VeinStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> ore, int radius) {
-			super(name, Type.VEIN, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+		public VeinStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> ore, int radius) {
+			super(name, Type.VEIN, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.ore = ore;
 			this.radius = radius;
 		}
@@ -315,8 +323,8 @@ public abstract class Structure {
 			this.tries = map.getInt("tries", 64);
 		}
 
-		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
-			super(name, type, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
+			super(name, type, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.block = block;
 			this.spreadX = spreadX;
 			this.spreadY = spreadY;
@@ -365,8 +373,8 @@ public abstract class Structure {
 		private final int spreadZ;
 		private final BlockStateHolder<?> block;
 
-		public GlowstoneStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
-			super(name, Type.GLOWSTONE, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+		public GlowstoneStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int density, int spreadX, int height, int spreadZ, BlockStateHolder<?> block) {
+			super(name, Type.GLOWSTONE, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.density = density;
 			this.spreadX = spreadX;
 			this.height = height;
@@ -434,8 +442,8 @@ public abstract class Structure {
 	public static class WaterfallStructure extends Structure {
 		private final FluidType fluid;
 
-		protected WaterfallStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, FluidType fluid) {
-			super(name, Type.WATERFALL, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+		protected WaterfallStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, FluidType fluid) {
+			super(name, Type.WATERFALL, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.fluid = fluid;
 		}
 

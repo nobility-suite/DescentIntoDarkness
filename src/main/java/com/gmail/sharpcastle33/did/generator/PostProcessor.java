@@ -105,22 +105,43 @@ public class PostProcessor {
 
 
 	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, Structure structure) throws WorldEditException {
-		for (Centroid centroid : centroids) {
-			if (ctx.rand.nextDouble() < structure.getChance()) {
-				if (structure.areTagsInverted()
-						? structure.getTags().stream().noneMatch(centroid.tags::contains)
-						: structure.getTags().stream().anyMatch(centroid.tags::contains)) {
-					Direction dir = structure.getRandomDirection(ctx.rand);
-					BlockVector3 pos;
-					if (dir == Direction.DOWN) {
-						pos = PostProcessor.getFloor(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
-					} else if (dir == Direction.UP) {
-						pos = PostProcessor.getCeiling(ctx, centroid.pos.toBlockPoint(), centroid.size + 2);
-					} else {
-						pos = PostProcessor.getWall(ctx, centroid.pos.toBlockPoint(), centroid.size + 2, dir.toBlockVector());
-					}
-					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-						structure.place(ctx, pos, dir);
+		List<Direction> validDirections = structure.getValidDirections();
+		if (validDirections.isEmpty()) {
+			return;
+		}
+		for (int i = 0; i < structure.getCount(); i++) {
+			for (Centroid centroid : centroids) {
+				if (centroid.size <= 0) {
+					continue;
+				}
+				if (ctx.rand.nextDouble() < structure.getChance()) {
+					if (structure.areTagsInverted()
+							? structure.getTags().stream().noneMatch(centroid.tags::contains)
+							: structure.getTags().stream().anyMatch(centroid.tags::contains)) {
+						// pick a random point on the unit sphere until it's a valid direction
+						Vector3 vector;
+						Direction dir;
+						do {
+							vector = Vector3.at(ctx.rand.nextGaussian(), ctx.rand.nextGaussian(), ctx.rand.nextGaussian()).normalize().multiply(centroid.size);
+							dir = Direction.findClosest(vector, Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+						} while (!validDirections.contains(dir));
+						assert dir != null; // stupid worldedit
+						double distanceToWall = dir.toVector().dot(vector);
+						Vector3 orthogonal = vector.subtract(dir.toVector().multiply(distanceToWall));
+						BlockVector3 origin = centroid.pos.add(orthogonal).toBlockPoint();
+
+						BlockVector3 pos;
+						if (dir == Direction.DOWN) {
+							pos = PostProcessor.getFloor(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
+						} else if (dir == Direction.UP) {
+							pos = PostProcessor.getCeiling(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
+						} else {
+							pos = PostProcessor.getWall(ctx, origin, (int) Math.ceil(distanceToWall) + 2, dir.toBlockVector());
+						}
+
+						if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
+							structure.place(ctx, pos, dir);
+						}
 					}
 				}
 			}
