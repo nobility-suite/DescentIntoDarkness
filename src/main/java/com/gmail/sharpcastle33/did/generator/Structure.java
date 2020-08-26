@@ -161,6 +161,7 @@ public abstract class Structure {
 	public static class SchematicStructure extends Structure {
 		private final List<Schematic> schematics;
 		private final Direction originSide;
+		private final boolean randomRotation;
 
 		public SchematicStructure(String name, ConfigurationSection map) {
 			super(name, Type.SCHEMATIC, map);
@@ -180,12 +181,14 @@ public abstract class Structure {
 					throw new InvalidConfigException("Invalid Direction: " + originSideVal);
 				}
 			}
+			this.randomRotation = map.getBoolean("randomRotation", true);
 		}
 
-		public SchematicStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide) {
+		public SchematicStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide, boolean randomRotation) {
 			super(name, Type.SCHEMATIC, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.schematics = schematics;
 			this.originSide = originSide;
+			this.randomRotation = randomRotation;
 		}
 
 		@Override
@@ -198,8 +201,13 @@ public abstract class Structure {
 		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
 			Schematic chosenSchematic = schematics.get(ctx.rand.nextInt(schematics.size()));
 			ClipboardHolder clipboardHolder = new ClipboardHolder(chosenSchematic.data);
+			AffineTransform transform = new AffineTransform();
+
+			if (side.isUpright() && randomRotation) {
+				transform = transform.rotateY(ctx.rand.nextInt(4) * 90);
+			}
+
 			if (side != originSide) {
-				AffineTransform transform = new AffineTransform();
 				if (originSide == Direction.DOWN) {
 					switch (side) {
 						case UP: transform = transform.scale(1, -1, 1); break;
@@ -239,8 +247,9 @@ public abstract class Structure {
 						}
 					}
 				}
-				clipboardHolder.setTransform(transform);
 			}
+
+			clipboardHolder.setTransform(transform);
 			BlockVector3 to = pos.subtract(side.toBlockVector());
 			if (canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
 				Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(true).build();
