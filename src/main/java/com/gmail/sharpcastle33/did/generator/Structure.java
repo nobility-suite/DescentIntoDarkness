@@ -12,16 +12,20 @@ import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.math.transform.Transform;
+import com.sk89q.worldedit.registry.state.PropertyKey;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -427,11 +431,214 @@ public abstract class Structure {
 		}
 	}
 
+	public static class WaterfallStructure extends Structure {
+		private final FluidType fluid;
+
+		protected WaterfallStructure(String name, List<Edge> edges, double chance, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, FluidType fluid) {
+			super(name, Type.WATERFALL, edges, chance, canPlaceOn, canReplace, tags, tagsInverted);
+			this.fluid = fluid;
+		}
+
+		protected WaterfallStructure(String name, ConfigurationSection map) {
+			super(name, Type.WATERFALL, map);
+			this.fluid = ConfigUtil.parseEnum(FluidType.class, map.getString("fluid", FluidType.WATER.name()));
+		}
+
+		@Override
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+			ctx.setBlock(pos, fluid.block);
+			simulateFluidTick(ctx, pos);
+		}
+
+		private void simulateFluidTick(CaveGenContext ctx, BlockVector3 pos) {
+			BlockStateHolder<?> state = ctx.getBlock(pos);
+			int level = state.<Integer>getState(PropertyKey.LEVEL);
+			int levelDecrease = fluid == FluidType.LAVA ? 2 : 1;
+
+			if (level > 0) {
+				int minLevel = -100;
+				int adjacentSourceBlocks = 0;
+				for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
+					int depth = getDepth(ctx.getBlock(pos.add(dir.toBlockVector())));
+					if (depth >= 0) {
+						if (depth == 0) {
+							adjacentSourceBlocks++;
+						} else if (depth >= 8) {
+							depth = 0;
+						}
+						minLevel = minLevel >= 0 && depth >= minLevel ? minLevel : depth;
+					}
+				}
+
+				int newLevel = minLevel + levelDecrease;
+				if (newLevel >= 8 || minLevel < 0) {
+					newLevel = -1;
+				}
+
+				int depthAbove = getDepth(ctx.getBlock(pos.add(0, 1, 0)));
+				if (depthAbove >= 0) {
+					if (depthAbove >= 8) {
+						newLevel = depthAbove;
+					} else {
+						newLevel = depthAbove + 8;
+					}
+				}
+
+				if (adjacentSourceBlocks >= 2 && fluid == FluidType.WATER) {
+					BlockStateHolder<?> stateBelow = ctx.getBlock(pos.add(0, -1, 0));
+					if (!canReplace(ctx, stateBelow)) {
+						newLevel = 0;
+					} else if (stateBelow.getBlockType() == fluid.block.getBlockType() && stateBelow.<Integer>getState(PropertyKey.LEVEL) == 0) {
+						newLevel = 0;
+					}
+				}
+
+				if (newLevel != level) {
+					level = newLevel;
+
+					if (newLevel < 0) {
+						ctx.setBlock(pos, Util.requireDefaultState(BlockTypes.AIR));
+					} else {
+						ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, newLevel));
+						simulateFluidTick(ctx, pos);
+					}
+				}
+			}
+
+			BlockVector3 posBelow = pos.add(0, -1, 0);
+			BlockStateHolder<?> blockBelow = ctx.getBlock(posBelow);
+			if (canFlowInto(ctx, posBelow, blockBelow)) {
+				// skipped: trigger mix effects
+
+				if (level >= 8) {
+					tryFlowInto(ctx, posBelow, blockBelow, level);
+				} else {
+					tryFlowInto(ctx, posBelow, blockBelow, level + 8);
+				}
+			} else if (level >= 0 && (level == 0 || isBlocked(ctx, posBelow, blockBelow))) {
+				Set<Direction> flowDirs = getPossibleFlowDirections(ctx, pos, level);
+				int newLevel = level + levelDecrease;
+				if (level >= 8) {
+					newLevel = 1;
+				}
+				if (newLevel >= 8) {
+					return;
+				}
+				for (Direction flowDir : flowDirs) {
+					BlockVector3 offsetPos = pos.add(flowDir.toBlockVector());
+					tryFlowInto(ctx, offsetPos, ctx.getBlock(offsetPos), newLevel);
+				}
+			}
+		}
+
+		private int getDepth(BlockStateHolder<?> state) {
+			return state.getBlockType() == fluid.block.getBlockType() ? state.<Integer>getState(PropertyKey.LEVEL) : -1;
+		}
+
+		private boolean canFlowInto(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
+			BlockType blockType = block.getBlockType();
+			return blockType != fluid.block.getBlockType() && blockType != FluidType.LAVA.block.getBlockType() && !isBlocked(ctx, pos, block);
+		}
+
+		private void tryFlowInto(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block, int level) {
+			if (!canFlowInto(ctx, pos, block)) {
+				return;
+			}
+
+			// skipped: trigger mix effects and block dropping
+			ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, level));
+			simulateFluidTick(ctx, pos);
+		}
+
+		private boolean isBlocked(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
+			return !canReplace(ctx, block) && block.getBlockType() != fluid.block.getBlockType();
+		}
+
+		private Set<Direction> getPossibleFlowDirections(CaveGenContext ctx, BlockVector3 pos, int level) {
+			int minDistanceToLower = 1000;
+			Set<Direction> flowDirs = EnumSet.noneOf(Direction.class);
+
+			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
+				BlockVector3 offsetPos = pos.add(dir.toBlockVector());
+				BlockStateHolder<?> offsetState = ctx.getBlock(offsetPos);
+
+				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != fluid.block.getBlockType() || offsetState.<Integer>getState(PropertyKey.LEVEL) > 0)) {
+					int distanceToLower;
+					BlockVector3 posBelow = offsetPos.add(0, -1, 0);
+					if (isBlocked(ctx, posBelow, ctx.getBlock(posBelow))) {
+						distanceToLower = getDistanceToLower(ctx, offsetPos, 1, Util.getOpposite(dir));
+					} else {
+						distanceToLower = 0;
+					}
+
+					if (distanceToLower < minDistanceToLower) {
+						flowDirs.clear();
+					}
+
+					if (distanceToLower <= minDistanceToLower) {
+						flowDirs.add(dir);
+						minDistanceToLower = distanceToLower;
+					}
+				}
+			}
+
+			return flowDirs;
+		}
+
+		private int getDistanceToLower(CaveGenContext ctx, BlockVector3 pos, int distance, Direction excludingDir) {
+			int minDistanceToLower = 1000;
+
+			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
+				if (dir == excludingDir) {
+					continue;
+				}
+
+				BlockVector3 offsetPos = pos.add(dir.toBlockVector());
+				BlockStateHolder<?> offsetState = ctx.getBlock(offsetPos);
+
+				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != fluid.block.getBlockType() || offsetState.<Integer>getState(PropertyKey.LEVEL) > 0)) {
+					if (!isBlocked(ctx, offsetPos.add(0, -1, 0), offsetState)) {
+						return distance;
+					}
+
+					if (distance < getSlopeFindDistance()) {
+						int distanceToLower = getDistanceToLower(ctx, offsetPos, distance + 1, Util.getOpposite(dir));
+						if (distanceToLower < minDistanceToLower) {
+							minDistanceToLower = distanceToLower;
+						}
+					}
+				}
+			}
+
+			return minDistanceToLower;
+		}
+
+		private int getSlopeFindDistance() {
+			return fluid == FluidType.LAVA ? 2 : 4;
+		}
+
+		@Override
+		protected void serialize0(ConfigurationSection map) {
+			map.set("fluid", ConfigUtil.enumToString(fluid));
+		}
+
+		public enum FluidType {
+			WATER(Util.requireDefaultState(BlockTypes.WATER)),
+			LAVA(Util.requireDefaultState(BlockTypes.LAVA));
+			public final BlockStateHolder<?> block;
+
+			FluidType(BlockStateHolder<?> block) {
+				this.block = block;
+			}
+		}
+	}
+
 	public enum Type {
 		SCHEMATIC(SchematicStructure::new),
 		VEIN(VeinStructure::new),
 		PATCH(PatchStructure::new),
 		GLOWSTONE(GlowstoneStructure::new),
+		WATERFALL(WaterfallStructure::new),
 		;
 
 		private final BiFunction<String, ConfigurationSection, Structure> deserializer;
