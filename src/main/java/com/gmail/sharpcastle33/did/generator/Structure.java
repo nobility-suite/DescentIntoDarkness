@@ -7,6 +7,7 @@ import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.function.operation.Operation;
 import com.sk89q.worldedit.function.operation.Operations;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -24,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -313,16 +313,14 @@ public abstract class Structure {
 		}
 	}
 
-	public static class PatchStructure extends Structure {
-		private final BlockStateHolder<?> block;
+	public static abstract class AbstractPatchStructure extends Structure {
 		private final int spreadX;
 		private final int spreadY;
 		private final int spreadZ;
 		private final int tries;
 
-		protected PatchStructure(String name, ConfigurationSection map) {
-			super(name, Type.PATCH, map);
-			this.block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
+		protected AbstractPatchStructure(String name, Type type, ConfigurationSection map) {
+			super(name, type, map);
 			this.spreadX = map.getInt("spreadX", 8);
 			this.spreadY = map.getInt("spreadY", 4);
 			this.spreadZ = map.getInt("spreadZ", 8);
@@ -332,9 +330,8 @@ public abstract class Structure {
 			this.tries = map.getInt("tries", 64);
 		}
 
-		protected PatchStructure(String name, Type type, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> block, int spreadX, int spreadY, int spreadZ, int tries) {
+		protected AbstractPatchStructure(String name, Type type, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int spreadX, int spreadY, int spreadZ, int tries) {
 			super(name, type, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-			this.block = block;
 			this.spreadX = spreadX;
 			this.spreadY = spreadY;
 			this.spreadZ = spreadZ;
@@ -343,7 +340,6 @@ public abstract class Structure {
 
 		@Override
 		protected void serialize0(ConfigurationSection map) {
-			map.set("block", block.getAsString());
 			map.set("spreadX", spreadX);
 			map.set("spreadY", spreadY);
 			map.set("spreadZ", spreadZ);
@@ -368,10 +364,94 @@ public abstract class Structure {
 						allowPlacement = canPlaceOn.stream().anyMatch(it -> it.equalsFuzzy(blockBelow));
 					}
 					if (allowPlacement) {
-						ctx.setBlock(offsetPos, this.block);
+						doPlace(ctx, offsetPos, side);
 					}
 				}
 			}
+		}
+
+		protected abstract void doPlace(CaveGenContext ctx, BlockVector3 pos, Direction side);
+	}
+
+	public static class PatchStructure extends AbstractPatchStructure {
+		private final BlockStateHolder<?> block;
+
+		protected PatchStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int spreadX, int spreadY, int spreadZ, int tries, BlockStateHolder<?> block) {
+			super(name, Type.PATCH, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted, spreadX, spreadY, spreadZ, tries);
+			this.block = block;
+		}
+
+		protected PatchStructure(String name, ConfigurationSection map) {
+			super(name, Type.PATCH, map);
+			this.block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
+		}
+
+		@Override
+		protected void serialize0(ConfigurationSection map) {
+			super.serialize0(map);
+			map.set("block", block.getAsString());
+		}
+
+		@Override
+		protected void doPlace(CaveGenContext ctx, BlockVector3 pos, Direction side) {
+			ctx.setBlock(pos, block);
+		}
+	}
+
+	public static class VinePatchStructure extends AbstractPatchStructure {
+		private final BlockStateHolder<?> vine;
+		private final int minHeight;
+		private final int maxHeight;
+		private final boolean randomRotation;
+
+		protected VinePatchStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, int spreadX, int spreadY, int spreadZ, int tries, BlockStateHolder<?> vine, int minHeight, int maxHeight, boolean randomRotation) {
+			super(name, Type.VINE_PATCH, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted, spreadX, spreadY, spreadZ, tries);
+			this.vine = vine;
+			this.minHeight = minHeight;
+			this.maxHeight = maxHeight;
+			this.randomRotation = randomRotation;
+		}
+
+		protected VinePatchStructure(String name, ConfigurationSection map) {
+			super(name, Type.VINE_PATCH, map);
+			this.vine = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "vine"));
+			this.minHeight = map.getInt("minHeight", 5);
+			this.maxHeight = map.getInt("maxHeight", 10);
+			if (minHeight < 1 || maxHeight < minHeight) {
+				throw new InvalidConfigException("Invalid height range");
+			}
+			this.randomRotation = map.getBoolean("randomRotation", true);
+		}
+
+		@Override
+		protected void serialize0(ConfigurationSection map) {
+			super.serialize0(map);
+			map.set("vine", vine.getAsString());
+			map.set("minHeight", minHeight);
+			map.set("maxHeight", maxHeight);
+			map.set("randomRotation", randomRotation);
+		}
+
+		@Override
+		protected void doPlace(CaveGenContext ctx, BlockVector3 pos, Direction side) {
+			int height = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
+			BlockStateHolder<?> block;
+			if (randomRotation) {
+				block = rotate(vine, ctx.rand.nextInt(4) * 90);
+			} else {
+				block = vine;
+			}
+
+			BlockVector3 offsetPos = pos;
+			for (int i = 0; i < height && canReplace(ctx, ctx.getBlock(offsetPos)); i++) {
+				ctx.setBlock(offsetPos, block);
+				offsetPos = offsetPos.subtract(side.toBlockVector());
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		private static <B extends BlockStateHolder<B>> B rotate(BlockStateHolder<?> block, double degrees) {
+			return BlockTransformExtent.transform((B) block, new AffineTransform().rotateY(degrees));
 		}
 	}
 
@@ -664,6 +744,7 @@ public abstract class Structure {
 		SCHEMATIC(SchematicStructure::new),
 		VEIN(VeinStructure::new),
 		PATCH(PatchStructure::new),
+		VINE_PATCH(VinePatchStructure::new),
 		GLOWSTONE(GlowstoneStructure::new),
 		WATERFALL(WaterfallStructure::new),
 		;
