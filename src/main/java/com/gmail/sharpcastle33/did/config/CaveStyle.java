@@ -278,9 +278,6 @@ public class CaveStyle {
 	}
 
 	public boolean isTransparentBlock(BlockStateHolder<?> block) {
-		if (airBlock.getBlocks().stream().anyMatch(air -> air.equalsFuzzy(block))) {
-			return true;
-		}
 		for (BlockStateHolder<?> transparentBlock : transparentBlocks) {
 			if (transparentBlock.equalsFuzzy(block)) {
 				return true;
