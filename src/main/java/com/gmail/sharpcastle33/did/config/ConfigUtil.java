@@ -38,6 +38,7 @@ public class ConfigUtil {
 		try {
 			ParserContext context = new ParserContext();
 			context.setRestricted(false);
+			context.setPreferringWildcard(true);
 			return WorldEdit.getInstance().getBlockFactory().parseFromInput(val, context);
 		} catch (InputParseException e) {
 			throw new InvalidConfigException("Invalid block state: " + val, e);
