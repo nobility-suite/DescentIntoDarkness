@@ -574,8 +574,9 @@ public abstract class Structure {
 				return;
 			}
 
-			ctx.setBlock(pos, fluid.block);
-			simulateFluidTick(ctx, pos);
+			if (ctx.setBlock(pos, fluid.block)) {
+				simulateFluidTick(ctx, pos);
+			}
 		}
 
 		private void simulateFluidTick(CaveGenContext ctx, BlockVector3 pos) {
@@ -627,8 +628,9 @@ public abstract class Structure {
 					if (newLevel < 0) {
 						ctx.setBlock(pos, Util.requireDefaultState(BlockTypes.AIR));
 					} else {
-						ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, newLevel));
-						simulateFluidTick(ctx, pos);
+						if (ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, newLevel))) {
+							simulateFluidTick(ctx, pos);
+						}
 					}
 				}
 			}
@@ -674,8 +676,9 @@ public abstract class Structure {
 			}
 
 			// skipped: trigger mix effects and block dropping
-			ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, level));
-			simulateFluidTick(ctx, pos);
+			if (ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, level))) {
+				simulateFluidTick(ctx, pos);
+			}
 		}
 
 		private boolean isBlocked(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
