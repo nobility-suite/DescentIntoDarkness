@@ -210,7 +210,7 @@ public abstract class Structure {
 			if (side != originSide) {
 				if (originSide == Direction.DOWN) {
 					switch (side) {
-						case UP: transform = transform.scale(1, -1, 1); break;
+						case UP: transform = transform.rotateX(180); break;
 						case NORTH: transform = transform.rotateX(-90); break;
 						case SOUTH: transform = transform.rotateX(90); break;
 						case WEST: transform = transform.rotateZ(90); break;
@@ -219,7 +219,7 @@ public abstract class Structure {
 					}
 				} else if (originSide == Direction.UP) {
 					switch (side) {
-						case DOWN: transform = transform.scale(1, -1, 1); break;
+						case DOWN: transform = transform.rotateX(180); break;
 						case NORTH: transform = transform.rotateX(90); break;
 						case SOUTH: transform = transform.rotateX(-90); break;
 						case WEST: transform = transform.rotateZ(-90); break;
