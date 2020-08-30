@@ -161,6 +161,7 @@ public abstract class Structure {
 	public static class SchematicStructure extends Structure {
 		private final List<Schematic> schematics;
 		private final Direction originSide;
+		private final boolean ignoreAir;
 		private final boolean randomRotation;
 
 		public SchematicStructure(String name, ConfigurationSection map) {
@@ -181,13 +182,15 @@ public abstract class Structure {
 					throw new InvalidConfigException("Invalid Direction: " + originSideVal);
 				}
 			}
+			this.ignoreAir = map.getBoolean("ignoreAir", true);
 			this.randomRotation = map.getBoolean("randomRotation", true);
 		}
 
-		public SchematicStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide, boolean randomRotation) {
+		public SchematicStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, List<Schematic> schematics, Direction originSide, boolean ignoreAir, boolean randomRotation) {
 			super(name, Type.SCHEMATIC, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 			this.schematics = schematics;
 			this.originSide = originSide;
+			this.ignoreAir = ignoreAir;
 			this.randomRotation = randomRotation;
 		}
 
@@ -195,6 +198,8 @@ public abstract class Structure {
 		protected void serialize0(ConfigurationSection map) {
 			map.set("schematics", ConfigUtil.serializeSingleableList(schematics, schematic -> schematic.name));
 			map.set("originSide", ConfigUtil.enumToString(originSide));
+			map.set("ignoreAir", ignoreAir);
+			map.set("randomRotation", randomRotation);
 		}
 
 		@Override
@@ -252,7 +257,7 @@ public abstract class Structure {
 			clipboardHolder.setTransform(transform);
 			BlockVector3 to = pos.subtract(side.toBlockVector());
 			if (canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
-				Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(true).build();
+				Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(ignoreAir).build();
 				Operations.complete(paste);
 				if (ctx.isDebug()) {
 					ctx.setBlock(to, Util.requireDefaultState(BlockTypes.DIAMOND_BLOCK));
