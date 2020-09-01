@@ -3,6 +3,8 @@ package com.gmail.sharpcastle33.did.listeners;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.registry.BlockMaterial;
 import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.adapters.bukkit.BukkitAdapter;
 import io.lumine.xikage.mythicmobs.api.bukkit.events.MythicMobSpawnEvent;
@@ -11,12 +13,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +38,7 @@ import java.util.stream.Collectors;
 public class MobSpawnManager implements Runnable, Listener {
 	private final Random rand = new Random();
 	private boolean spawningMob = false;
+	private MobSpawnEntry currentSpawnEntry;
 	private final List<MobInstance> allMobs = new ArrayList<>();
 
 	private void spawnMobs(CaveTracker cave) {
@@ -96,15 +102,29 @@ public class MobSpawnManager implements Runnable, Listener {
 				.multiply(spawnEntry.getMinDistance() + rand.nextDouble() * (spawnEntry.getMaxDistance() - spawnEntry.getMinDistance()))
 				.add(chosenPlayer.getLocation().toVector());
 		spawnLocation.setY(Math.floor(spawnLocation.getY()));
+		if (spawnEntry.isCenteredSpawn()) {
+			spawnLocation.setX(Math.floor(spawnLocation.getX()) + 0.5);
+			spawnLocation.setZ(Math.floor(spawnLocation.getZ()) + 0.5);
+		}
 
-		// quick exit for the blocks the mob will definitely intersect
-		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY(), spawnLocation.getBlockZ()).isPassable()) {
-			return false;
+		// quick exit for the blocks the mob will definitely intersect, and respect custom hitbox
+		if (spawnEntry.getXSize() > 0 && spawnEntry.getYSize() > 0 && spawnEntry.getZSize() > 0) {
+			if (!canSpawnMob(cave.getWorld(), spawnEntry,
+					spawnLocation.getX() - spawnEntry.getXSize() / 2, spawnLocation.getY(), spawnLocation.getZ() - spawnEntry.getZSize() / 2,
+					spawnLocation.getX() + spawnEntry.getXSize() / 2, spawnLocation.getY() + spawnEntry.getYSize(), spawnLocation.getZ() + spawnEntry.getZSize() / 2)) {
+				return false;
+			}
+		} else {
+			if (!canSpawnMob(cave.getWorld(), spawnEntry,
+					spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(),
+					spawnLocation.getX() + 0.001, spawnLocation.getY() + 2, spawnLocation.getZ() + 0.001)) {
+				return false;
+			}
 		}
-		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() + 1, spawnLocation.getBlockZ()).isPassable()) {
-			return false;
-		}
-		if (!cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() - 1, spawnLocation.getBlockZ()).getType().isSolid()) {
+		Block blockBelow = cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() - 1, spawnLocation.getBlockZ());
+		if (spawnEntry.getCanSpawnOn() == null
+				? !blockBelow.getType().isSolid()
+				: spawnEntry.getCanSpawnOn().stream().noneMatch(it -> it.equalsFuzzy(blockData2State(blockBelow.getBlockData())))) {
 			return false;
 		}
 
@@ -138,11 +158,13 @@ public class MobSpawnManager implements Runnable, Listener {
 		Entity mob;
 		if (isMythicMob) {
 			spawningMob = true;
+			currentSpawnEntry = spawnEntry;
 			ActiveMob activeMob;
 			try {
 				activeMob = MythicMobs.inst().getMobManager().spawnMob(spawnEntry.getMob(), loc);
 			} finally {
 				spawningMob = false;
+				currentSpawnEntry = null;
 			}
 			if (activeMob == null) {
 				return false;
@@ -158,7 +180,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			}
 			EntityType bukkitEntity = com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(entityType);
 			mob = cave.getWorld().spawnEntity(loc, bukkitEntity);
-			if (!canSpawnMob(cave.getWorld(), mob)) {
+			if (!canSpawnMob(cave.getWorld(), spawnEntry, mob)) {
 				mob.remove();
 				return false;
 			}
@@ -262,22 +284,42 @@ public class MobSpawnManager implements Runnable, Listener {
 		if (world == null) {
 			return;
 		}
-		if (!canSpawnMob(world, event.getEntity())) {
+		if (!canSpawnMob(world, currentSpawnEntry, event.getEntity())) {
 			event.setCancelled();
 		}
 	}
 
-	private boolean canSpawnMob(World world, Entity mob) {
-		for (int x = (int)Math.floor(mob.getBoundingBox().getMinX()); x <= (int)Math.ceil(mob.getBoundingBox().getMaxX()); x++) {
-			for (int y = (int)Math.floor(mob.getBoundingBox().getMinY()); y <= (int)Math.ceil(mob.getBoundingBox().getMaxY()); y++) {
-				for (int z = (int)Math.floor(mob.getBoundingBox().getMinZ()); z <= (int)Math.ceil(mob.getBoundingBox().getMaxZ()); z++) {
-					if (!world.getBlockAt(x, y, z).isPassable()) {
+	private boolean canSpawnMob(World world, MobSpawnEntry spawnEntry, Entity mob) {
+		BoundingBox boundingBox = mob.getBoundingBox();
+		return canSpawnMob(world, spawnEntry,
+				boundingBox.getMinX(), boundingBox.getMinY(), boundingBox.getMinZ(),
+				boundingBox.getMaxX(), boundingBox.getMaxY(), boundingBox.getMaxZ());
+	}
+
+	private boolean canSpawnMob(World world, MobSpawnEntry spawnEntry, double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+		for (int x = (int)Math.floor(minX + 0.0001); x <= (int)Math.ceil(maxX - 0.0001); x++) {
+			for (int y = (int)Math.floor(minY + 0.0001); y <= (int)Math.ceil(maxY - 0.0001); y++) {
+				for (int z = (int)Math.floor(minZ + 0.0001); z <= (int)Math.ceil(maxZ - 0.0001); z++) {
+					if (!canSpawnIn(spawnEntry, blockData2State(world.getBlockAt(x, y, z).getBlockData()))) {
 						return false;
 					}
 				}
 			}
 		}
 		return true;
+	}
+
+	private boolean canSpawnIn(MobSpawnEntry spawnEntry, BlockStateHolder<?> block) {
+		if (spawnEntry.getCanSpawnIn() == null) {
+			BlockMaterial material = block.getBlockType().getMaterial();
+			return !material.isMovementBlocker() && !material.isLiquid();
+		} else {
+			return spawnEntry.getCanSpawnIn().stream().anyMatch(it -> it.equalsFuzzy(block));
+		}
+	}
+
+	private static BlockStateHolder<?> blockData2State(BlockData data) {
+		return com.sk89q.worldedit.bukkit.BukkitAdapter.adapt(data);
 	}
 
 	private void checkForDespawn(MobInstance mob) {
