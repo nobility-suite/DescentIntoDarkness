@@ -4,7 +4,9 @@ import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
+import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
+import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.did.listeners.PlayerListener;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -27,9 +29,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import com.gmail.sharpcastle33.did.listeners.CommandListener;
-import com.gmail.sharpcastle33.did.listeners.OreListener;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.jetbrains.annotations.NotNull;
@@ -37,14 +36,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -59,7 +54,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 public class DescentIntoDarkness extends JavaPlugin {
 
@@ -154,7 +148,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 	private void setupConfig() {
 		config.addDefault("instanceLimit", 8);
 		config.addDefault("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
-		config.addDefault("caveStyles.default", 10);
+		if (!config.contains("caveStyles")) {
+			config.addDefault("caveStyles.default", 10);
+		}
 		config.options().copyDefaults(true);
 		saveConfig();
 		reload();
