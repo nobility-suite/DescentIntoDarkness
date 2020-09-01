@@ -190,7 +190,9 @@ public class MobSpawnManager implements Runnable, Listener {
 			allMobs.add(new VanillaMobInstance(cave, spawnEntry, mob, spawnedPlayer));
 		}
 
-		mob.setRotation(rand.nextFloat() * 360, 0);
+		if (spawnEntry.isRandomRotation()) {
+			mob.setRotation(rand.nextFloat() * 360, 0);
+		}
 
 		return true;
 	}

@@ -22,6 +22,7 @@ public final class MobSpawnEntry {
 	private final List<BlockStateHolder<?>> canSpawnOn;
 	private final List<BlockStateHolder<?>> canSpawnIn;
 	private final boolean centeredSpawn;
+	private final boolean randomRotation;
 
 	public MobSpawnEntry(
 			String name,
@@ -39,8 +40,8 @@ public final class MobSpawnEntry {
 			double zSize,
 			List<BlockStateHolder<?>> canSpawnOn,
 			List<BlockStateHolder<?>> canSpawnIn,
-			boolean centeredSpawn
-	) {
+			boolean centeredSpawn,
+			boolean randomRotation) {
 		this.name = name;
 		this.mob = mob;
 		this.singleMobCost = singleMobCost;
@@ -57,6 +58,7 @@ public final class MobSpawnEntry {
 		this.canSpawnOn = canSpawnOn;
 		this.canSpawnIn = canSpawnIn;
 		this.centeredSpawn = centeredSpawn;
+		this.randomRotation = randomRotation;
 	}
 
 	public String getName() {
@@ -123,6 +125,10 @@ public final class MobSpawnEntry {
 		return centeredSpawn;
 	}
 
+	public boolean isRandomRotation() {
+		return randomRotation;
+	}
+
 	@Override
 	public int hashCode() {
 		return name.hashCode();
@@ -152,6 +158,7 @@ public final class MobSpawnEntry {
 		if (canSpawnOn != null) map.set("canSpawnOn", ConfigUtil.serializeSingleableList(canSpawnOn, BlockStateHolder::getAsString));
 		if (canSpawnIn != null) map.set("canSpawnIn", ConfigUtil.serializeSingleableList(canSpawnIn, BlockStateHolder::getAsString));
 		map.set("centeredSpawn", centeredSpawn);
+		map.set("randomRotation", randomRotation);
 	}
 
 	public static MobSpawnEntry deserialize(String name, ConfigurationSection map) {
@@ -170,6 +177,7 @@ public final class MobSpawnEntry {
 		List<BlockStateHolder<?>> canSpawnOn = ConfigUtil.deserializeSingleableList(map.get("canSpawnOn"), ConfigUtil::parseBlock, () -> null);
 		List<BlockStateHolder<?>> canSpawnIn = ConfigUtil.deserializeSingleableList(map.get("canSpawnIn"), ConfigUtil::parseBlock, () -> null);
 		boolean centeredSpawn = map.getBoolean("centeredSpawn", false);
-		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown, despawnRange, xSize, ySize, zSize, canSpawnOn, canSpawnIn, centeredSpawn);
+		boolean randomRotation = map.getBoolean("randomRotation", true);
+		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown, despawnRange, xSize, ySize, zSize, canSpawnOn, canSpawnIn, centeredSpawn, randomRotation);
 	}
 }
