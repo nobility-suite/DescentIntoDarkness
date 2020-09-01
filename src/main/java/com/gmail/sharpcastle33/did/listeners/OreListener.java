@@ -40,14 +40,14 @@ public class OreListener implements Listener {
 			if (ore.getBlock().equalsFuzzy(block)) {
 				isOre = true;
 				int blockBreakCount = cave.getBlockBreakCount(pos) + 1;
+				TextComponent numberPart = new TextComponent(blockBreakCount + "/" + ore.getBreakAmount());
+				numberPart.setColor(ChatColor.WHITE);
+				TextComponent message = new TextComponent("Break progress: ");
+				message.setColor(ChatColor.BLUE);
+				message.setExtra(Lists.newArrayList(numberPart));
+				player.spigot().sendMessage(ChatMessageType.ACTION_BAR, message);
 				if (blockBreakCount < ore.getBreakAmount()) {
 					cave.setBlockBreakCount(pos, blockBreakCount);
-					TextComponent numberPart = new TextComponent(blockBreakCount + "/" + ore.getBreakAmount());
-					numberPart.setColor(ChatColor.WHITE);
-					TextComponent message = new TextComponent("Break progress: ");
-					message.setColor(ChatColor.BLUE);
-					message.setExtra(Lists.newArrayList(numberPart));
-					player.spigot().sendMessage(ChatMessageType.ACTION_BAR, message);
 					event.setCancelled(true);
 				} else {
 					cave.setBlockBreakCount(pos, 0);
