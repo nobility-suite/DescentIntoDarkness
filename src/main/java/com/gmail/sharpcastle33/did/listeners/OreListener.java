@@ -28,7 +28,7 @@ public class OreListener implements Listener {
 	@EventHandler
 	public void oreBreak(BlockBreakEvent event) {
 		Player player = event.getPlayer();
-		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(player);
+		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(player);
 		if (cave == null) {
 			return;
 		}
@@ -94,7 +94,7 @@ public class OreListener implements Listener {
 	@EventHandler
 	public void blockPlace(BlockPlaceEvent event) {
 		Player player = event.getPlayer();
-		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCave(player);
+		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(player);
 		if (cave == null) {
 			return;
 		}

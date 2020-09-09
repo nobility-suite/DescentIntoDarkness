@@ -216,12 +216,12 @@ public class CaveTrackerManager {
 	}
 
 	public boolean isInCave(Player p) {
-		return getCave(p) != null;
+		return getCaveForPlayer(p) != null;
 	}
 
 	@Nullable
 	public Location respawnPlayer(Player p) {
-		CaveTracker existingCave = getCave(p);
+		CaveTracker existingCave = getCaveForPlayer(p);
 		if (existingCave == null) {
 			return null;
 		}
@@ -242,7 +242,7 @@ public class CaveTrackerManager {
 	}
 
 	public boolean teleportPlayerTo(Player p, @Nullable CaveTracker newCave) {
-		CaveTracker existingCave = getCave(p);
+		CaveTracker existingCave = getCaveForPlayer(p);
 		if (existingCave == newCave) {
 			return true;
 		}
@@ -288,14 +288,19 @@ public class CaveTrackerManager {
 	}
 
 	@Nullable
-	public CaveTracker getCave(Player p) {
-		for(CaveTracker cave : caveTrackers) {
+	public CaveTracker getCaveForPlayer(Player p) {
+		for (CaveTracker cave : caveTrackers) {
 			List<UUID> members = cave.getPlayers();
 			if(members.contains(p.getUniqueId())) {
 				return cave;
 			}
 		}
 		return null;
+	}
+
+	public static boolean isCaveWorld(World world) {
+		MultiverseWorld mvWorld = DescentIntoDarkness.multiverseCore.getMVWorldManager().getMVWorld(world);
+		return mvWorld != null && mvWorld.getName().equals(WORLD_NAME);
 	}
 
 	public List<CaveTracker> getCaves() {
@@ -330,6 +335,7 @@ public class CaveTrackerManager {
 		mvWorld.setRespawnToWorld(worldManager.getSpawnWorld().getName());
 		World world = mvWorld.getCBWorld();
 		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+		world.setGameRule(GameRule.RANDOM_TICK_SPEED, 0);
 
 		return world;
 	}
