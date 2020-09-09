@@ -49,6 +49,7 @@ public class CaveTrackerManager {
 	private int nextInstanceId;
 	private Objective pollutionObjective;
 	private final AtomicBoolean generatingCave = new AtomicBoolean(false);
+	private ThreadLocal<Boolean> isLeavingCave = new ThreadLocal<>();
 
 	public CaveTrackerManager(int instanceLimit) {
 		this.instanceLimit = instanceLimit;
@@ -250,7 +251,12 @@ public class CaveTrackerManager {
 		if (newCave == null) {
 			Location newLocation = respawnPlayer(p);
 			if (newLocation != null) {
-				p.teleport(newLocation);
+				isLeavingCave.set(true);
+				try {
+					p.teleport(newLocation);
+				} finally {
+					isLeavingCave.set(false);
+				}
 				return true;
 			} else {
 				return false;
@@ -275,6 +281,10 @@ public class CaveTrackerManager {
 		newCave.addPlayer(p.getUniqueId());
 
 		return true;
+	}
+
+	public boolean isLeavingCave() {
+		return isLeavingCave.get();
 	}
 
 	@Nullable

@@ -38,11 +38,9 @@ public class PlayerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerPortal(PlayerPortalEvent event) {
-		if (CaveTrackerManager.isCaveWorld(event.getFrom().getWorld())) {
-			Location newLocation = DescentIntoDarkness.plugin.getCaveTrackerManager().respawnPlayer(event.getPlayer());
-			if (newLocation != null) {
-				event.setTo(newLocation);
-			}
+		if (CaveTrackerManager.isCaveWorld(event.getFrom().getWorld()) && !DescentIntoDarkness.plugin.getCaveTrackerManager().isLeavingCave()) {
+			DescentIntoDarkness.plugin.getCaveTrackerManager().teleportPlayerTo(event.getPlayer(), null);
+			event.setCancelled(true);
 		}
 	}
 }
