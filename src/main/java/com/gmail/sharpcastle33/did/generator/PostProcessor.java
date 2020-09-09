@@ -140,7 +140,7 @@ public class PostProcessor {
 						}
 
 						if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-							structure.place(ctx, pos, dir);
+							structure.place(ctx, pos, dir, false);
 						}
 					}
 				}
@@ -157,11 +157,8 @@ public class PostProcessor {
 			return;
 		}
 		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid, caveRadius);
-		if (portal.canPlaceOn(ctx, ctx.getBlock(pos))) {
-			portal.place(ctx, pos, Direction.DOWN);
-		}
+		portal.place(ctx, pos, Direction.DOWN, true);
 	}
-
 
 	public static void generateWaterfalls(CaveGenContext ctx, List<Centroid> centroids, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {
 		for(Centroid centroid : centroids) {

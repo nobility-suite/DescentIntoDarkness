@@ -148,7 +148,7 @@ public abstract class Structure {
 		return ConfigUtil.deserializeSingleableList(rule, ConfigUtil::parseBlock, () -> null);
 	}
 
-	public abstract void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException;
+	public abstract void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException;
 
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {
@@ -203,7 +203,7 @@ public abstract class Structure {
 		}
 
 		@Override
-		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
 			Schematic chosenSchematic = schematics.get(ctx.rand.nextInt(schematics.size()));
 			ClipboardHolder clipboardHolder = new ClipboardHolder(chosenSchematic.data);
 			AffineTransform transform = new AffineTransform();
@@ -256,7 +256,7 @@ public abstract class Structure {
 
 			clipboardHolder.setTransform(transform);
 			BlockVector3 to = pos.subtract(side.toBlockVector());
-			if (canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
+			if (force || canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
 				Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(ignoreAir).build();
 				Operations.complete(paste);
 				if (ctx.isDebug()) {
@@ -313,7 +313,7 @@ public abstract class Structure {
 		}
 
 		@Override
-		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
 			ModuleGenerator.generateOreCluster(ctx, pos, radius, canReplace, ore);
 		}
 	}
@@ -352,7 +352,7 @@ public abstract class Structure {
 		}
 
 		@Override
-		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
 			BlockVector3 origin = pos.subtract(side.toBlockVector());
 			for (int i = 0; i < tries; i++) {
 				BlockVector3 offsetPos = origin.add(
@@ -524,7 +524,7 @@ public abstract class Structure {
 		}
 
 		@Override
-		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
 			Direction xAxis = side.isUpright() ? Direction.EAST : side.getRight();
 			Direction zAxis = Direction.findClosest(side.toVector().cross(xAxis.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert zAxis != null;
@@ -568,15 +568,17 @@ public abstract class Structure {
 		}
 
 		@Override
-		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side) throws WorldEditException {
-			int wallCount = 0;
-			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {
-				if (canPlaceOn(ctx, ctx.getBlock(pos.add(dir.toBlockVector())))) {
-					wallCount++;
+		public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
+			if (!force) {
+				int wallCount = 0;
+				for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {
+					if (canPlaceOn(ctx, ctx.getBlock(pos.add(dir.toBlockVector())))) {
+						wallCount++;
+					}
 				}
-			}
-			if (wallCount != 5) {
-				return;
+				if (wallCount != 5) {
+					return;
+				}
 			}
 
 			if (ctx.setBlock(pos, fluid.block)) {
