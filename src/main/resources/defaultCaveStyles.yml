@@ -16,6 +16,7 @@ default:
   minLength: 90
   maxSize: 9
   minSize: 5
+  startY: 210
 
   portals: {}
 

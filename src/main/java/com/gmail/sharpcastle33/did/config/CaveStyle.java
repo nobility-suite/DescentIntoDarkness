@@ -40,6 +40,7 @@ public class CaveStyle {
 	private int maxLength;
 	private int minSize;
 	private int maxSize;
+	private int startY;
 	private final List<Room> rooms = new ArrayList<>();
 	private GrammarGraph grammar;
 	private final List<PainterStep> painterSteps = new ArrayList<>();
@@ -77,6 +78,7 @@ public class CaveStyle {
 		map.set("maxLength", maxLength);
 		map.set("minSize", minSize);
 		map.set("maxSize", maxSize);
+		map.set("startY", startY);
 		grammar.serialize(map.createSection("grammar"));
 		ConfigurationSection roomsSection = map.createSection("rooms");
 		for (Room room : rooms) {
@@ -189,6 +191,10 @@ public class CaveStyle {
 		style.maxSize = map.getInt("maxSize", 11);
 		if (style.minSize < 1 || style.maxSize < style.minSize) {
 			throw new InvalidConfigException("Illegal size range");
+		}
+		style.startY = map.getInt("startY", 210);
+		if (style.startY < 0 || style.startY > 255) {
+			throw new InvalidConfigException("startY must be between 0 and 255");
 		}
 		ConfigurationSection roomsSection = map.getConfigurationSection("rooms");
 		if (roomsSection != null) {
@@ -328,6 +334,10 @@ public class CaveStyle {
 
 	public int getMaxSize() {
 		return maxSize;
+	}
+
+	public int getStartY() {
+		return startY;
 	}
 
 	public List<Room> getRooms() {

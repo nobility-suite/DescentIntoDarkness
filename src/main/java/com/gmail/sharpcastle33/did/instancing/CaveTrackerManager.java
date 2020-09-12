@@ -154,7 +154,7 @@ public class CaveTrackerManager {
 
 		return DescentIntoDarkness.plugin.supplyAsync(() -> {
 			BlockVector2 caveChunkCoords = getInstanceChunkCoords(id);
-			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, 210, caveChunkCoords.getBlockZ() * 16);
+			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, style.getStartY(), caveChunkCoords.getBlockZ() * 16);
 			Random rand = new Random();
 			CuboidRegion limit = new CuboidRegion(
 					spawnPos.multiply(1, 0, 1).subtract(8 * INSTANCE_WIDTH_CHUNKS - 32, 0, 8 * INSTANCE_WIDTH_CHUNKS - 32),
