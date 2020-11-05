@@ -2,9 +2,9 @@ package com.gmail.sharpcastle33.did.config;
 
 import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.gmail.sharpcastle33.did.generator.GrammarGraph;
-import com.gmail.sharpcastle33.did.generator.PainterStep;
-import com.gmail.sharpcastle33.did.generator.Room;
-import com.gmail.sharpcastle33.did.generator.Structure;
+import com.gmail.sharpcastle33.did.generator.painter.PainterStep;
+import com.gmail.sharpcastle33.did.generator.room.Room;
+import com.gmail.sharpcastle33.did.generator.structure.Structure;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
 

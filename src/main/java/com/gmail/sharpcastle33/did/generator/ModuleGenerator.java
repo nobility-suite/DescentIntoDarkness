@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import com.gmail.sharpcastle33.did.generator.room.Room;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;

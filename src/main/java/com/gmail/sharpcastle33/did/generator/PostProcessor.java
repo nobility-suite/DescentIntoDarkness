@@ -2,6 +2,8 @@ package com.gmail.sharpcastle33.did.generator;
 
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.BlockTypeRange;
+import com.gmail.sharpcastle33.did.generator.painter.PainterStep;
+import com.gmail.sharpcastle33.did.generator.structure.Structure;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;

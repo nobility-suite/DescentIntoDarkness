@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 import com.gmail.sharpcastle33.did.Util;
+import com.gmail.sharpcastle33.did.generator.room.Room;
+import com.gmail.sharpcastle33.did.generator.room.SimpleRoom;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -44,7 +46,7 @@ public class CaveGenerator {
 		LayoutGenerator.Layout layout = LayoutGenerator.generateCave(ctx, length);
 
 		if(!moreBranches) {
-			Room simpleRoom = ctx.style.getRooms().stream().filter(room -> room instanceof Room.SimpleRoom).findFirst().orElse(null);
+			Room simpleRoom = ctx.style.getRooms().stream().filter(room -> room instanceof SimpleRoom).findFirst().orElse(null);
 			String branchReplacement = simpleRoom == null ? "" : String.valueOf(simpleRoom.getSymbol());
 			for (Room room : ctx.style.getRooms()) {
 				if (room.isBranch()) {

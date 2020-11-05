@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import com.gmail.sharpcastle33.did.generator.room.Room;
 import org.bukkit.Bukkit;
 
 import java.util.ArrayList;
