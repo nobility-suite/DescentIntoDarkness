@@ -24,7 +24,9 @@ import org.bukkit.configuration.ConfigurationSection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -555,16 +557,27 @@ public abstract class Structure {
 	}
 
 	public static class WaterfallStructure extends Structure {
-		private final FluidType fluid;
+		private static final Map<BlockVector3, Integer> blockLevels = new HashMap<>();
 
-		protected WaterfallStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, FluidType fluid) {
+		private final FluidType fluid;
+		private final BlockStateHolder<?> block;
+		private final int flowDistance;
+
+		protected WaterfallStructure(String name, List<Edge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted, BlockStateHolder<?> block, int flowDistance) {
 			super(name, Type.WATERFALL, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-			this.fluid = fluid;
+			this.block = block;
+			this.fluid = FluidType.byBlockType(block.getBlockType());
+			this.flowDistance = fluid == FluidType.WATER ? 8 : fluid == FluidType.LAVA ? 4 : flowDistance;
 		}
 
 		protected WaterfallStructure(String name, ConfigurationSection map) {
 			super(name, Type.WATERFALL, map);
-			this.fluid = ConfigUtil.parseEnum(FluidType.class, map.getString("fluid", FluidType.WATER.name()));
+			this.block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
+			this.fluid = FluidType.byBlockType(block.getBlockType());
+			this.flowDistance = fluid == FluidType.BLOCK ? map.getInt("flowDistance", 8) : 8;
+			if (flowDistance < 1) {
+				throw new InvalidConfigException("flowDistance must be positive");
+			}
 		}
 
 		@Override
@@ -581,25 +594,27 @@ public abstract class Structure {
 				}
 			}
 
-			if (ctx.setBlock(pos, fluid.block)) {
+			if (ctx.setBlock(pos, this.block)) {
 				simulateFluidTick(ctx, pos);
 			}
+			blockLevels.clear();
 		}
 
 		private void simulateFluidTick(CaveGenContext ctx, BlockVector3 pos) {
 			BlockStateHolder<?> state = ctx.getBlock(pos);
-			int level = state.<Integer>getState(PropertyKey.LEVEL);
+			int level = getLevel(pos, state);
 			int levelDecrease = fluid == FluidType.LAVA ? 2 : 1;
 
 			if (level > 0) {
 				int minLevel = -100;
 				int adjacentSourceBlocks = 0;
 				for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
-					int depth = getDepth(ctx.getBlock(pos.add(dir.toBlockVector())));
+					BlockVector3 offsetPos = pos.add(dir.toBlockVector());
+					int depth = getLevel(offsetPos, ctx.getBlock(offsetPos));
 					if (depth >= 0) {
 						if (depth == 0) {
 							adjacentSourceBlocks++;
-						} else if (depth >= 8) {
+						} else if (depth >= flowDistance) {
 							depth = 0;
 						}
 						minLevel = minLevel >= 0 && depth >= minLevel ? minLevel : depth;
@@ -607,16 +622,17 @@ public abstract class Structure {
 				}
 
 				int newLevel = minLevel + levelDecrease;
-				if (newLevel >= 8 || minLevel < 0) {
+				if (newLevel >= flowDistance || minLevel < 0) {
 					newLevel = -1;
 				}
 
-				int depthAbove = getDepth(ctx.getBlock(pos.add(0, 1, 0)));
+				BlockVector3 posAbove = pos.add(0, 1, 0);
+				int depthAbove = getLevel(posAbove, ctx.getBlock(posAbove));
 				if (depthAbove >= 0) {
-					if (depthAbove >= 8) {
+					if (depthAbove >= flowDistance) {
 						newLevel = depthAbove;
 					} else {
-						newLevel = depthAbove + 8;
+						newLevel = depthAbove + flowDistance;
 					}
 				}
 
@@ -624,7 +640,7 @@ public abstract class Structure {
 					BlockStateHolder<?> stateBelow = ctx.getBlock(pos.add(0, -1, 0));
 					if (!canReplace(ctx, stateBelow)) {
 						newLevel = 0;
-					} else if (stateBelow.getBlockType() == fluid.block.getBlockType() && stateBelow.<Integer>getState(PropertyKey.LEVEL) == 0) {
+					} else if (stateBelow.getBlockType() == this.block.getBlockType() && stateBelow.<Integer>getState(PropertyKey.LEVEL) == 0) {
 						newLevel = 0;
 					}
 				}
@@ -635,7 +651,7 @@ public abstract class Structure {
 					if (newLevel < 0) {
 						ctx.setBlock(pos, Util.requireDefaultState(BlockTypes.AIR));
 					} else {
-						if (ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, newLevel))) {
+						if (setLevel(ctx, pos, newLevel)) {
 							simulateFluidTick(ctx, pos);
 						}
 					}
@@ -647,18 +663,18 @@ public abstract class Structure {
 			if (canFlowInto(ctx, posBelow, blockBelow)) {
 				// skipped: trigger mix effects
 
-				if (level >= 8) {
+				if (level >= flowDistance) {
 					tryFlowInto(ctx, posBelow, blockBelow, level);
 				} else {
-					tryFlowInto(ctx, posBelow, blockBelow, level + 8);
+					tryFlowInto(ctx, posBelow, blockBelow, level + flowDistance);
 				}
 			} else if (level >= 0 && (level == 0 || isBlocked(ctx, posBelow, blockBelow))) {
 				Set<Direction> flowDirs = getPossibleFlowDirections(ctx, pos, level);
 				int newLevel = level + levelDecrease;
-				if (level >= 8) {
+				if (level >= flowDistance) {
 					newLevel = 1;
 				}
-				if (newLevel >= 8) {
+				if (newLevel >= flowDistance) {
 					return;
 				}
 				for (Direction flowDir : flowDirs) {
@@ -668,13 +684,40 @@ public abstract class Structure {
 			}
 		}
 
-		private int getDepth(BlockStateHolder<?> state) {
-			return state.getBlockType() == fluid.block.getBlockType() ? state.<Integer>getState(PropertyKey.LEVEL) : -1;
+		private int getLevel(BlockVector3 pos, BlockStateHolder<?> state) {
+			if (state.getBlockType() != this.block.getBlockType()) {
+				return -1;
+			}
+			if (fluid == FluidType.BLOCK || fluid == FluidType.SNOW_LAYER) {
+				return blockLevels.getOrDefault(pos, 0);
+			} else {
+				return state.<Integer>getState(PropertyKey.LEVEL);
+			}
+		}
+
+		private boolean setLevel(CaveGenContext ctx, BlockVector3 pos, int level) {
+			if (fluid == FluidType.BLOCK) {
+				return !Integer.valueOf(level).equals(blockLevels.put(pos, level)) | ctx.setBlock(pos, block);
+			} else if (fluid == FluidType.SNOW_LAYER) {
+				BlockVector3 posBelow = pos.add(0, -1, 0);
+				if (ctx.getBlock(posBelow).getBlockType() == BlockTypes.SNOW) {
+					ctx.setBlock(posBelow, Util.requireDefaultState(BlockTypes.SNOW).with(PropertyKey.LAYERS, 8));
+				}
+				int layers = level == 0 ? 8 : 9 - (int) Math.ceil((double)level / flowDistance * 8);
+				if (layers <= 0) layers = 1;
+				else if (layers > 8) layers = 8;
+				if (ctx.getBlock(pos.add(0, 1, 0)).getBlockType() == BlockTypes.SNOW) {
+					layers = 8;
+				}
+				return !Integer.valueOf(level).equals(blockLevels.put(pos, level)) | ctx.setBlock(pos, block.with(PropertyKey.LAYERS, layers));
+			} else {
+				return ctx.setBlock(pos, block.with(PropertyKey.LEVEL, level));
+			}
 		}
 
 		private boolean canFlowInto(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
 			BlockType blockType = block.getBlockType();
-			return blockType != fluid.block.getBlockType() && blockType != FluidType.LAVA.block.getBlockType() && !isBlocked(ctx, pos, block);
+			return blockType != this.block.getBlockType() && blockType != BlockTypes.LAVA && !isBlocked(ctx, pos, block);
 		}
 
 		private void tryFlowInto(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block, int level) {
@@ -683,24 +726,24 @@ public abstract class Structure {
 			}
 
 			// skipped: trigger mix effects and block dropping
-			if (ctx.setBlock(pos, fluid.block.with(PropertyKey.LEVEL, level))) {
+			if (setLevel(ctx, pos, level)) {
 				simulateFluidTick(ctx, pos);
 			}
 		}
 
 		private boolean isBlocked(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
-			return !canReplace(ctx, block) && block.getBlockType() != fluid.block.getBlockType();
+			return !canReplace(ctx, block) && block.getBlockType() != this.block.getBlockType();
 		}
 
 		private Set<Direction> getPossibleFlowDirections(CaveGenContext ctx, BlockVector3 pos, int level) {
-			int minDistanceToLower = 1000;
+			int minDistanceToLower = Integer.MAX_VALUE;
 			Set<Direction> flowDirs = EnumSet.noneOf(Direction.class);
 
 			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
 				BlockVector3 offsetPos = pos.add(dir.toBlockVector());
 				BlockStateHolder<?> offsetState = ctx.getBlock(offsetPos);
 
-				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != fluid.block.getBlockType() || offsetState.<Integer>getState(PropertyKey.LEVEL) > 0)) {
+				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != this.block.getBlockType() || getLevel(offsetPos, offsetState) > 0)) {
 					int distanceToLower;
 					BlockVector3 posBelow = offsetPos.add(0, -1, 0);
 					if (isBlocked(ctx, posBelow, ctx.getBlock(posBelow))) {
@@ -724,7 +767,7 @@ public abstract class Structure {
 		}
 
 		private int getDistanceToLower(CaveGenContext ctx, BlockVector3 pos, int distance, Direction excludingDir) {
-			int minDistanceToLower = 1000;
+			int minDistanceToLower = Integer.MAX_VALUE;
 
 			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL)) {
 				if (dir == excludingDir) {
@@ -734,7 +777,7 @@ public abstract class Structure {
 				BlockVector3 offsetPos = pos.add(dir.toBlockVector());
 				BlockStateHolder<?> offsetState = ctx.getBlock(offsetPos);
 
-				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != fluid.block.getBlockType() || offsetState.<Integer>getState(PropertyKey.LEVEL) > 0)) {
+				if (!isBlocked(ctx, offsetPos, offsetState) && (offsetState.getBlockType() != this.block.getBlockType() || getLevel(offsetPos, offsetState) > 0)) {
 					if (!isBlocked(ctx, offsetPos.add(0, -1, 0), offsetState)) {
 						return distance;
 					}
@@ -757,16 +800,31 @@ public abstract class Structure {
 
 		@Override
 		protected void serialize0(ConfigurationSection map) {
-			map.set("fluid", ConfigUtil.enumToString(fluid));
+			map.set("block", this.block.getAsString());
+			if (fluid == FluidType.BLOCK) {
+				map.set("flowDistance", flowDistance);
+			}
 		}
 
 		public enum FluidType {
-			WATER(Util.requireDefaultState(BlockTypes.WATER)),
-			LAVA(Util.requireDefaultState(BlockTypes.LAVA));
-			public final BlockStateHolder<?> block;
+			WATER(BlockTypes.WATER), LAVA(BlockTypes.LAVA), SNOW_LAYER(BlockTypes.SNOW), BLOCK(null);
 
-			FluidType(BlockStateHolder<?> block) {
-				this.block = block;
+			private static Map<BlockType, FluidType> BY_BLOCK_TYPE;
+			FluidType(BlockType blockType) {
+				if (blockType != null) {
+					putByBlockType(blockType, this);
+				}
+			}
+
+			private static void putByBlockType(BlockType blockType, FluidType fluidType) {
+				if (BY_BLOCK_TYPE == null) {
+					BY_BLOCK_TYPE = new HashMap<>();
+				}
+				BY_BLOCK_TYPE.put(blockType, fluidType);
+			}
+
+			public static FluidType byBlockType(BlockType blockType) {
+				return BY_BLOCK_TYPE.getOrDefault(blockType, BLOCK);
 			}
 		}
 	}
