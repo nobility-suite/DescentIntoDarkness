@@ -11,6 +11,7 @@ public enum StructureType {
 	VINE_PATCH(VinePatchStructure::new),
 	GLOWSTONE(GlowstoneStructure::new),
 	WATERFALL(WaterfallStructure::new),
+	TREE(TreeStructure::new),
 	;
 
 	private final BiFunction<String, ConfigurationSection, Structure> deserializer;
