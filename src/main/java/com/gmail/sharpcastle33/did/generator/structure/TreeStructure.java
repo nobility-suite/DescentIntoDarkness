@@ -27,7 +27,9 @@ public class TreeStructure extends Structure {
 	private final double cornerLeafChance;
 	private final BlockStateHolder<?> vine;
 	private final List<BlockStateHolder<?>> vinesCanReplace;
+	private final BlockStateHolder<?> trunkVine;
 	private final double trunkVineChance;
+	private final BlockStateHolder<?> hangingVine;
 	private final double hangingVineChance;
 	private final BlockStateHolder<?> cocoa;
 	private final boolean invertCocoaFacing;
@@ -39,8 +41,9 @@ public class TreeStructure extends Structure {
 							List<String> tags, boolean tagsInverted, BlockStateHolder<?> log, BlockStateHolder<?> leaf,
 							BlockStateHolder<?> dirt, int minHeight, int maxHeight, int minLeafHeight, int maxLeafHeight,
 							int topLeafRadius, int leafStepHeight, double cornerLeafChance, BlockStateHolder<?> vine,
-							List<BlockStateHolder<?>> vinesCanReplace, double trunkVineChance, double hangingVineChance,
-							BlockStateHolder<?> cocoa, boolean invertCocoaFacing, double cocoaChance, int minCocoaTreeHeight) {
+							List<BlockStateHolder<?>> vinesCanReplace, BlockStateHolder<?> trunkVine, double trunkVineChance,
+							BlockStateHolder<?> hangingVine, double hangingVineChance, BlockStateHolder<?> cocoa,
+							boolean invertCocoaFacing, double cocoaChance, int minCocoaTreeHeight) {
 		super(name, StructureType.TREE, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
 		this.log = log;
 		this.leaf = leaf;
@@ -54,7 +57,9 @@ public class TreeStructure extends Structure {
 		this.cornerLeafChance = cornerLeafChance;
 		this.vine = vine;
 		this.vinesCanReplace = vinesCanReplace;
+		this.trunkVine = trunkVine;
 		this.trunkVineChance = trunkVineChance;
+		this.hangingVine = hangingVine;
 		this.hangingVineChance = hangingVineChance;
 		this.cocoa = cocoa;
 		this.invertCocoaFacing = invertCocoaFacing;
@@ -74,7 +79,7 @@ public class TreeStructure extends Structure {
 		}
 		minLeafHeight = map.getInt("minLeafHeight", 4);
 		maxLeafHeight = map.getInt("maxLeafHeight", 4);
-		if (minLeafHeight < minHeight || maxLeafHeight < minLeafHeight) {
+		if (minLeafHeight > minHeight || maxLeafHeight < minLeafHeight) {
 			throw new InvalidConfigException("Invalid leaf height range");
 		}
 		topLeafRadius = map.getInt("topLeafRadius", 1);
@@ -85,7 +90,9 @@ public class TreeStructure extends Structure {
 		cornerLeafChance = map.getDouble("cornerLeafChance", 0.5);
 		vine = map.contains("vine") ? ConfigUtil.parseBlock(map.getString("vine")) : null;
 		vinesCanReplace = ConfigUtil.deserializeSingleableList(map.get("vinesCanReplace"), ConfigUtil::parseBlock, () -> null);
+		trunkVine = map.contains("trunkVine") ? ConfigUtil.parseBlock(map.getString("trunkVine")) : vine;
 		trunkVineChance = map.getDouble("trunkVineChance", 2.0 / 3);
+		hangingVine = map.contains("hangingVine") ? ConfigUtil.parseBlock(map.getString("hangingVine")) : vine;
 		hangingVineChance = map.getDouble("hangingVineChance", 0.25);
 		cocoa = map.contains("cocoa") ? ConfigUtil.parseBlock(map.getString("cocoa")) : null;
 		invertCocoaFacing = map.getBoolean("invertCocoaFacing", false);
@@ -113,7 +120,13 @@ public class TreeStructure extends Structure {
 		if (vinesCanReplace != null) {
 			map.set("vinesCanReplace", ConfigUtil.serializeSingleableList(vinesCanReplace, BlockStateHolder::getAsString));
 		}
+		if (trunkVine != null) {
+			map.set("trunkVine", trunkVine);
+		}
 		map.set("trunkVineChance", trunkVineChance);
+		if (hangingVine != null) {
+			map.set("hangingVine", hangingVine);
+		}
 		map.set("hangingVineChance", hangingVineChance);
 		if (cocoa != null) {
 			map.set("cocoa", cocoa.getAsString());
@@ -191,25 +204,25 @@ public class TreeStructure extends Structure {
 			if (canReplace(ctx, ctx.getBlock(pos.add(0, dy, 0)))) {
 				ctx.setBlock(pos.add(0, dy, 0), this.log);
 
-				if (this.vine != null && dy > 0) {
+				if (trunkVine != null && dy > 0) {
 					if (ctx.rand.nextDouble() < trunkVineChance && vinesCanReplace(ctx, ctx.getBlock(pos.add(-1, dy, 0)))) {
-						placeVine(ctx, pos.add(-1, dy, 0), PropertyKey.EAST);
+						placeVine(ctx, pos.add(-1, dy, 0), trunkVine, PropertyKey.EAST);
 					}
 					if (ctx.rand.nextDouble() < trunkVineChance && vinesCanReplace(ctx, ctx.getBlock(pos.add(1, dy, 0)))) {
-						placeVine(ctx, pos.add(1, dy, 0), PropertyKey.WEST);
+						placeVine(ctx, pos.add(1, dy, 0), trunkVine, PropertyKey.WEST);
 					}
 					if (ctx.rand.nextDouble() < trunkVineChance && vinesCanReplace(ctx, ctx.getBlock(pos.add(0, dy, -1)))) {
-						placeVine(ctx, pos.add(0, dy, -1), PropertyKey.SOUTH);
+						placeVine(ctx, pos.add(0, dy, -1), trunkVine, PropertyKey.SOUTH);
 					}
 					if (ctx.rand.nextDouble() < trunkVineChance && vinesCanReplace(ctx, ctx.getBlock(pos.add(0, dy, 1)))) {
-						placeVine(ctx, pos.add(0, dy, 1), PropertyKey.NORTH);
+						placeVine(ctx, pos.add(0, dy, 1), trunkVine, PropertyKey.NORTH);
 					}
 				}
 			}
 		}
 
 		// place hanging vines
-		if (vine != null) {
+		if (hangingVine != null) {
 			for (int y = pos.getY() - leafHeight + 1 + trunkHeight; y <= pos.getY() + trunkHeight; y++) {
 				int yRelativeToTop = y - (pos.getY() + trunkHeight);
 				int vineRadius = topLeafRadius + 1 - yRelativeToTop / leafStepHeight;
@@ -224,16 +237,16 @@ public class TreeStructure extends Structure {
 							BlockVector3 vinePosSouth = vinePos.add(0, 0, 1);
 
 							if (ctx.rand.nextDouble() < hangingVineChance && vinesCanReplace(ctx, ctx.getBlock(vinePostWest))) {
-								this.placeHangingVine(ctx, vinePostWest, PropertyKey.EAST);
+								placeHangingVine(ctx, vinePostWest, PropertyKey.EAST);
 							}
 							if (ctx.rand.nextDouble() < hangingVineChance && vinesCanReplace(ctx, ctx.getBlock(vinePosEast))) {
-								this.placeHangingVine(ctx, vinePosEast, PropertyKey.WEST);
+								placeHangingVine(ctx, vinePosEast, PropertyKey.WEST);
 							}
 							if (ctx.rand.nextDouble() < hangingVineChance && vinesCanReplace(ctx, ctx.getBlock(vinePosNorth))) {
-								this.placeHangingVine(ctx, vinePosNorth, PropertyKey.SOUTH);
+								placeHangingVine(ctx, vinePosNorth, PropertyKey.SOUTH);
 							}
 							if (ctx.rand.nextDouble() < hangingVineChance && vinesCanReplace(ctx, ctx.getBlock(vinePosSouth))) {
-								this.placeHangingVine(ctx, vinePosSouth, PropertyKey.NORTH);
+								placeHangingVine(ctx, vinePosSouth, PropertyKey.NORTH);
 							}
 						}
 					}
@@ -253,7 +266,7 @@ public class TreeStructure extends Structure {
 								List<Integer> validAges = cocoa.getBlockType().<Integer>getProperty(PropertyKey.AGE).getValues();
 								age = validAges.get(ctx.rand.nextInt(validAges.size()));
 							}
-							this.placeCocoa(ctx, age, pos.add(cocoaAttachDir.getBlockX(), trunkHeight - minCocoaTreeHeight + cocoaDy + 1, cocoaAttachDir.getBlockZ()), dir);
+							placeCocoa(ctx, age, pos.add(cocoaAttachDir.getBlockX(), trunkHeight - minCocoaTreeHeight + cocoaDy + 1, cocoaAttachDir.getBlockZ()), dir);
 						}
 					}
 				}
@@ -265,20 +278,19 @@ public class TreeStructure extends Structure {
 		return canReplace(ctx, block) && (vinesCanReplace == null || vinesCanReplace.stream().anyMatch(it -> it.equalsFuzzy(block)));
 	}
 
-	private void placeVine(CaveGenContext ctx, BlockVector3 pos, PropertyKey attachProp) {
-		if (vine.getBlockType().hasProperty(attachProp)) {
-			ctx.setBlock(pos, vine.with(attachProp, true));
+	private void placeVine(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> vineBlock, PropertyKey attachProp) {
+		if (vineBlock.getBlockType().hasProperty(attachProp)) {
+			ctx.setBlock(pos, vineBlock.with(attachProp, true));
 		} else {
-			ctx.setBlock(pos, vine);
+			ctx.setBlock(pos, vineBlock);
 		}
 	}
 
-	private void placeHangingVine(CaveGenContext worldIn, BlockVector3 pos, PropertyKey prop)
-	{
-		this.placeVine(worldIn, pos, prop);
+	private void placeHangingVine(CaveGenContext worldIn, BlockVector3 pos, PropertyKey prop) {
+		placeVine(worldIn, pos, hangingVine, prop);
 		BlockVector3 vinePos = pos.add(0, -1, 0);
 		for (int y = 4; vinesCanReplace(worldIn, worldIn.getBlock(vinePos)) && y > 0; y--) {
-			this.placeVine(worldIn, vinePos, prop);
+			placeVine(worldIn, vinePos, hangingVine, prop);
 			vinePos = vinePos.add(0, -1, 0);
 		}
 	}
