@@ -267,7 +267,7 @@ public class WaterfallStructure extends Structure {
 
 	@Override
 	protected void serialize0(ConfigurationSection map) {
-		map.set("block", this.block.getAsString());
+		map.set("block", ConfigUtil.serializeBlock(this.block));
 		if (fluid == FluidType.BLOCK) {
 			map.set("flowDistance", flowDistance);
 		}

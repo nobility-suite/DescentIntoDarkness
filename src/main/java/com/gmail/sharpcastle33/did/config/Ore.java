@@ -49,7 +49,7 @@ public class Ore {
 	}
 
 	public void serialize(ConfigurationSection map) {
-		map.set("block", block.getAsString());
+		map.set("block", ConfigUtil.serializeBlock(block));
 		map.set("pollution", pollution);
 		if (dropTable != null) {
 			if (dropTable.size() == 1) {

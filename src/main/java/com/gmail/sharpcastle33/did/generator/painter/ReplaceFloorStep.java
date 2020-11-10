@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did.generator.painter;
 
+import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.PostProcessor;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -23,7 +24,7 @@ public class ReplaceFloorStep extends PainterStep {
 
 	@Override
 	public Object serialize() {
-		String ret = getSerializationPrefix() + " " + old.getAsString() + " " + _new.getAsString();
+		String ret = getSerializationPrefix() + " " + ConfigUtil.serializeBlock(old) + " " + ConfigUtil.serializeBlock(_new);
 		if (chance != 1) {
 			ret += " " + chance;
 		}

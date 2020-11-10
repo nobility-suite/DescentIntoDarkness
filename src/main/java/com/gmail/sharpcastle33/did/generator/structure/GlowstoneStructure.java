@@ -55,7 +55,7 @@ public class GlowstoneStructure extends Structure {
 		map.set("spreadX", spreadX);
 		map.set("height", height);
 		map.set("spreadZ", spreadZ);
-		map.set("block", block.getAsString());
+		map.set("block", ConfigUtil.serializeBlock(block));
 	}
 
 	@Override

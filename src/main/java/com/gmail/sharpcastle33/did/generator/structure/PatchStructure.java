@@ -29,7 +29,7 @@ public class PatchStructure extends AbstractPatchStructure {
 	@Override
 	protected void serialize0(ConfigurationSection map) {
 		super.serialize0(map);
-		map.set("block", block.getAsString());
+		map.set("block", ConfigUtil.serializeBlock(block));
 	}
 
 	@Override

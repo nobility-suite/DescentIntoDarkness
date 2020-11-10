@@ -38,8 +38,8 @@ public class VinePatchStructure extends AbstractPatchStructure {
 	protected VinePatchStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.VINE_PATCH, map);
 		this.vine = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "vine"));
-		this.firstBlock = ConfigUtil.parseBlock(map.getString("firstBlock", vine.getAsString()));
-		this.lastBlock = ConfigUtil.parseBlock(map.getString("lastBlock", vine.getAsString()));
+		this.firstBlock = ConfigUtil.parseBlock(map.getString("firstBlock", ConfigUtil.serializeBlock(vine)));
+		this.lastBlock = ConfigUtil.parseBlock(map.getString("lastBlock", ConfigUtil.serializeBlock(vine)));
 		this.minHeight = map.getInt("minHeight", 5);
 		this.maxHeight = map.getInt("maxHeight", 10);
 		if (minHeight < 1 || maxHeight < minHeight) {
@@ -51,9 +51,9 @@ public class VinePatchStructure extends AbstractPatchStructure {
 	@Override
 	protected void serialize0(ConfigurationSection map) {
 		super.serialize0(map);
-		map.set("vine", vine.getAsString());
-		map.set("firstBlock", firstBlock.getAsString());
-		map.set("lastBlock", lastBlock.getAsString());
+		map.set("vine", ConfigUtil.serializeBlock(vine));
+		map.set("firstBlock", ConfigUtil.serializeBlock(firstBlock));
+		map.set("lastBlock", ConfigUtil.serializeBlock(lastBlock));
 		map.set("minHeight", minHeight);
 		map.set("maxHeight", maxHeight);
 		map.set("randomRotation", randomRotation);

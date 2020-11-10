@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.onarandombox.MultiverseCore.api.MVDestination;
@@ -337,7 +338,7 @@ public class CaveTrackerManager {
 			return worldManager.getMVWorld(WORLD_NAME).getCBWorld();
 		}
 
-		String generator = "DescentIntoDarkness:full_" + Util.requireDefaultState(BlockTypes.STONE).getAsString();
+		String generator = "DescentIntoDarkness:full_" + ConfigUtil.serializeBlock(Util.requireDefaultState(BlockTypes.STONE));
 		if (!worldManager.addWorld(WORLD_NAME, World.Environment.THE_END, "0", WorldType.FLAT, Boolean.FALSE, generator, false)) {
 			return null;
 		}

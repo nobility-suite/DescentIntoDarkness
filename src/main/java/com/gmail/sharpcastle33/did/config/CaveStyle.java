@@ -57,7 +57,7 @@ public class CaveStyle {
 		airBlock.serialize(map, "airBlock");
 		serializeTagsToAirBlocks(map.createSection("roomAirBlocks"), roomAirBlocks);
 		serializeTagsToAirBlocks(map.createSection("tagAirBlocks"), tagAirBlocks);
-		map.set("baseBlock", baseBlock.getAsString());
+		map.set("baseBlock", ConfigUtil.serializeBlock(baseBlock));
 		map.set("transparentBlocks", transparentBlocks.stream().map(BlockStateHolder::getAsString).collect(Collectors.toCollection(ArrayList::new)));
 
 		ConfigurationSection oresSection = map.createSection("ores");

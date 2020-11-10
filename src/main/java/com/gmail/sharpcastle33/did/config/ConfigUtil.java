@@ -1,11 +1,14 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.gmail.sharpcastle33.did.compat.NobilityItems;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.WorldEdit;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.Material;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
@@ -35,6 +38,14 @@ public class ConfigUtil {
 	}
 
 	public static BlockStateHolder<?> parseBlock(String val) {
+		if (val.startsWith("nobility:")) {
+			val = val.substring("nobility:".length());
+			BlockData blockData = NobilityItems.getNobilityBlock(val);
+			if (blockData == null) {
+				throw new InvalidConfigException("Invalid NobilityBlock: " + val);
+			}
+			return BukkitAdapter.adapt(blockData);
+		}
 		try {
 			ParserContext context = new ParserContext();
 			context.setRestricted(false);
@@ -45,6 +56,14 @@ public class ConfigUtil {
 		}
 	}
 
+	public static String serializeBlock(BlockStateHolder<?> block) {
+		String nobilityName = NobilityItems.getNobilityName(BukkitAdapter.adapt(block));
+		if (nobilityName != null) {
+			return "nobility:" + nobilityName;
+		}
+		return block.getAsString();
+	}
+
 	@SuppressWarnings("unchecked")
 	public static ItemStack parseItem(Object val) {
 		if (val instanceof String) {
@@ -53,16 +72,25 @@ public class ConfigUtil {
 			int count = starIndex == -1 ? 1 : parseInt(typeAndCount.substring(0, starIndex));
 			String originalItemName = starIndex == -1 ? typeAndCount : typeAndCount.substring(starIndex + 1);
 			String itemName = originalItemName;
-			if (itemName.startsWith("minecraft:")) itemName = itemName.substring("minecraft:".length());
+			ItemStack nobilityStack = null;
+			if (itemName.startsWith("minecraft:")) {
+				itemName = itemName.substring("minecraft:".length());
+			} else if (itemName.startsWith("nobility:")) {
+				itemName = itemName.substring("nobility:".length());
+				nobilityStack = NobilityItems.createNobilityStack(itemName, count);
+				if (nobilityStack == null) {
+					throw new InvalidConfigException("Unknown NobilityItem: " + itemName);
+				}
+			}
 			itemName = itemName.toUpperCase(Locale.ROOT);
-			Material material = Material.getMaterial(itemName);
+			Material material = nobilityStack != null ? nobilityStack.getType() : Material.getMaterial(itemName);
 			if (material == null || !material.isItem()) {
 				throw new InvalidConfigException("Unknown item: " + originalItemName);
 			}
 			if (count < 1 || count > material.getMaxStackSize()) {
 				throw new InvalidConfigException("Cannot have a stack size of " + count + " for item " + originalItemName);
 			}
-			return new ItemStack(material, count);
+			return nobilityStack != null ? nobilityStack : new ItemStack(material, count);
 		} else if (val instanceof Map) {
 			return ItemStack.deserialize((Map<String, Object>) val);
 		} else if (val instanceof ConfigurationSection) {
@@ -73,7 +101,14 @@ public class ConfigUtil {
 	}
 
 	public static Object serializeItemStack(ItemStack stack) {
-		if (stack.hasItemMeta()) {
+		String nobilityName = NobilityItems.getNobilityName(stack);
+		if (nobilityName != null) {
+			if (stack.getAmount() != 1) {
+				return stack.getAmount() + "*nobility:" + nobilityName;
+			} else {
+				return "nobility:" + nobilityName;
+			}
+		} else if (stack.hasItemMeta()) {
 			return stack.serialize();
 		} else if (stack.getAmount() != 1) {
 			return stack.getAmount() + "*" + stack.getType().getKey();

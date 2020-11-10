@@ -1,6 +1,7 @@
 package com.gmail.sharpcastle33.did.generator.painter;
 
 import com.gmail.sharpcastle33.did.config.BlockTypeRange;
+import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.PostProcessor;
 import com.sk89q.worldedit.MaxChangedBlocksException;
@@ -22,7 +23,7 @@ public class ReplaceMesaStep extends PainterStep {
 
 	@Override
 	public Object serialize() {
-		return getSerializationPrefix() + " " + old.getAsString() + " " + mesaLayers.serializePainter();
+		return getSerializationPrefix() + " " + ConfigUtil.serializeBlock(old) + " " + mesaLayers.serializePainter();
 	}
 
 	@Override

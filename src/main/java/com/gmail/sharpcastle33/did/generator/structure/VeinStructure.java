@@ -31,7 +31,7 @@ public class VeinStructure extends Structure {
 
 	@Override
 	protected void serialize0(ConfigurationSection map) {
-		map.set("ore", ore.getAsString());
+		map.set("ore", ConfigUtil.serializeBlock(ore));
 		map.set("radius", radius);
 	}
 

@@ -102,10 +102,10 @@ public class TreeStructure extends Structure {
 
 	@Override
 	protected void serialize0(ConfigurationSection map) {
-		map.set("log", log.getAsString());
-		map.set("leaf", leaf.getAsString());
+		map.set("log", ConfigUtil.serializeBlock(log));
+		map.set("leaf", ConfigUtil.serializeBlock(leaf));
 		if (dirt != null) {
-			map.set("dirt", dirt.getAsString());
+			map.set("dirt", ConfigUtil.serializeBlock(dirt));
 		}
 		map.set("minHeight", minHeight);
 		map.set("maxHeight", maxHeight);
@@ -115,7 +115,7 @@ public class TreeStructure extends Structure {
 		map.set("leafStepHeight", leafStepHeight);
 		map.set("cornerLeafChance", cornerLeafChance);
 		if (vine != null) {
-			map.set("vine", vine.getAsString());
+			map.set("vine", ConfigUtil.serializeBlock(vine));
 		}
 		if (vinesCanReplace != null) {
 			map.set("vinesCanReplace", ConfigUtil.serializeSingleableList(vinesCanReplace, BlockStateHolder::getAsString));
@@ -129,7 +129,7 @@ public class TreeStructure extends Structure {
 		}
 		map.set("hangingVineChance", hangingVineChance);
 		if (cocoa != null) {
-			map.set("cocoa", cocoa.getAsString());
+			map.set("cocoa", ConfigUtil.serializeBlock(cocoa));
 		}
 		map.set("invertCocoaFacing", invertCocoaFacing);
 		map.set("cocoaChance", cocoaChance);

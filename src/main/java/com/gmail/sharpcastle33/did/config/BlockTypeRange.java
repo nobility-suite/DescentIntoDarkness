@@ -126,14 +126,14 @@ public final class BlockTypeRange<T extends Comparable<T>> {
 
 	public void serialize(ConfigurationSection parentSection, String key) {
 		if (entries.size() == 1) {
-			parentSection.set(key, entries.get(0).block.getAsString());
+			parentSection.set(key, ConfigUtil.serializeBlock(entries.get(0).block));
 			return;
 		}
 
 		ConfigurationSection section = parentSection.createSection(key);
 		entries.stream()
 				.collect(Collectors.groupingBy((Entry<T> entry) -> entry.block, LinkedHashMap::new, Collectors.toList()))
-				.forEach((block, entries) -> section.set(block.getAsString(), entries.stream()
+				.forEach((block, entries) -> section.set(ConfigUtil.serializeBlock(block), entries.stream()
 						.map(entry -> entry.min.equals(entry.max) ? String.valueOf(entry.min) : (entry.min + "-" + entry.max))
 						.collect(Collectors.joining(", "))));
 	}
@@ -141,9 +141,9 @@ public final class BlockTypeRange<T extends Comparable<T>> {
 	public String serializePainter() {
 		return entries.stream().map(entry -> {
 			if (entry.min.equals(entry.max)) {
-				return entry.min + " " + entry.block.getAsString();
+				return entry.min + " " + ConfigUtil.serializeBlock(entry.block);
 			} else {
-				return entry.min + "-" + entry.max + " " + entry.block.getAsString();
+				return entry.min + "-" + entry.max + " " + ConfigUtil.serializeBlock(entry.block);
 			}
 		}).collect(Collectors.joining(" "));
 	}
