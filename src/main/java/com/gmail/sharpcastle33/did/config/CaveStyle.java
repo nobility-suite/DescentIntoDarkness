@@ -41,6 +41,7 @@ public class CaveStyle {
 	private int minSize;
 	private int maxSize;
 	private int startY;
+	private String biome;
 	private final List<Room> rooms = new ArrayList<>();
 	private GrammarGraph grammar;
 	private final List<PainterStep> painterSteps = new ArrayList<>();
@@ -79,6 +80,7 @@ public class CaveStyle {
 		map.set("minSize", minSize);
 		map.set("maxSize", maxSize);
 		map.set("startY", startY);
+		map.set("biome", biome);
 		grammar.serialize(map.createSection("grammar"));
 		ConfigurationSection roomsSection = map.createSection("rooms");
 		for (Room room : rooms) {
@@ -195,6 +197,10 @@ public class CaveStyle {
 		style.startY = map.getInt("startY", 210);
 		if (style.startY < 0 || style.startY > 255) {
 			throw new InvalidConfigException("startY must be between 0 and 255");
+		}
+		style.biome = map.getString("biome", "minecraft:ocean");
+		if (!Biomes.biomeExists(style.biome)) {
+			throw new InvalidConfigException("No such biome: " + style.biome);
 		}
 		ConfigurationSection roomsSection = map.getConfigurationSection("rooms");
 		if (roomsSection != null) {
@@ -338,6 +344,10 @@ public class CaveStyle {
 
 	public int getStartY() {
 		return startY;
+	}
+
+	public String getBiome() {
+		return biome;
 	}
 
 	public List<Room> getRooms() {

@@ -16,6 +16,10 @@
 			<url>https://repo.onarandombox.com/content/repositories/multiverse</url>
 		</repository>
 		<repository>
+			<id>protocollib-repo</id>
+			<url>https://repo.dmulloy2.net/nexus/repository/public/</url>
+		</repository>
+		<repository>
 			<id>spigot-repo</id>
 			<url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
 		</repository>
@@ -67,6 +71,11 @@
 			<artifactId>MythicMobs</artifactId>
 			<version>4.8.0</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.comphenix.protocol</groupId>
+			<artifactId>ProtocolLib</artifactId>
+			<version>4.5.0</version>
 		</dependency>
 	</dependencies>
 

@@ -1,12 +1,15 @@
 package com.gmail.sharpcastle33.did;
 
+import com.gmail.sharpcastle33.did.config.Biomes;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
+import com.gmail.sharpcastle33.did.config.DataPacks;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.gmail.sharpcastle33.did.listeners.CommandListener;
 import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
+import com.gmail.sharpcastle33.did.listeners.PacketListener;
 import com.gmail.sharpcastle33.did.listeners.PlayerListener;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -129,6 +132,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
 		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, caveTrackerManager::update, 0, 20);
+
+		PacketListener.register();
 	}
 
 	@Override
@@ -151,6 +156,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 		if (!config.contains("caveStyles")) {
 			config.addDefault("caveStyles.default", 10);
 		}
+		config.addDefault("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
 		config.options().copyDefaults(true);
 		saveConfig();
 		reload();
@@ -161,6 +167,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 		reloadConfig();
 		config = getConfig();
 
+		DataPacks.reload();
+		Biomes.reload();
+
 		caveStyleWeights = new LinkedHashMap<>();
 		ConfigurationSection caveStylesSection = config.getConfigurationSection("caveStyles");
 		if (caveStylesSection != null) {
@@ -169,6 +178,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 			}
 		}
 
+		Bukkit.getLogger().info("Loading cave styles...");
 		File caveStylesDir = new File(getDataFolder(), "caveStyles");
 		//noinspection ResultOfMethodCallIgnored
 		caveStylesDir.mkdirs();
@@ -193,6 +203,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 		}
 		this.caveStyles = null;
 		getCaveStyles();
+
+		Bukkit.getLogger().info("Reloaded DescentIntoDarkness config");
 	}
 
 	private FileConfiguration reloadConfig(String configName) {
@@ -211,6 +223,10 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	public int getCaveTimeLimit() {
 		return config.getInt("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
+	}
+
+	public int getCustomBiomeIdStart() {
+		return config.getInt("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
 	}
 
 	public LinkedHashMap<String, Integer> getCaveStyleWeights() {
