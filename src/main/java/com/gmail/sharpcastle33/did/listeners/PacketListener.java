@@ -33,6 +33,10 @@ public class PacketListener {
 	private static final MethodAccessor DATA_RESULT_ERROR;
 	private static final MethodAccessor PARTIAL_RESULT_MESSAGE;
 
+	private static final Class<?> DIMENSION_TYPE;
+	private static final Object NETHER_DIMENSION;
+	private static final Object END_DIMENSION;
+
 	static {
 		DYNAMIC_REGISTRY_MANAGER_IMPL = MinecraftReflection.getMinecraftClass("IRegistryCustom$Dimension");
 		Field registryManagerNetworkCodecField = FuzzyReflection.fromClass(DYNAMIC_REGISTRY_MANAGER_IMPL).getFieldByType("[.\\w$]*com\\.mojang\\.serialization\\.Codec");
@@ -61,6 +65,10 @@ public class PacketListener {
 		DATA_RESULT_RESULT = Accessors.getMethodAccessor(FuzzyReflection.fromClass(dataResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("result").returnTypeExact(Optional.class).parameterCount(0).build()));
 		DATA_RESULT_ERROR = Accessors.getMethodAccessor(FuzzyReflection.fromClass(dataResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("error").returnTypeExact(Optional.class).parameterCount(0).build()));
 		PARTIAL_RESULT_MESSAGE = Accessors.getMethodAccessor(FuzzyReflection.fromClass(partialResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("message").returnTypeExact(String.class).parameterCount(0).build()));
+
+		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("DimensionManager");
+		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_NETHER_IMPL"), true).get(null);
+		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_END_IMPL"), true).get(null);
 	}
 
 	private static JsonObject registryManagerToJson(Object registryManager) {
@@ -136,6 +144,20 @@ public class PacketListener {
 					}
 					Arrays.fill(biomes, Biomes.getRawId(cave.getStyle().getBiome()));
 					return biomes;
+				});
+			}
+		});
+
+		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.plugin, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
+			@Override
+			public void onPacketSending(PacketEvent event) {
+				event.getPacket().getModifier().withType(DIMENSION_TYPE).modify(0, dim -> {
+					CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
+					if (cave != null) {
+						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
+					} else {
+						return dim;
+					}
 				});
 			}
 		});

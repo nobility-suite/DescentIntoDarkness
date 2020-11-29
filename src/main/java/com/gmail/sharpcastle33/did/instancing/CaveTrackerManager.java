@@ -276,10 +276,11 @@ public class CaveTrackerManager {
 		Location start = newCave.getStart();
 		String destStr = String.format("e:%s:%f,%f,%f", WORLD_NAME, start.getX(), start.getY(), start.getZ());
 		MVDestination dest = DescentIntoDarkness.multiverseCore.getDestFactory().getDestination(destStr);
+		newCave.addPlayer(p.getUniqueId());
 		if (DescentIntoDarkness.multiverseCore.getSafeTTeleporter().teleport(Bukkit.getConsoleSender(), p, dest) != TeleportResult.SUCCESS) {
+			newCave.removePlayer(p.getUniqueId());
 			return false;
 		}
-		newCave.addPlayer(p.getUniqueId());
 
 		return true;
 	}

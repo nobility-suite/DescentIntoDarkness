@@ -42,6 +42,7 @@ public class CaveStyle {
 	private int maxSize;
 	private int startY;
 	private String biome;
+	private boolean nether;
 	private final List<Room> rooms = new ArrayList<>();
 	private GrammarGraph grammar;
 	private final List<PainterStep> painterSteps = new ArrayList<>();
@@ -81,6 +82,7 @@ public class CaveStyle {
 		map.set("maxSize", maxSize);
 		map.set("startY", startY);
 		map.set("biome", biome);
+		map.set("nether", nether);
 		grammar.serialize(map.createSection("grammar"));
 		ConfigurationSection roomsSection = map.createSection("rooms");
 		for (Room room : rooms) {
@@ -202,6 +204,7 @@ public class CaveStyle {
 		if (!Biomes.biomeExists(style.biome)) {
 			throw new InvalidConfigException("No such biome: " + style.biome);
 		}
+		style.nether = map.getBoolean("nether");
 		ConfigurationSection roomsSection = map.getConfigurationSection("rooms");
 		if (roomsSection != null) {
 			style.rooms.clear();
@@ -348,6 +351,10 @@ public class CaveStyle {
 
 	public String getBiome() {
 		return biome;
+	}
+
+	public boolean isNether() {
+		return nether;
 	}
 
 	public List<Room> getRooms() {
