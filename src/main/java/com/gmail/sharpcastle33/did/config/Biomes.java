@@ -1,5 +1,11 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.comphenix.protocol.reflect.FuzzyReflection;
+import com.comphenix.protocol.reflect.accessors.Accessors;
+import com.comphenix.protocol.reflect.accessors.MethodAccessor;
+import com.comphenix.protocol.reflect.fuzzy.FuzzyMethodContract;
+import com.comphenix.protocol.utility.MinecraftReflection;
+import com.comphenix.protocol.wrappers.MinecraftKey;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -12,6 +18,7 @@ import org.bukkit.entity.Player;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -25,6 +32,25 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 public class Biomes {
+	private static final Object BUILTIN_BIOME_REGISTRY;
+	private static final MethodAccessor REGISTRY_GET_RAW_ID;
+	private static final MethodAccessor REGISTRY_GET;
+	static {
+		FuzzyReflection builtinRegistries = FuzzyReflection.fromClass(MinecraftReflection.getMinecraftClass("RegistryGeneration"));
+		BUILTIN_BIOME_REGISTRY = Accessors.getFieldAccessor(builtinRegistries.getFieldByName("WORLDGEN_BIOME")).get(null);
+		FuzzyReflection registry = FuzzyReflection.fromClass(MinecraftReflection.getMinecraftClass("IRegistry"));
+		REGISTRY_GET_RAW_ID = Accessors.getMethodAccessor(registry.getMethod(FuzzyMethodContract.newBuilder()
+				.banModifier(Modifier.STATIC)
+				.returnTypeExact(int.class)
+				.parameterExactArray(Object.class)
+				.build()));
+		REGISTRY_GET = Accessors.getMethodAccessor(registry.getMethod(FuzzyMethodContract.newBuilder()
+				.banModifier(Modifier.STATIC)
+				.returnTypeExact(Object.class)
+				.parameterExactArray(MinecraftReflection.getMinecraftKeyClass())
+				.build()));
+	}
+
 	public static final int DEFAULT_CUSTOM_BIOME_ID_START = 256;
 
 	private static final Gson GSON = new Gson();
@@ -100,7 +126,11 @@ public class Biomes {
 		biome = normalize(biome);
 		BiomeType biomeType = BiomeTypes.get(biome);
 		if (biomeType != null) {
-			return biomeType.getInternalId();
+			String[] parts = biome.split(":", 2);
+			Object identifier = MinecraftKey.getConverter().getGeneric(new MinecraftKey(parts[0], parts[1]));
+			Object biomeObj = REGISTRY_GET.invoke(BUILTIN_BIOME_REGISTRY, identifier);
+			assert biomeObj != null;
+			return (Integer) REGISTRY_GET_RAW_ID.invoke(BUILTIN_BIOME_REGISTRY, biomeObj);
 		}
 		Integer rawId = biomeRawIds.get(biome);
 		return rawId == null ? -1 : rawId;
