@@ -11,6 +11,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 public abstract class PainterStep {
 	private final PainterStepType type;
@@ -146,6 +147,6 @@ public abstract class PainterStep {
 		throw new InvalidConfigException("Invalid painter step type: " + value.getClass());
 	}
 
-	public abstract void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException;
+	public abstract void apply(CaveGenContext ctx, BlockVector3 center, int radius, Predicate<BlockVector3> canTryToPaint) throws MaxChangedBlocksException;
 
 }

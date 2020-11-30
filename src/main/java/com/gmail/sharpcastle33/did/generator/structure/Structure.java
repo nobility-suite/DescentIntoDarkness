@@ -19,8 +19,7 @@ public abstract class Structure {
 	private final String name;
 	private final StructureType type;
 	protected final List<StructurePlacementEdge> edges;
-	private final double chance;
-	private final int count;
+	private final double count;
 	protected final List<BlockStateHolder<?>> canPlaceOn;
 	protected final List<BlockStateHolder<?>> canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
@@ -31,8 +30,20 @@ public abstract class Structure {
 		this.name = name;
 		this.type = type;
 		this.edges = ConfigUtil.deserializeSingleableList(map.get("edges"), val -> ConfigUtil.parseEnum(StructurePlacementEdge.class, val), () -> Lists.newArrayList(StructurePlacementEdge.values()));
-		this.chance = map.getDouble("chance", 1);
-		this.count = map.getInt("count", 1);
+		if (map.contains("chance")) {
+			if (map.contains("count")) {
+				throw new InvalidConfigException("Structure contains both \"chance\" and \"count\"");
+			}
+			double chance = map.getDouble("chance", 1);
+			if (chance < 0 || chance > 0.999) {
+				throw new InvalidConfigException("Structure chance must be between 0 <= chance < 1");
+			}
+			// 1 - chance = e^(-count)
+			// -count = ln(1 - chance)
+			this.count = -Math.log(1 - chance);
+		} else {
+			this.count = map.getDouble("count", 1);
+		}
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
 		this.tags = ConfigUtil.deserializeSingleableList(map.get("tags"), Function.identity(), ArrayList::new);
@@ -40,11 +51,10 @@ public abstract class Structure {
 		computeValidDirections();
 	}
 
-	protected Structure(String name, StructureType type, List<StructurePlacementEdge> edges, double chance, int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
+	protected Structure(String name, StructureType type, List<StructurePlacementEdge> edges, double chance, double count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
 		this.name = name;
 		this.type = type;
 		this.edges = edges;
-		this.chance = chance;
 		this.count = count;
 		this.canPlaceOn = canPlaceOn;
 		this.canReplace = canReplace;
@@ -74,11 +84,7 @@ public abstract class Structure {
 		return validDirections;
 	}
 
-	public double getChance() {
-		return chance;
-	}
-
-	public int getCount() {
+	public double getCount() {
 		return count;
 	}
 
@@ -101,7 +107,6 @@ public abstract class Structure {
 	public void serialize(ConfigurationSection map) {
 		map.set("type", ConfigUtil.enumToString(type));
 		map.set("edges", ConfigUtil.serializeSingleableList(edges, ConfigUtil::enumToString));
-		map.set("chance", chance);
 		map.set("count", count);
 		if (canPlaceOn != null) {
 			map.set("canPlaceOn", ConfigUtil.serializeSingleableList(canPlaceOn, BlockStateHolder::getAsString));

@@ -2,14 +2,12 @@ package com.gmail.sharpcastle33.did.generator.painter;
 
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
-import com.gmail.sharpcastle33.did.generator.PostProcessor;
-import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 
 import java.util.List;
 
-public class ReplaceAllStep extends PainterStep {
+public class ReplaceAllStep extends SimplePainterStep {
 	private final BlockStateHolder<?> old;
 	private final BlockStateHolder<?> _new;
 	private final double chance;
@@ -32,7 +30,9 @@ public class ReplaceAllStep extends PainterStep {
 	}
 
 	@Override
-	public void apply(CaveGenContext ctx, BlockVector3 loc, int r) throws MaxChangedBlocksException {
-		PostProcessor.chanceReplaceAll(ctx, loc, r, old, _new, chance);
+	protected void applyToBlock(CaveGenContext ctx, BlockVector3 pos) {
+		if (ctx.getBlock(pos).equalsFuzzy(old) && ctx.rand.nextDouble() < chance) {
+			ctx.setBlock(pos, _new);
+		}
 	}
 }
