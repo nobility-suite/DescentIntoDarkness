@@ -42,6 +42,9 @@ public class CaveStyle {
 	private int maxSize;
 	private int startY;
 	private boolean randomRotation;
+	private int centroidVaryHorizontal;
+	private int centroidVaryMinY;
+	private int centroidVaryMaxY;
 	private String biome;
 	private boolean nether;
 	private final List<Room> rooms = new ArrayList<>();
@@ -83,6 +86,9 @@ public class CaveStyle {
 		map.set("maxSize", maxSize);
 		map.set("startY", startY);
 		map.set("randomRotation", randomRotation);
+		map.set("centroidVaryHorizontal", centroidVaryHorizontal);
+		map.set("centroidVaryMinY", centroidVaryMinY);
+		map.set("centroidVaryMaxY", centroidVaryMaxY);
 		map.set("biome", biome);
 		map.set("nether", nether);
 		grammar.serialize(map.createSection("grammar"));
@@ -203,6 +209,15 @@ public class CaveStyle {
 			throw new InvalidConfigException("startY must be between 0 and 255");
 		}
 		style.randomRotation = map.getBoolean("randomRotation", true);
+		style.centroidVaryHorizontal = map.getInt("centroidVaryHorizontal", 1);
+		if (style.centroidVaryHorizontal < 0) {
+			throw new InvalidConfigException("centroidVaryHorizontal cannot be negative");
+		}
+		style.centroidVaryMinY = map.getInt("centroidVaryMinY", -1);
+		style.centroidVaryMaxY = map.getInt("centroidVaryMaxY", -1);
+		if (style.centroidVaryMaxY < style.centroidVaryMinY) {
+			throw new InvalidConfigException("Invalid centroidVaryY range");
+		}
 		style.biome = map.getString("biome", "minecraft:ocean");
 		if (!Biomes.biomeExists(style.biome)) {
 			throw new InvalidConfigException("No such biome: " + style.biome);
@@ -350,6 +365,18 @@ public class CaveStyle {
 
 	public boolean usesRandomRotation() {
 		return randomRotation;
+	}
+
+	public int getCentroidVaryHorizontal() {
+		return centroidVaryHorizontal;
+	}
+
+	public int getCentroidVaryMinY() {
+		return centroidVaryMinY;
+	}
+
+	public int getCentroidVaryMaxY() {
+		return centroidVaryMaxY;
 	}
 
 	public int getStartY() {

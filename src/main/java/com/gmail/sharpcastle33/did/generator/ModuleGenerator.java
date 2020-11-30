@@ -71,9 +71,9 @@ public class ModuleGenerator {
 	}
 
 	public static Vector3 vary(CaveGenContext ctx, Vector3 loc) {
-		int x = ctx.rand.nextInt(2)-1;
-		int y = ctx.rand.nextInt(2)-1;
-		int z = ctx.rand.nextInt(2)-1;
+		int x = ctx.rand.nextInt(2 * ctx.style.getCentroidVaryHorizontal() + 1) - ctx.style.getCentroidVaryHorizontal();
+		int y = ctx.style.getCentroidVaryMinY() + ctx.rand.nextInt(ctx.style.getCentroidVaryMaxY() - ctx.style.getCentroidVaryMinY() + 1);
+		int z = ctx.rand.nextInt(2 * ctx.style.getCentroidVaryHorizontal() + 1) - ctx.style.getCentroidVaryHorizontal();
 		return loc.add(x,y,z);
 	}
 

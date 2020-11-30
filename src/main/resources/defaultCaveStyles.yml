@@ -18,6 +18,9 @@ default:
   minSize: 5
   startY: 210
   randomRotation: true
+  centroidVaryHorizontal: 1
+  centroidVaryMinY: -1
+  centroidVaryMaxY: 0
 
   nether: false
 
