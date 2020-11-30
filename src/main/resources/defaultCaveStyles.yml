@@ -17,6 +17,7 @@ default:
   maxSize: 9
   minSize: 5
   startY: 210
+  randomRotation: true
 
   nether: false
 

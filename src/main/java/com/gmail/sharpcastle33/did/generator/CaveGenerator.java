@@ -36,7 +36,10 @@ public class CaveGenerator {
 		List<Centroid> centroids = new ArrayList<>();
 		List<Integer> roomStarts = new ArrayList<>();
 		int length = ctx.style.getMinLength() + ctx.rand.nextInt(ctx.style.getMaxLength() - ctx.style.getMinLength() + 1);
-		Vector3 startingDir = Util.rotateAroundY(Vector3.UNIT_X, ctx.rand.nextDouble() * 2 * Math.PI);
+		Vector3 startingDir = Vector3.UNIT_X;
+		if (ctx.style.usesRandomRotation()) {
+			startingDir = Util.rotateAroundY(startingDir, ctx.rand.nextDouble() * 2 * Math.PI);
+		}
 		String caveString = generateBranch(ctx, size, pos, length, true, startingDir, centroids, roomStarts);
 		PostProcessor.postProcess(ctx, centroids, roomStarts);
 		return caveString;

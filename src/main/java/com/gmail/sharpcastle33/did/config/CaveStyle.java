@@ -41,6 +41,7 @@ public class CaveStyle {
 	private int minSize;
 	private int maxSize;
 	private int startY;
+	private boolean randomRotation;
 	private String biome;
 	private boolean nether;
 	private final List<Room> rooms = new ArrayList<>();
@@ -81,6 +82,7 @@ public class CaveStyle {
 		map.set("minSize", minSize);
 		map.set("maxSize", maxSize);
 		map.set("startY", startY);
+		map.set("randomRotation", randomRotation);
 		map.set("biome", biome);
 		map.set("nether", nether);
 		grammar.serialize(map.createSection("grammar"));
@@ -200,6 +202,7 @@ public class CaveStyle {
 		if (style.startY < 0 || style.startY > 255) {
 			throw new InvalidConfigException("startY must be between 0 and 255");
 		}
+		style.randomRotation = map.getBoolean("randomRotation", true);
 		style.biome = map.getString("biome", "minecraft:ocean");
 		if (!Biomes.biomeExists(style.biome)) {
 			throw new InvalidConfigException("No such biome: " + style.biome);
@@ -343,6 +346,10 @@ public class CaveStyle {
 
 	public int getMaxSize() {
 		return maxSize;
+	}
+
+	public boolean usesRandomRotation() {
+		return randomRotation;
 	}
 
 	public int getStartY() {
