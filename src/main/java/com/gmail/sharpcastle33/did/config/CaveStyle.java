@@ -254,7 +254,7 @@ public class CaveStyle {
 		}
 		String contChar = map.getString("continuationSymbol", "Y");
 		style.continuationSymbol = contChar == null || contChar.isEmpty() ? 0 : contChar.charAt(0);
-		if (style.continuationSymbol != 0) {
+		if (!style.isAbstract && style.continuationSymbol != 0) {
 			if (!style.grammar.hasRuleSet(style.continuationSymbol) && !roomSymbols.contains(style.continuationSymbol)) {
 				throw new InvalidConfigException("continuationSymbol '" + style.continuationSymbol + "' is not a rule set in the grammar");
 			}
