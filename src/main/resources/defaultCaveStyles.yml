@@ -83,6 +83,8 @@ defaultGrammar:
       BBBBBBB: 1
       BBBBBBBB: 1
       BBBBBBBBB: 1
+  continuationSymbol: Y
+  truncateCaves: true
 
 defaultRooms:
   __builtin_no_default_inherit: true

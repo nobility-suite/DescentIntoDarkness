@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 
 public class LayoutGenerator {
 
-	public static Layout generateCave(CaveGenContext ctx, int maxLength) {
-		return generateCave(ctx, maxLength, 'C', 'Y');
+	public static Layout generateCave(CaveGenContext ctx, int maxLength, char startingSymbol) {
+		return generateCave(ctx, maxLength, startingSymbol, ctx.style.getContinuationSymbol());
 	}
 
 	public static Layout generateCave(CaveGenContext ctx, int maxLength, char startingSymbol, char continuationSymbol) {
@@ -50,7 +50,7 @@ public class LayoutGenerator {
 		}
 
 		// Don't extend empty caves, could lead to an infinite loop. Only a silly cave grammar would produce an empty cave anyway.
-		if (grammar.hasRuleSet(continuationSymbol) || roomSymbols.contains(continuationSymbol)) {
+		if (continuationSymbol != 0) {
 			if(cave.length() != 0 && cave.length() < maxLength) {
 				int length = maxLength-cave.length();
 				Layout layout = generateCave(ctx, length, continuationSymbol, continuationSymbol);
@@ -59,7 +59,7 @@ public class LayoutGenerator {
 			}
 		}
 
-		if(cave.length() > maxLength) {
+		if (ctx.style.shouldTruncateCaves() && cave.length() > maxLength) {
 			cave.delete(maxLength, cave.length());
 			tags.subList(maxLength, cave.length()).clear();
 		}

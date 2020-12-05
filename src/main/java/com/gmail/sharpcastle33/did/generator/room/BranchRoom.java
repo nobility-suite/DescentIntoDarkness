@@ -17,9 +17,10 @@ public class BranchRoom extends Room {
 	private final int maxSizeReduction;
 	private final int minBranchLength;
 	private final int maxBranchLength;
+	private final char branchSymbol;
 
 	public BranchRoom(char symbol, List<String> tags, double minAngle, double maxAngle, int minSizeReduction,
-					  int maxSizeReduction, int minBranchLength, int maxBranchLength) {
+					  int maxSizeReduction, int minBranchLength, int maxBranchLength, char branchSymbol) {
 		super(symbol, RoomType.BRANCH, tags);
 		this.minAngle = minAngle;
 		this.maxAngle = maxAngle;
@@ -27,6 +28,7 @@ public class BranchRoom extends Room {
 		this.maxSizeReduction = maxSizeReduction;
 		this.minBranchLength = minBranchLength;
 		this.maxBranchLength = maxBranchLength;
+		this.branchSymbol = branchSymbol;
 	}
 
 	public BranchRoom(char symbol, ConfigurationSection map) {
@@ -43,6 +45,11 @@ public class BranchRoom extends Room {
 		if (minBranchLength <= 0 || maxBranchLength < minBranchLength) {
 			throw new InvalidConfigException("Invalid branch length range");
 		}
+		String branchStr = map.getString("branchSymbol", "C");
+		if (branchStr == null || branchStr.length() != 1) {
+			throw new InvalidConfigException("branchSymbol must be a character");
+		}
+		this.branchSymbol = branchStr.charAt(0);
 	}
 
 	@Override
@@ -60,7 +67,7 @@ public class BranchRoom extends Room {
 		int sizeReduction = minSizeReduction + ctx.rand.nextInt(maxSizeReduction - minSizeReduction + 1);
 		Vector3 newDir = Util.rotateAroundY(direction,
 				Math.toRadians((minAngle + ctx.rand.nextDouble() * (maxAngle - minAngle)) * dir));
-		CaveGenerator.generateBranch(ctx, caveRadius - sizeReduction, location, newLength, false, newDir, centroids,
+		CaveGenerator.generateBranch(ctx, caveRadius - sizeReduction, location, newLength, branchSymbol, false, newDir, centroids,
 				roomStarts);
 	}
 
@@ -72,10 +79,16 @@ public class BranchRoom extends Room {
 		map.set("maxSizeReduction", maxSizeReduction);
 		map.set("minBranchLength", minBranchLength);
 		map.set("maxBranchLength", maxBranchLength);
+		map.set("branchSymbol", String.valueOf(branchSymbol));
 	}
 
 	@Override
 	public boolean isBranch() {
 		return true;
+	}
+
+	@Override
+	public char getBranchSymbol() {
+		return branchSymbol;
 	}
 }

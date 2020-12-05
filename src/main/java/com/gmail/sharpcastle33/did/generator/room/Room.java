@@ -69,4 +69,8 @@ public abstract class Room {
 		return false;
 	}
 
+	public char getBranchSymbol() {
+		return 0;
+	}
+
 }

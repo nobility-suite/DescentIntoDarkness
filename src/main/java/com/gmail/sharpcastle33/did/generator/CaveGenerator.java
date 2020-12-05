@@ -40,13 +40,13 @@ public class CaveGenerator {
 		if (ctx.style.usesRandomRotation()) {
 			startingDir = Util.rotateAroundY(startingDir, ctx.rand.nextDouble() * 2 * Math.PI);
 		}
-		String caveString = generateBranch(ctx, size, pos, length, true, startingDir, centroids, roomStarts);
+		String caveString = generateBranch(ctx, size, pos, length, 'C', true, startingDir, centroids, roomStarts);
 		PostProcessor.postProcess(ctx, centroids, roomStarts);
 		return caveString;
 	}
 
-	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, boolean moreBranches, Vector3 dir, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
-		LayoutGenerator.Layout layout = LayoutGenerator.generateCave(ctx, length);
+	public static String generateBranch(CaveGenContext ctx, int size, Vector3 pos, int length, char startingSymbol, boolean moreBranches, Vector3 dir, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
+		LayoutGenerator.Layout layout = LayoutGenerator.generateCave(ctx, length, startingSymbol);
 
 		if(!moreBranches) {
 			Room simpleRoom = ctx.style.getRooms().stream().filter(room -> room instanceof SimpleRoom).findFirst().orElse(null);

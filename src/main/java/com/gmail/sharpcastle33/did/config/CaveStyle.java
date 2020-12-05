@@ -10,8 +10,10 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CaveStyle {
@@ -49,6 +51,8 @@ public class CaveStyle {
 	private boolean nether;
 	private final List<Room> rooms = new ArrayList<>();
 	private GrammarGraph grammar;
+	private char continuationSymbol;
+	private boolean truncateCaves;
 	private final List<PainterStep> painterSteps = new ArrayList<>();
 	private final List<Structure> structures = new ArrayList<>();
 	private final List<Structure> portals = new ArrayList<>();
@@ -92,6 +96,8 @@ public class CaveStyle {
 		map.set("biome", biome);
 		map.set("nether", nether);
 		grammar.serialize(map.createSection("grammar"));
+		map.set("continuationSymbol", continuationSymbol == 0 ? "" : String.valueOf(continuationSymbol));
+		map.set("truncateCaves", truncateCaves);
 		ConfigurationSection roomsSection = map.createSection("rooms");
 		for (Room room : rooms) {
 			room.serialize(roomsSection.createSection(String.valueOf(room.getSymbol())));
@@ -236,13 +242,24 @@ public class CaveStyle {
 				}
 			}
 		}
+		Set<Character> startingSymbols = style.rooms.stream().filter(Room::isBranch).map(Room::getBranchSymbol).collect(Collectors.toCollection(LinkedHashSet::new));
+		startingSymbols.add('C');
+		Set<Character> roomSymbols = style.rooms.stream().map(Room::getSymbol).collect(Collectors.toSet());
 		ConfigurationSection grammarSection = map.getConfigurationSection("grammar");
 		if (grammarSection != null) {
 			style.grammar = GrammarGraph.deserialize(grammarSection);
 			if (!style.isAbstract) {
-				style.grammar.validate(style.rooms.stream().map(Room::getSymbol).collect(Collectors.toSet()));
+				style.grammar.validate(startingSymbols, roomSymbols);
 			}
 		}
+		String contChar = map.getString("continuationSymbol", "Y");
+		style.continuationSymbol = contChar == null || contChar.isEmpty() ? 0 : contChar.charAt(0);
+		if (style.continuationSymbol != 0) {
+			if (!style.grammar.hasRuleSet(style.continuationSymbol) && !roomSymbols.contains(style.continuationSymbol)) {
+				throw new InvalidConfigException("continuationSymbol '" + style.continuationSymbol + "' is not a rule set in the grammar");
+			}
+		}
+		style.truncateCaves = map.getBoolean("truncateCaves", true);
 
 		List<?> painterSteps = map.getList("painterSteps");
 		if (painterSteps != null) {
@@ -397,6 +414,14 @@ public class CaveStyle {
 
 	public GrammarGraph getGrammar() {
 		return grammar;
+	}
+
+	public char getContinuationSymbol() {
+		return continuationSymbol;
+	}
+
+	public boolean shouldTruncateCaves() {
+		return truncateCaves;
 	}
 
 	public List<PainterStep> getPainterSteps() {

@@ -72,19 +72,23 @@ public class GrammarGraph {
 		return new GrammarGraph(ruleSets);
 	}
 
-	public void validate(Set<Character> roomSymbols) {
+	public void validate(Iterable<Character> startingSymbols, Set<Character> roomSymbols) {
 		if (roomSymbols.stream().anyMatch(ruleSets::containsKey)) {
 			throw new InvalidConfigException("Room cannot use the same symbol as a grammar rule set");
 		}
 		if (ruleSets.isEmpty()) {
-			if (!roomSymbols.contains('C')) {
-				throw new InvalidConfigException("Could not find starting 'C' symbol");
+			for (Character startingSymbol : startingSymbols) {
+				if (!roomSymbols.contains(startingSymbol)) {
+					throw new InvalidConfigException("Could not find starting/branch '" + startingSymbol + "' symbol");
+				}
 			}
 			return;
 		}
 
-		if (!ruleSets.containsKey('C')) {
-			throw new InvalidConfigException("Could not find starting 'C' symbol");
+		for (Character startingSymbol : startingSymbols) {
+			if (!ruleSets.containsKey(startingSymbol)) {
+				throw new InvalidConfigException("Could not find starting/branch '" + startingSymbol + "' symbol");
+			}
 		}
 
 		for (RuleSet ruleSet : ruleSets.values()) {
@@ -99,7 +103,9 @@ public class GrammarGraph {
 			}
 		}
 
-		checkIllegalRecursion('C', new HashSet<>(), new HashSet<>());
+		for (Character startingSymbol : startingSymbols) {
+			checkIllegalRecursion(startingSymbol, new HashSet<>(), new HashSet<>());
+		}
 	}
 
 	// Checks for all recursion in the grammar and complains about it, except in the special case where a rule directly
