@@ -12,6 +12,7 @@ public enum StructureType {
 	GLOWSTONE(GlowstoneStructure::new),
 	WATERFALL(WaterfallStructure::new),
 	TREE(TreeStructure::new),
+	STALAGMITE(StalagmiteStructure::new),
 	;
 
 	private final BiFunction<String, ConfigurationSection, Structure> deserializer;
