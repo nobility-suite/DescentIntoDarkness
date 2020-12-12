@@ -1,11 +1,13 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.gmail.sharpcastle33.did.generator.GrammarGraph;
 import com.gmail.sharpcastle33.did.generator.painter.PainterStep;
 import com.gmail.sharpcastle33.did.generator.room.Room;
 import com.gmail.sharpcastle33.did.generator.structure.Structure;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
@@ -320,7 +322,8 @@ public class CaveStyle {
 			}
 		}
 
-		return airBlock.get(y);
+		BlockStateHolder<?> block = airBlock.get(y);
+		return block == null ? Util.requireDefaultState(BlockTypes.AIR) : block;
 	}
 
 	public BlockStateHolder<?> getBaseBlock() {

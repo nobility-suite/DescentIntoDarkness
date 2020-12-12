@@ -35,6 +35,9 @@ public class ReplaceMesaStep extends PainterStep {
 
 		for (int ty = -radius; ty <= radius; ty++) {
 			BlockStateHolder<?> replacement = mesaLayers.get(ty + y);
+			if (replacement == null) {
+				continue;
+			}
 			for (int tx = -radius; tx <= radius; tx++) {
 				for (int tz = -radius; tz <= radius; tz++) {
 					if (tx * tx  +  ty * ty  +  tz * tz <= (radius - 2) * (radius - 2)) {
