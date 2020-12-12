@@ -166,7 +166,10 @@ public class PostProcessor {
 					}
 
 					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-						structure.place(ctx, pos, dir, false);
+						int randomYRotation = ctx.rand.nextInt(4) * 90;
+						ctx.pushTransform(structure.getBlockTransform(randomYRotation, pos, dir), structure.getPositionTransform(randomYRotation, pos, dir));
+						structure.place(ctx, pos, false);
+						ctx.popTransform();
 					}
 				}
 			}
@@ -183,7 +186,10 @@ public class PostProcessor {
 			return;
 		}
 		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid, caveRadius);
-		portal.place(ctx, pos, Direction.DOWN, true);
+		int randomYRotation = ctx.rand.nextInt(4) * 90;
+		ctx.pushTransform(portal.getBlockTransform(randomYRotation, pos, Direction.DOWN), portal.getPositionTransform(randomYRotation, pos, Direction.DOWN));
+		portal.place(ctx, pos, true);
+		ctx.popTransform();
 	}
 
 	public static void generateWaterfalls(CaveGenContext ctx, List<Centroid> centroids, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {

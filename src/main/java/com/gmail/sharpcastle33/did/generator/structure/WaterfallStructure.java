@@ -15,7 +15,6 @@ import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,16 +24,6 @@ public class WaterfallStructure extends Structure {
 	private final FluidType fluid;
 	private final BlockStateHolder<?> block;
 	private final int flowDistance;
-
-	protected WaterfallStructure(String name, List<StructurePlacementEdge> edges, double chance, int count,
-								 List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace,
-								 List<String> tags, boolean tagsInverted, BlockStateHolder<?> block,
-								 int flowDistance) {
-		super(name, StructureType.WATERFALL, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-		this.block = block;
-		this.fluid = FluidType.byBlockType(block.getBlockType());
-		this.flowDistance = fluid == FluidType.WATER ? 8 : fluid == FluidType.LAVA ? 4 : flowDistance;
-	}
 
 	protected WaterfallStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.WATERFALL, map);
@@ -47,7 +36,12 @@ public class WaterfallStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
+	protected boolean shouldTransformPositionByDefault() {
+		return false;
+	}
+
+	@Override
+	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		if (!force) {
 			int wallCount = 0;
 			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {

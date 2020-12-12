@@ -6,7 +6,10 @@ import com.sk89q.jnbt.ListTagBuilder;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NBTOutputStream;
 import com.sk89q.jnbt.NamedTag;
+import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -40,6 +43,19 @@ public class Util {
 		double cos = Math.cos(radians);
 		double sin = Math.sin(radians);
 		return Vector3.at(cos * vector.getX() + sin * vector.getZ(), vector.getY(), cos * vector.getZ() - sin * vector.getX());
+	}
+
+	public static BlockVector3 applyDirection(Transform transform, BlockVector3 vector) {
+		Vector3 m3 = transform.apply(Vector3.ZERO);
+		Vector3 m0 = transform.apply(Vector3.UNIT_X).subtract(m3);
+		Vector3 m1 = transform.apply(Vector3.UNIT_Y).subtract(m3);
+		Vector3 m2 = transform.apply(Vector3.UNIT_Z).subtract(m3);
+
+		return BlockVector3.at(
+				m0.getX() * vector.getX() + m1.getX() * vector.getY() + m2.getX() * vector.getZ(),
+				m0.getY() * vector.getX() + m1.getY() * vector.getY() + m2.getY() * vector.getZ(),
+				m0.getZ() * vector.getX() + m1.getZ() * vector.getY() + m2.getZ() * vector.getZ()
+		);
 	}
 
 	public static Direction getOpposite(Direction dir) {

@@ -36,37 +36,6 @@ public class TreeStructure extends Structure {
 	private final double cocoaChance;
 	private final int minCocoaTreeHeight;
 
-	protected TreeStructure(String name, List<StructurePlacementEdge> edges, double chance,
-							int count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace,
-							List<String> tags, boolean tagsInverted, BlockStateHolder<?> log, BlockStateHolder<?> leaf,
-							BlockStateHolder<?> dirt, int minHeight, int maxHeight, int minLeafHeight, int maxLeafHeight,
-							int topLeafRadius, int leafStepHeight, double cornerLeafChance, BlockStateHolder<?> vine,
-							List<BlockStateHolder<?>> vinesCanReplace, BlockStateHolder<?> trunkVine, double trunkVineChance,
-							BlockStateHolder<?> hangingVine, double hangingVineChance, BlockStateHolder<?> cocoa,
-							boolean invertCocoaFacing, double cocoaChance, int minCocoaTreeHeight) {
-		super(name, StructureType.TREE, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-		this.log = log;
-		this.leaf = leaf;
-		this.dirt = dirt;
-		this.minHeight = minHeight;
-		this.maxHeight = maxHeight;
-		this.minLeafHeight = minLeafHeight;
-		this.maxLeafHeight = maxLeafHeight;
-		this.topLeafRadius = topLeafRadius;
-		this.leafStepHeight = leafStepHeight;
-		this.cornerLeafChance = cornerLeafChance;
-		this.vine = vine;
-		this.vinesCanReplace = vinesCanReplace;
-		this.trunkVine = trunkVine;
-		this.trunkVineChance = trunkVineChance;
-		this.hangingVine = hangingVine;
-		this.hangingVineChance = hangingVineChance;
-		this.cocoa = cocoa;
-		this.invertCocoaFacing = invertCocoaFacing;
-		this.cocoaChance = cocoaChance;
-		this.minCocoaTreeHeight = minCocoaTreeHeight;
-	}
-
 	protected TreeStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.TREE, map);
 		log = map.contains("log") ? ConfigUtil.parseBlock(map.getString("log")) : Util.requireDefaultState(BlockTypes.OAK_LOG);
@@ -98,6 +67,11 @@ public class TreeStructure extends Structure {
 		invertCocoaFacing = map.getBoolean("invertCocoaFacing", false);
 		cocoaChance = map.getDouble("cocoaChance", 0.2);
 		minCocoaTreeHeight = map.getInt("minCocoaTreeHeight", 6);
+	}
+
+	@Override
+	protected boolean shouldTransformBlocksByDefault() {
+		return true;
 	}
 
 	@Override
@@ -137,7 +111,7 @@ public class TreeStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
+	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 
 		int trunkHeight = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);

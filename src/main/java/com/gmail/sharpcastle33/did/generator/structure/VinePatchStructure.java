@@ -10,30 +10,13 @@ import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.List;
-
 public class VinePatchStructure extends AbstractPatchStructure {
 	private final BlockStateHolder<?> vine;
 	private final BlockStateHolder<?> firstBlock;
 	private final BlockStateHolder<?> lastBlock;
 	private final int minHeight;
 	private final int maxHeight;
-	private final boolean randomRotation;
-
-	protected VinePatchStructure(String name, List<StructurePlacementEdge> edges, double chance, int count,
-								 List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace,
-								 List<String> tags, boolean tagsInverted, int spreadX, int spreadY, int spreadZ,
-								 int tries, BlockStateHolder<?> vine, BlockStateHolder<?> firstBlock,
-								 BlockStateHolder<?> lastBlock, int minHeight, int maxHeight, boolean randomRotation) {
-		super(name, StructureType.VINE_PATCH, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted, spreadX,
-				spreadY, spreadZ, tries);
-		this.vine = vine;
-		this.firstBlock = firstBlock;
-		this.lastBlock = lastBlock;
-		this.minHeight = minHeight;
-		this.maxHeight = maxHeight;
-		this.randomRotation = randomRotation;
-	}
+	private final boolean vineRandomRotation;
 
 	protected VinePatchStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.VINE_PATCH, map);
@@ -45,7 +28,12 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		if (minHeight < 1 || maxHeight < minHeight) {
 			throw new InvalidConfigException("Invalid height range");
 		}
-		this.randomRotation = map.getBoolean("randomRotation", true);
+		this.vineRandomRotation = map.getBoolean("vineRandomRotation", true);
+	}
+
+	@Override
+	protected Direction getOriginPositionSide() {
+		return Direction.UP;
 	}
 
 	@Override
@@ -56,16 +44,16 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		map.set("lastBlock", ConfigUtil.serializeBlock(lastBlock));
 		map.set("minHeight", minHeight);
 		map.set("maxHeight", maxHeight);
-		map.set("randomRotation", randomRotation);
+		map.set("vineRandomRotation", vineRandomRotation);
 	}
 
 	@Override
-	protected void doPlace(CaveGenContext ctx, BlockVector3 pos, Direction side) {
+	protected void doPlace(CaveGenContext ctx, BlockVector3 pos) {
 		int height = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
 		BlockStateHolder<?> block;
 		BlockStateHolder<?> firstBlock;
 		BlockStateHolder<?> lastBlock;
-		if (randomRotation) {
+		if (vineRandomRotation) {
 			int angle = ctx.rand.nextInt(4) * 90;
 			block = rotate(vine, angle);
 			firstBlock = rotate(this.firstBlock, angle);
@@ -81,9 +69,9 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		for (int i = 0; i < height && canReplace(ctx, ctx.getBlock(offsetPos)); i++) {
 			ctx.setBlock(offsetPos, i == 0 ? firstBlock : block);
 			placed = true;
-			offsetPos = offsetPos.subtract(side.toBlockVector());
+			offsetPos = offsetPos.add(0, -1, 0);
 		}
-		offsetPos = offsetPos.add(side.toBlockVector());
+		offsetPos = offsetPos.add(0, 1, 0);
 		if (placed) {
 			ctx.setBlock(offsetPos, lastBlock);
 		}

@@ -8,8 +8,11 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.AbstractDelegateExtent;
 import com.sk89q.worldedit.extent.Extent;
+import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.transform.Identity;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
@@ -18,8 +21,11 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
 
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -32,6 +38,9 @@ public class CaveGenContext implements AutoCloseable {
 	private boolean debug;
 	private final Map<BlockVector3, BlockState> blockCache = new HashMap<>();
 	private final Set<BlockVector2> accessedChunks = new HashSet<>();
+	private final Deque<Transform> inverseBlockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
+	private final Deque<Transform> locationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
+	private final Deque<Transform> inverseLocationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private Region limit = null;
 
 	private CaveGenContext(EditSession session, CaveStyle style, Random rand) {
@@ -73,6 +82,8 @@ public class CaveGenContext implements AutoCloseable {
 	}
 
 	public boolean setBlock(BlockVector3 pos, BlockStateHolder<?> block) throws MaxChangedBlocksException {
+		pos = getInverseLocationTransform().apply(pos.toVector3()).toBlockPoint();
+		block = transformBlock(block, getInverseBlockTransform());
 		if (pos.getBlockY() <= 0 || pos.getBlockY() >= 255) {
 			return false;
 		}
@@ -88,7 +99,13 @@ public class CaveGenContext implements AutoCloseable {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	private static <T extends BlockStateHolder<T>> BlockStateHolder<?> transformBlock(BlockStateHolder<?> block, Transform transform) {
+		return BlockTransformExtent.transform((T) block, transform);
+	}
+
 	public BlockState getBlock(BlockVector3 pos) {
+		pos = getInverseLocationTransform().apply(pos.toVector3()).toBlockPoint();
 		if (pos.getBlockY() < 0 || pos.getBlockY() > 255) {
 			return Util.requireDefaultState(BlockTypes.AIR);
 		}
@@ -100,6 +117,45 @@ public class CaveGenContext implements AutoCloseable {
 		}
 		ensureChunkGenerated(pos);
 		return blockCache.getOrDefault(pos, style.getBaseBlock().toImmutableState());
+	}
+
+	public void pushTransform(Transform blockTransform, Transform locationTransform) {
+		inverseBlockTransformStack.push(blockTransform.inverse().combine(getInverseBlockTransform()));
+		locationTransformStack.push(getLocationTransform().combine(locationTransform));
+		inverseLocationTransformStack.push(locationTransform.inverse().combine(getInverseLocationTransform()));
+	}
+
+	public void popTransform() {
+		inverseBlockTransformStack.pop();
+		locationTransformStack.pop();
+		inverseLocationTransformStack.pop();
+	}
+
+	/**
+	 * Gets the current local space -> world space block transform
+	 */
+	public Transform getInverseBlockTransform() {
+		Transform transform = inverseBlockTransformStack.peek();
+		assert transform != null;
+		return transform;
+	}
+
+	/**
+	 * Gets the current world space -> local space location transform
+	 */
+	public Transform getLocationTransform() {
+		Transform transform = locationTransformStack.peek();
+		assert transform != null;
+		return transform;
+	}
+
+	/**
+	 * Gets the current local space -> world space location transform
+	 */
+	public Transform getInverseLocationTransform() {
+		Transform transform = inverseLocationTransformStack.peek();
+		assert transform != null;
+		return transform;
 	}
 
 	public Extent asExtent() {

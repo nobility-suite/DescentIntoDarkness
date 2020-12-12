@@ -6,6 +6,9 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.math.transform.Identity;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
@@ -23,6 +26,10 @@ public abstract class Structure {
 	protected final List<BlockStateHolder<?>> canPlaceOn;
 	protected final List<BlockStateHolder<?>> canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
+	private final Direction originSide;
+	private final boolean shouldTransformBlocks;
+	private final boolean shouldTransformPosition;
+	private final boolean randomRotation;
 	private final List<String> tags;
 	private final boolean tagsInverted;
 
@@ -46,20 +53,26 @@ public abstract class Structure {
 		}
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
+		String originSideVal = map.getString("originSide");
+		if (originSideVal == null) {
+			if (edges.contains(StructurePlacementEdge.FLOOR)) {
+				this.originSide = Direction.DOWN;
+			} else if (edges.contains(StructurePlacementEdge.CEILING)) {
+				this.originSide = Direction.UP;
+			} else {
+				this.originSide = Direction.SOUTH;
+			}
+		} else {
+			this.originSide = ConfigUtil.parseEnum(Direction.class, originSideVal);
+			if (!originSide.isCardinal() && !originSide.isUpright()) {
+				throw new InvalidConfigException("Invalid Direction: " + originSideVal);
+			}
+		}
+		this.shouldTransformBlocks = map.getBoolean("shouldTransformBlocks", shouldTransformBlocksByDefault());
+		this.shouldTransformPosition = map.getBoolean("shouldTransformPosition", shouldTransformPositionByDefault());
+		this.randomRotation = map.getBoolean("randomRotation", true);
 		this.tags = ConfigUtil.deserializeSingleableList(map.get("tags"), Function.identity(), ArrayList::new);
 		this.tagsInverted = map.getBoolean("tagsInverted", !map.contains("tags"));
-		computeValidDirections();
-	}
-
-	protected Structure(String name, StructureType type, List<StructurePlacementEdge> edges, double chance, double count, List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted) {
-		this.name = name;
-		this.type = type;
-		this.edges = edges;
-		this.count = count;
-		this.canPlaceOn = canPlaceOn;
-		this.canReplace = canReplace;
-		this.tags = tags;
-		this.tagsInverted = tagsInverted;
 		computeValidDirections();
 	}
 
@@ -96,6 +109,132 @@ public abstract class Structure {
 		}
 	}
 
+	protected boolean shouldTransformBlocksByDefault() {
+		return false;
+	}
+
+	protected boolean shouldTransformPositionByDefault() {
+		return true;
+	}
+
+	public Direction getOriginSide() {
+		return originSide;
+	}
+
+	protected Direction getOriginPositionSide() {
+		return Direction.DOWN;
+	}
+
+	public Transform getBlockTransform(int randomYRotation, BlockVector3 pos, Direction side) {
+		if (!shouldTransformBlocks) {
+			return new Identity();
+		}
+		return getTransform(randomYRotation, pos, originSide, side);
+	}
+
+	public Transform getPositionTransform(int randomYRotation, BlockVector3 pos, Direction side) {
+		if (!shouldTransformPosition) {
+			return new Identity();
+		}
+		return getTransform(randomYRotation, pos, getOriginPositionSide(), side);
+	}
+
+	private Transform getTransform(int randomYRotation, BlockVector3 pos, Direction originSide, Direction side) {
+		AffineTransform transform = new AffineTransform();
+
+		transform = transform.translate(pos);
+
+		if (side.isUpright() && randomRotation) {
+			transform = transform.rotateY(randomYRotation);
+		}
+
+		if (side != originSide) {
+			if (originSide == Direction.DOWN) {
+				switch (side) {
+					case UP:
+						transform = transform.rotateX(180);
+						break;
+					case NORTH:
+						transform = transform.rotateX(-90);
+						break;
+					case SOUTH:
+						transform = transform.rotateX(90);
+						break;
+					case WEST:
+						transform = transform.rotateZ(90);
+						break;
+					case EAST:
+						transform = transform.rotateZ(-90);
+						break;
+					default:
+						throw new AssertionError("There are too many directions!");
+				}
+			} else if (originSide == Direction.UP) {
+				switch (side) {
+					case DOWN:
+						transform = transform.rotateX(180);
+						break;
+					case NORTH:
+						transform = transform.rotateX(90);
+						break;
+					case SOUTH:
+						transform = transform.rotateX(-90);
+						break;
+					case WEST:
+						transform = transform.rotateZ(-90);
+						break;
+					case EAST:
+						transform = transform.rotateZ(90);
+						break;
+					default:
+						throw new AssertionError("There are too many directions!");
+				}
+			} else {
+				if (side.isCardinal()) {
+					transform = transform.rotateY(originSide.toBlockVector().toYaw() - side.toBlockVector().toYaw());
+				} else if (side == Direction.DOWN) {
+					switch (originSide) {
+						case NORTH:
+							transform = transform.rotateX(90);
+							break;
+						case SOUTH:
+							transform = transform.rotateX(-90);
+							break;
+						case WEST:
+							transform = transform.rotateZ(-90);
+							break;
+						case EAST:
+							transform = transform.rotateZ(90);
+							break;
+						default:
+							throw new AssertionError("There are too many directions!");
+					}
+				} else {
+					switch (originSide) {
+						case NORTH:
+							transform = transform.rotateX(-90);
+							break;
+						case SOUTH:
+							transform = transform.rotateX(90);
+							break;
+						case WEST:
+							transform = transform.rotateZ(90);
+							break;
+						case EAST:
+							transform = transform.rotateZ(-90);
+							break;
+						default:
+							throw new AssertionError("There are too many directions!");
+					}
+				}
+			}
+		}
+
+		transform = transform.translate(pos.multiply(-1));
+
+		return transform;
+	}
+
 	public List<String> getTags() {
 		return tags;
 	}
@@ -114,6 +253,10 @@ public abstract class Structure {
 		if (canReplace != null) {
 			map.set("canReplace", ConfigUtil.serializeSingleableList(canReplace, BlockStateHolder::getAsString));
 		}
+		map.set("originSide", ConfigUtil.enumToString(originSide));
+		map.set("shouldTransformBlocks", shouldTransformBlocks);
+		map.set("shouldTransformPosition", shouldTransformPosition);
+		map.set("randomRotation", randomRotation);
 		if (!tags.isEmpty()) {
 			map.set("tags", ConfigUtil.serializeSingleableList(tags, Function.identity()));
 		}
@@ -127,19 +270,11 @@ public abstract class Structure {
 		return type.deserialize(name, map);
 	}
 
-	protected static List<StructurePlacementEdge> deserializeEdges(Object edges) {
-		List<StructurePlacementEdge> ret = ConfigUtil.deserializeSingleableList(edges, val -> ConfigUtil.parseEnum(StructurePlacementEdge.class, val), () -> Lists.newArrayList(StructurePlacementEdge.values()));
-		if (ret.isEmpty()) {
-			throw new InvalidConfigException("No edges to choose from");
-		}
-		return ret;
-	}
-
 	protected static List<BlockStateHolder<?>> deserializePlacementRule(Object rule) {
 		return ConfigUtil.deserializeSingleableList(rule, ConfigUtil::parseBlock, () -> null);
 	}
 
-	public abstract void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException;
+	public abstract void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException;
 
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {

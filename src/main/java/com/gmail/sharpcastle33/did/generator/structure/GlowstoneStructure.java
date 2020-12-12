@@ -11,26 +11,12 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.List;
-
 public class GlowstoneStructure extends Structure {
 	private final int density;
 	private final int spreadX;
 	private final int height;
 	private final int spreadZ;
 	private final BlockStateHolder<?> block;
-
-	public GlowstoneStructure(String name, List<StructurePlacementEdge> edges, double chance, int count,
-							  List<BlockStateHolder<?>> canPlaceOn, List<BlockStateHolder<?>> canReplace,
-							  List<String> tags, boolean tagsInverted, int density, int spreadX, int height,
-							  int spreadZ, BlockStateHolder<?> block) {
-		super(name, StructureType.GLOWSTONE, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-		this.density = density;
-		this.spreadX = spreadX;
-		this.height = height;
-		this.spreadZ = spreadZ;
-		this.block = block;
-	}
 
 	public GlowstoneStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.GLOWSTONE, map);
@@ -50,6 +36,11 @@ public class GlowstoneStructure extends Structure {
 	}
 
 	@Override
+	protected Direction getOriginPositionSide() {
+		return Direction.UP;
+	}
+
+	@Override
 	protected void serialize0(ConfigurationSection map) {
 		map.set("density", density);
 		map.set("spreadX", spreadX);
@@ -59,18 +50,13 @@ public class GlowstoneStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
-		Direction xAxis = side.isUpright() ? Direction.EAST : side.getRight();
-		Direction zAxis = Direction.findClosest(side.toVector().cross(xAxis.toVector()),
-				Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
-		assert zAxis != null;
-
+	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		ctx.setBlock(pos, block);
 		for (int i = 0; i < density; i++) {
 			BlockVector3 offsetPos = pos.add(
-					xAxis.toBlockVector().multiply(ctx.rand.nextInt(spreadX) - ctx.rand.nextInt(spreadX)),
-					side.toBlockVector().multiply(-ctx.rand.nextInt(height)),
-					zAxis.toBlockVector().multiply(ctx.rand.nextInt(spreadZ) - ctx.rand.nextInt(spreadZ))
+					ctx.rand.nextInt(spreadX) - ctx.rand.nextInt(spreadX),
+					-ctx.rand.nextInt(height),
+					ctx.rand.nextInt(spreadZ) - ctx.rand.nextInt(spreadZ)
 			);
 
 			int neighboringGlowstone = 0;

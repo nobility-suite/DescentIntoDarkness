@@ -6,11 +6,8 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
-
-import java.util.List;
 
 public class StalagmiteStructure extends Structure {
 	private final BlockStateHolder<?> block;
@@ -29,33 +26,6 @@ public class StalagmiteStructure extends Structure {
 	private final int minRadiusForWind;
 	private final float minBluntnessForWind;
 	private final boolean hasStalactite;
-
-	protected StalagmiteStructure(String name, List<StructurePlacementEdge> edges, double chance,
-								  int count, List<BlockStateHolder<?>> canPlaceOn,
-								  List<BlockStateHolder<?>> canReplace, List<String> tags, boolean tagsInverted,
-								  BlockStateHolder<?> block, int floorToCeilingSearchRange,
-								  float maxColumnRadiusToCaveHeightRatio, int minColumnRadius, int maxColumnRadius,
-								  float minStalagmiteBluntness, float maxStalagmiteBluntness, float minStalactiteBluntness,
-								  float maxStalactiteBluntness, float minHeightScale, float maxHeightScale,
-								  float minWindSpeed, float maxWindSpeed, int minRadiusForWind, float minBluntnessForWind, boolean hasStalactite) {
-		super(name, StructureType.STALAGMITE, edges, chance, count, canPlaceOn, canReplace, tags, tagsInverted);
-		this.block = block;
-		this.floorToCeilingSearchRange = floorToCeilingSearchRange;
-		this.maxColumnRadiusToCaveHeightRatio = maxColumnRadiusToCaveHeightRatio;
-		this.minColumnRadius = minColumnRadius;
-		this.maxColumnRadius = maxColumnRadius;
-		this.minStalagmiteBluntness = minStalagmiteBluntness;
-		this.maxStalagmiteBluntness = maxStalagmiteBluntness;
-		this.minStalactiteBluntness = minStalactiteBluntness;
-		this.maxStalactiteBluntness = maxStalactiteBluntness;
-		this.minHeightScale = minHeightScale;
-		this.maxHeightScale = maxHeightScale;
-		this.minWindSpeed = minWindSpeed;
-		this.maxWindSpeed = maxWindSpeed;
-		this.minRadiusForWind = minRadiusForWind;
-		this.minBluntnessForWind = minBluntnessForWind;
-		this.hasStalactite = hasStalactite;
-	}
 
 	protected StalagmiteStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.STALAGMITE, map);
@@ -105,6 +75,11 @@ public class StalagmiteStructure extends Structure {
 	}
 
 	@Override
+	protected boolean shouldTransformBlocksByDefault() {
+		return true;
+	}
+
+	@Override
 	protected void serialize0(ConfigurationSection map) {
 		map.set("block", block);
 		map.set("floorToCeilingSearchRange", floorToCeilingSearchRange);
@@ -125,12 +100,7 @@ public class StalagmiteStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Direction side, boolean force) throws WorldEditException {
-		if (side != Direction.DOWN) {
-			// TODO
-			return;
-		}
-
+	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 
 		if (!force && !canReplace(ctx, ctx.getBlock(pos))) {
