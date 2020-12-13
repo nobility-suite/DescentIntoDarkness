@@ -3,6 +3,7 @@ package com.gmail.sharpcastle33.did.generator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -77,7 +78,7 @@ public class ModuleGenerator {
 		return loc.add(x,y,z);
 	}
 
-	public static int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int radius, List<BlockStateHolder<?>> oldBlocks, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
+	public static int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int radius, Predicate<BlockStateHolder<?>> oldBlocks, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
@@ -89,15 +90,8 @@ public class ModuleGenerator {
 					if(tx * tx  +  ty * ty  +  tz * tz <= (radius - 2) * (radius - 2)) {
 						if(ty+y > 0) {
 							BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
-
 							BlockState block = ctx.getBlock(pos);
-							boolean canPlaceOre;
-							if (oldBlocks == null) {
-								canPlaceOre = !ctx.style.isTransparentBlock(block);
-							} else {
-								canPlaceOre = oldBlocks.stream().anyMatch(oldBlock -> oldBlock.equalsFuzzy(block));
-							}
-							if(canPlaceOre) {
+							if(oldBlocks.test(block)) {
 								if(((tx == 0 && ty == 0) || (tx == 0 && tz == 0) || (ty == 0 && tz == 0)) && (Math.abs(tx+ty+tz) == radius - 2)) {
 									if(ctx.rand.nextBoolean())
 										continue;

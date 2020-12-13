@@ -23,8 +23,10 @@ public abstract class Structure {
 	private final StructureType type;
 	protected final List<StructurePlacementEdge> edges;
 	private final double count;
-	protected final List<BlockStateHolder<?>> canPlaceOn;
-	protected final List<BlockStateHolder<?>> canReplace;
+	private final List<BlockStateHolder<?>> canPlaceOn;
+	private final List<BlockStateHolder<?>> cannotPlaceOn;
+	private final List<BlockStateHolder<?>> canReplace;
+	private final List<BlockStateHolder<?>> cannotReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
 	private final Direction originSide;
 	private final boolean shouldTransformBlocks;
@@ -52,7 +54,9 @@ public abstract class Structure {
 			this.count = map.getDouble("count", 1);
 		}
 		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
+		this.cannotPlaceOn = deserializePlacementRule(map.get("cannotPlaceOn"));
 		this.canReplace = deserializePlacementRule(map.get("canReplace"));
+		this.cannotReplace = deserializePlacementRule(map.get("cannotReplace"));
 		String originSideVal = map.getString("originSide");
 		if (originSideVal == null) {
 			if (edges.contains(StructurePlacementEdge.FLOOR)) {
@@ -103,7 +107,10 @@ public abstract class Structure {
 
 	public boolean canPlaceOn(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canPlaceOn == null) {
-			return !ctx.style.isTransparentBlock(block);
+			if (cannotPlaceOn == null) {
+				return !ctx.style.isTransparentBlock(block);
+			}
+			return cannotPlaceOn.stream().noneMatch(it -> it.equalsFuzzy(block));
 		} else {
 			return canPlaceOn.stream().anyMatch(it -> it.equalsFuzzy(block));
 		}
@@ -250,8 +257,14 @@ public abstract class Structure {
 		if (canPlaceOn != null) {
 			map.set("canPlaceOn", ConfigUtil.serializeSingleableList(canPlaceOn, BlockStateHolder::getAsString));
 		}
+		if (cannotPlaceOn != null) {
+			map.set("cannotPlaceOn", ConfigUtil.serializeSingleableList(cannotPlaceOn, BlockStateHolder::getAsString));
+		}
 		if (canReplace != null) {
 			map.set("canReplace", ConfigUtil.serializeSingleableList(canReplace, BlockStateHolder::getAsString));
+		}
+		if (cannotReplace != null) {
+			map.set("cannotReplace", ConfigUtil.serializeSingleableList(cannotReplace, BlockStateHolder::getAsString));
 		}
 		map.set("originSide", ConfigUtil.enumToString(originSide));
 		map.set("shouldTransformBlocks", shouldTransformBlocks);
@@ -278,7 +291,10 @@ public abstract class Structure {
 
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {
-			return ctx.style.isTransparentBlock(block);
+			if (cannotReplace == null) {
+				return ctx.style.isTransparentBlock(block);
+			}
+			return cannotReplace.stream().noneMatch(it -> it.equalsFuzzy(block));
 		} else {
 			return canReplace.stream().anyMatch(it -> it.equalsFuzzy(block));
 		}
