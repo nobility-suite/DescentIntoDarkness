@@ -6,12 +6,14 @@ import com.sk89q.jnbt.ListTagBuilder;
 import com.sk89q.jnbt.NBTInputStream;
 import com.sk89q.jnbt.NBTOutputStream;
 import com.sk89q.jnbt.NamedTag;
+import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
-import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.math.transform.Transform;
+import com.sk89q.worldedit.registry.state.PropertyKey;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockState;
+import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -25,6 +27,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -80,6 +83,51 @@ public class Util {
 			case SOUTH_SOUTHWEST: return Direction.NORTH_NORTHEAST;
 			default: throw new AssertionError("Stop adding new directions, sk89q!");
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends BlockStateHolder<T>> BlockStateHolder<?> transformBlock(BlockStateHolder<?> block, Transform transform) {
+		if (transform.isIdentity()) {
+			return block;
+		}
+
+		BlockType type = block.getBlockType();
+		if (type.hasProperty(PropertyKey.NORTH)
+				&& type.hasProperty(PropertyKey.SOUTH)
+				&& type.hasProperty(PropertyKey.WEST)
+				&& type.hasProperty(PropertyKey.EAST)
+				&& type.hasProperty(PropertyKey.DOWN)
+				&& type.hasProperty(PropertyKey.UP)) {
+			Direction newNorth = Direction.findClosest(transform.apply(Direction.NORTH.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newNorth != null;
+			Direction newSouth = Direction.findClosest(transform.apply(Direction.SOUTH.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newSouth != null;
+			Direction newWest = Direction.findClosest(transform.apply(Direction.WEST.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newWest != null;
+			Direction newEast = Direction.findClosest(transform.apply(Direction.EAST.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newEast != null;
+			Direction newDown = Direction.findClosest(transform.apply(Direction.DOWN.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newDown != null;
+			Direction newUp = Direction.findClosest(transform.apply(Direction.UP.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			assert newUp != null;
+
+			Object northState = block.getState(PropertyKey.NORTH);
+			Object southState = block.getState(PropertyKey.SOUTH);
+			Object westState = block.getState(PropertyKey.WEST);
+			Object eastState = block.getState(PropertyKey.EAST);
+			Object downState = block.getState(PropertyKey.DOWN);
+			Object upState = block.getState(PropertyKey.UP);
+
+			block = block.with(PropertyKey.valueOf(newNorth.name().toUpperCase(Locale.ROOT)), northState);
+			block = block.with(PropertyKey.valueOf(newSouth.name().toUpperCase(Locale.ROOT)), southState);
+			block = block.with(PropertyKey.valueOf(newWest.name().toUpperCase(Locale.ROOT)), westState);
+			block = block.with(PropertyKey.valueOf(newEast.name().toUpperCase(Locale.ROOT)), eastState);
+			block = block.with(PropertyKey.valueOf(newDown.name().toUpperCase(Locale.ROOT)), downState);
+			block = block.with(PropertyKey.valueOf(newUp.name().toUpperCase(Locale.ROOT)), upState);
+
+			return block;
+		}
+		return BlockTransformExtent.transform((T) block, transform);
 	}
 
 	public static <T> CompletableFuture<T> completeExceptionally(Throwable t) {

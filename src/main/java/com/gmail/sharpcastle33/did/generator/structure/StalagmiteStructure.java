@@ -6,8 +6,11 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
+
+import java.util.List;
 
 public class StalagmiteStructure extends Structure {
 	private final BlockStateHolder<?> block;
@@ -77,6 +80,11 @@ public class StalagmiteStructure extends Structure {
 	@Override
 	protected boolean shouldTransformBlocksByDefault() {
 		return true;
+	}
+
+	@Override
+	protected Direction getDefaultOriginSide(List<StructurePlacementEdge> edges) {
+		return Direction.DOWN;
 	}
 
 	@Override

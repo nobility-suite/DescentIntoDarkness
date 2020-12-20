@@ -1,11 +1,12 @@
 package com.gmail.sharpcastle33.did.generator.structure;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
@@ -55,9 +56,10 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		BlockStateHolder<?> lastBlock;
 		if (vineRandomRotation) {
 			int angle = ctx.rand.nextInt(4) * 90;
-			block = rotate(vine, angle);
-			firstBlock = rotate(this.firstBlock, angle);
-			lastBlock = rotate(this.lastBlock, angle);
+			Transform transform = new AffineTransform().rotateY(angle);
+			block = Util.transformBlock(vine, transform);
+			firstBlock = Util.transformBlock(this.firstBlock, transform);
+			lastBlock = Util.transformBlock(this.lastBlock, transform);
 		} else {
 			block = vine;
 			firstBlock = this.firstBlock;
@@ -75,10 +77,5 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		if (placed) {
 			ctx.setBlock(offsetPos, lastBlock);
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <B extends BlockStateHolder<B>> B rotate(BlockStateHolder<?> block, double degrees) {
-		return BlockTransformExtent.transform((B) block, new AffineTransform().rotateY(degrees));
 	}
 }

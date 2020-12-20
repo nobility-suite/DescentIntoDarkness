@@ -75,6 +75,11 @@ public class TreeStructure extends Structure {
 	}
 
 	@Override
+	protected Direction getDefaultOriginSide(List<StructurePlacementEdge> edges) {
+		return Direction.DOWN;
+	}
+
+	@Override
 	protected void serialize0(ConfigurationSection map) {
 		map.set("log", ConfigUtil.serializeBlock(log));
 		map.set("leaf", ConfigUtil.serializeBlock(leaf));

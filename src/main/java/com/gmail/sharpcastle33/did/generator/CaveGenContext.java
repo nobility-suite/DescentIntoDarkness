@@ -8,7 +8,6 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.AbstractDelegateExtent;
 import com.sk89q.worldedit.extent.Extent;
-import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.transform.Identity;
@@ -83,7 +82,7 @@ public class CaveGenContext implements AutoCloseable {
 
 	public boolean setBlock(BlockVector3 pos, BlockStateHolder<?> block) throws MaxChangedBlocksException {
 		pos = getInverseLocationTransform().apply(pos.toVector3()).toBlockPoint();
-		block = transformBlock(block, getInverseBlockTransform());
+		block = Util.transformBlock(block, getInverseBlockTransform());
 		if (pos.getBlockY() <= 0 || pos.getBlockY() >= 255) {
 			return false;
 		}
@@ -97,11 +96,6 @@ public class CaveGenContext implements AutoCloseable {
 		} else {
 			return false;
 		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <T extends BlockStateHolder<T>> BlockStateHolder<?> transformBlock(BlockStateHolder<?> block, Transform transform) {
-		return BlockTransformExtent.transform((T) block, transform);
 	}
 
 	public BlockState getBlock(BlockVector3 pos) {

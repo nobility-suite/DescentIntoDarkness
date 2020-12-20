@@ -13,6 +13,7 @@ public enum StructureType {
 	WATERFALL(WaterfallStructure::new),
 	TREE(TreeStructure::new),
 	STALAGMITE(StalagmiteStructure::new),
+	CHORUS_PLANT(ChorusPlantStructure::new),
 	;
 
 	private final BiFunction<String, ConfigurationSection, Structure> deserializer;

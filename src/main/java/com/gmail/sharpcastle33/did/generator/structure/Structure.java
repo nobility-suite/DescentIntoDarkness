@@ -59,13 +59,7 @@ public abstract class Structure {
 		this.cannotReplace = deserializePlacementRule(map.get("cannotReplace"));
 		String originSideVal = map.getString("originSide");
 		if (originSideVal == null) {
-			if (edges.contains(StructurePlacementEdge.FLOOR)) {
-				this.originSide = Direction.DOWN;
-			} else if (edges.contains(StructurePlacementEdge.CEILING)) {
-				this.originSide = Direction.UP;
-			} else {
-				this.originSide = Direction.SOUTH;
-			}
+			this.originSide = getDefaultOriginSide(edges);
 		} else {
 			this.originSide = ConfigUtil.parseEnum(Direction.class, originSideVal);
 			if (!originSide.isCardinal() && !originSide.isUpright()) {
@@ -122,6 +116,16 @@ public abstract class Structure {
 
 	protected boolean shouldTransformPositionByDefault() {
 		return true;
+	}
+
+	protected Direction getDefaultOriginSide(List<StructurePlacementEdge> edges) {
+		if (edges.contains(StructurePlacementEdge.FLOOR)) {
+			return Direction.DOWN;
+		} else if (edges.contains(StructurePlacementEdge.CEILING)) {
+			return Direction.UP;
+		} else {
+			return Direction.SOUTH;
+		}
 	}
 
 	public Direction getOriginSide() {
