@@ -28,4 +28,9 @@ public class VeinStructure extends Structure {
 	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		ModuleGenerator.generateOreCluster(ctx, pos, radius, block -> canReplace(ctx, block), ore);
 	}
+
+	@Override
+	protected boolean defaultCanReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
+		return !ctx.style.isTransparentBlock(block);
+	}
 }

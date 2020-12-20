@@ -296,12 +296,16 @@ public abstract class Structure {
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {
 			if (cannotReplace == null) {
-				return ctx.style.isTransparentBlock(block);
+				return defaultCanReplace(ctx, block);
 			}
 			return cannotReplace.stream().noneMatch(it -> it.equalsFuzzy(block));
 		} else {
 			return canReplace.stream().anyMatch(it -> it.equalsFuzzy(block));
 		}
+	}
+
+	protected boolean defaultCanReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
+		return ctx.style.isTransparentBlock(block);
 	}
 
 }
