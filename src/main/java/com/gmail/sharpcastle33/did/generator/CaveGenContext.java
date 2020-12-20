@@ -22,10 +22,8 @@ import org.bukkit.Bukkit;
 
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -35,7 +33,7 @@ public class CaveGenContext implements AutoCloseable {
 	public final CaveStyle style;
 	public final Random rand;
 	private boolean debug;
-	private final Map<BlockVector3, BlockState> blockCache = new HashMap<>();
+	private final PackedBlockStorage blockStorage;
 	private final Set<BlockVector2> accessedChunks = new HashSet<>();
 	private final Deque<Transform> inverseBlockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> locationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
@@ -46,6 +44,7 @@ public class CaveGenContext implements AutoCloseable {
 		this.session = session;
 		this.style = style;
 		this.rand = rand;
+		this.blockStorage = new PackedBlockStorage(style.getBaseBlock().toImmutableState());
 	}
 
 	public CaveGenContext setDebug(boolean debug) {
@@ -91,7 +90,7 @@ public class CaveGenContext implements AutoCloseable {
 		}
 		ensureChunkGenerated(pos);
 		if (session.setBlock(pos, block)) {
-			blockCache.put(pos, block.toImmutableState());
+			blockStorage.setBlock(pos, block.toImmutableState());
 			return true;
 		} else {
 			return false;
@@ -110,7 +109,7 @@ public class CaveGenContext implements AutoCloseable {
 			return style.getBaseBlock().toImmutableState();
 		}
 		ensureChunkGenerated(pos);
-		return blockCache.getOrDefault(pos, style.getBaseBlock().toImmutableState());
+		return blockStorage.getBlock(pos);
 	}
 
 	public void pushTransform(Transform blockTransform, Transform locationTransform) {
