@@ -61,14 +61,14 @@ public class BranchRoom extends Room {
 	@Override
 	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
 							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		int dir = ctx.rand.nextBoolean() ? 1 : -1;
 		int newLength = minBranchLength + ctx.rand.nextInt(maxBranchLength - minBranchLength + 1);
 		int sizeReduction = minSizeReduction + ctx.rand.nextInt(maxSizeReduction - minSizeReduction + 1);
 		Vector3 newDir = Util.rotateAroundY(direction,
 				Math.toRadians((minAngle + ctx.rand.nextDouble() * (maxAngle - minAngle)) * dir));
 		CaveGenerator.generateBranch(ctx, caveRadius - sizeReduction, location, newLength, branchSymbol, false, newDir, centroids,
-				roomStarts);
+				roomStarts, roomLocations);
 	}
 
 	@Override

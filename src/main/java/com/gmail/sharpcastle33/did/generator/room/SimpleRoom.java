@@ -19,7 +19,7 @@ public class SimpleRoom extends Room {
 	@Override
 	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
 							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		centroids.add(new Centroid(location, caveRadius, tags));
 	}
 

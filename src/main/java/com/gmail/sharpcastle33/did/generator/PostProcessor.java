@@ -21,7 +21,7 @@ public class PostProcessor {
 
 	private static final int STRUCTURE_CHANCE_ADJUST = 6 * 6;
 
-	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<Integer> roomStarts) throws WorldEditException {
+	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<Integer> roomStarts, List<List<Vector3>> roomLocations) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
 		for (int i = 0; i < roomStarts.size(); i++) {
@@ -68,8 +68,24 @@ public class PostProcessor {
 		}
 
 		if (ctx.isDebug()) {
+			for (List<Vector3> tunnel : roomLocations) {
+				for (int i = 1; i < tunnel.size(); i++) {
+					Vector3 startPos = tunnel.get(i - 1);
+					Vector3 endPos = tunnel.get(i);
+					Vector3 direction = startPos.equals(endPos) ? Vector3.ZERO : endPos.subtract(startPos).normalize();
+					double maxDist = startPos.distance(endPos);
+					for (int dist = 0; dist < maxDist; dist++) {
+						ctx.setBlock(startPos.add(direction.multiply(dist)).toBlockPoint(), Util.requireDefaultState(BlockTypes.GREEN_STAINED_GLASS));
+					}
+				}
+			}
 			for (Centroid centroid : centroids) {
 				ctx.setBlock(centroid.pos.toBlockPoint(), Util.requireDefaultState(BlockTypes.EMERALD_BLOCK));
+			}
+			for (List<Vector3> tunnel : roomLocations) {
+				for (Vector3 roomCenter : tunnel) {
+					ctx.setBlock(roomCenter.toBlockPoint(), Util.requireDefaultState(BlockTypes.REDSTONE_BLOCK));
+				}
 			}
 		}
 	}

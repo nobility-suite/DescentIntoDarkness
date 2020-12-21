@@ -69,7 +69,7 @@ public class PitMineRoom extends Room {
 
 	@Override
 	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags) {
+								   List<String> tags, List<List<Vector3>> roomLocations) {
 		int numSteps = minSteps + ctx.rand.nextInt(maxSteps - minSteps + 1);
 		List<Step> steps = new ArrayList<>(numSteps);
 		int radius = (minBaseWidth + ctx.rand.nextInt(maxBaseWidth - minBaseWidth + 1) + 1) / 2;
@@ -114,7 +114,7 @@ public class PitMineRoom extends Room {
 	@Override
 	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
 							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		List<Step> steps = (List<Step>) userData[0];
 		for (Step step : steps) {
 			int centroidWidth = Math.max(3, Math.min(10, Math.min(step.height, (int) Math.ceil(Math.min(step.rx,

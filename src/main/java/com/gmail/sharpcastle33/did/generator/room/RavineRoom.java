@@ -64,7 +64,7 @@ public class RavineRoom extends Room {
 
 	@Override
 	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags) {
+								   List<String> tags, List<List<Vector3>> roomLocations) {
 		int length = minLength + ctx.rand.nextInt(maxLength - minLength + 1);
 		int height = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
 		int width = minWidth + ctx.rand.nextInt(maxWidth - minWidth + 1);
@@ -95,7 +95,7 @@ public class RavineRoom extends Room {
 	@Override
 	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
 							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		int length = (Integer) userData[0];
 		int height = (Integer) userData[1];
 		int width = (Integer) userData[2];

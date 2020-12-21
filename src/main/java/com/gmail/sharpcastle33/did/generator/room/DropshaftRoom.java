@@ -39,7 +39,7 @@ public class DropshaftRoom extends Room {
 
 	@Override
 	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags) {
+								   List<String> tags, List<List<Vector3>> roomLocations) {
 		return new Object[]{minDepth + ctx.rand.nextInt(maxDepth - minDepth + 1)};
 	}
 
@@ -57,7 +57,7 @@ public class DropshaftRoom extends Room {
 	@Override
 	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
 							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		int depth = (Integer) userData[0];
 		int i = 0;
 		int radius = caveRadius >= 4 ? caveRadius - 1 : caveRadius;

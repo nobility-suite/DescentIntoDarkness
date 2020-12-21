@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did;
 
+import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.DoubleTag;
 import com.sk89q.jnbt.ListTagBuilder;
@@ -15,6 +16,7 @@ import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
+import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -26,12 +28,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -210,6 +219,55 @@ public class Util {
 		scoreboard.resetScores(score.getEntry());
 		for (Score otherScore : otherScores) {
 			otherScore.getObjective().getScore(otherScore.getEntry()).setScore(otherScore.getScore());
+		}
+	}
+
+	public static void ensureConnected(List<Centroid> centroidsInOut, int connectingCentroidRadius, Function<Vector3, Centroid> centroidSupplier) {
+		// find the minimum spanning tree of the centroids using Kruskal's algorithm, to ensure they are connected
+		List<Pair<Centroid, Centroid>> edges = new ArrayList<>();
+		for (int i = 0; i < centroidsInOut.size() - 1; i++) {
+			for (int j = i + 1; j < centroidsInOut.size(); j++) {
+				edges.add(Pair.of(centroidsInOut.get(i), centroidsInOut.get(j)));
+			}
+		}
+		edges.sort(Comparator.comparingDouble(edge -> edge.getLeft().pos.distance(edge.getRight().pos) - edge.getLeft().size - edge.getRight().size));
+		Map<Centroid, Integer> nodeGroups = new HashMap<>();
+		int groupCount = 0;
+		ListIterator<Pair<Centroid, Centroid>> edgesItr = edges.listIterator();
+		while (edgesItr.hasNext()) {
+			Pair<Centroid, Centroid> edge = edgesItr.next();
+			Integer groupA = nodeGroups.get(edge.getLeft());
+			Integer groupB = nodeGroups.get(edge.getRight());
+			if (groupA != null && groupA.equals(groupB)) {
+				edgesItr.remove();
+			} else {
+				if (groupA != null && groupB != null) {
+					nodeGroups.replaceAll((key, val) -> val.equals(groupB) ? groupA : val);
+				} else {
+					Integer group = groupA == null ? groupB == null ? groupCount++ : groupB : groupA;
+					nodeGroups.put(edge.getLeft(), group);
+					nodeGroups.put(edge.getRight(), group);
+				}
+			}
+		}
+
+		for (Pair<Centroid, Centroid> edge : edges) {
+			double distance = edge.getLeft().pos.distance(edge.getRight().pos);
+			double actualDistance = distance - edge.getLeft().size - edge.getRight().size;
+			if (actualDistance < 0) {
+				continue;
+			}
+			actualDistance = Math.max(1, actualDistance);
+			Vector3 dir = edge.getRight().pos.subtract(edge.getLeft().pos).divide(distance);
+
+			int numSegments = (int) Math.ceil(actualDistance / connectingCentroidRadius) + 1;
+			double segmentLength = actualDistance / numSegments;
+
+			Vector3 startPos = edge.getLeft().pos.add(dir.multiply(edge.getLeft().size));
+			Vector3 segment = dir.multiply(segmentLength);
+			for (int i = 1; i < numSegments; i++) {
+				centroidsInOut.add(centroidSupplier.apply(startPos.add(segment.multiply(i))));
+			}
 		}
 	}
 

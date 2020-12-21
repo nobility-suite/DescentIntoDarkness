@@ -17,7 +17,7 @@ import org.bukkit.Bukkit;
 
 public class ModuleGenerator {
 
-	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids, List<Integer> roomStarts) {
+	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids, List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
 		String cave = layout.getValue();
 		Bukkit.getLogger().log(Level.INFO, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.INFO, "Cave string: " + cave);
@@ -27,16 +27,20 @@ public class ModuleGenerator {
 
 		int roomStartIndex = roomStarts.size();
 
+		List<Vector3> theseRoomLocations = new ArrayList<>();
+		roomLocations.add(theseRoomLocations);
+
 		Vector3 location = start;
 		for (int i = 0; i < cave.length(); i++) {
 			roomStarts.add(centroids.size());
 			Room room = rooms.get(cave.charAt(i));
 			List<String> tags = new ArrayList<>(layout.getTags().get(i));
 			tags.addAll(room.getTags());
-			Object[] userData = room.createUserData(ctx, location, dir, caveRadius, tags);
-			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids, roomStarts);
+			Object[] userData = room.createUserData(ctx, location, dir, caveRadius, tags, roomLocations);
+			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids, roomStarts, roomLocations);
 			dir = room.adjustDirection(ctx, dir, userData);
 			location = room.adjustLocation(ctx, location, dir, caveRadius, userData);
+			theseRoomLocations.add(location);
 		}
 
 		for (int i = roomStartIndex; i < roomStarts.size(); i++) {

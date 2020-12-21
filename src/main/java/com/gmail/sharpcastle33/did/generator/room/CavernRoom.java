@@ -1,11 +1,14 @@
 package com.gmail.sharpcastle33.did.generator.room;
 
+import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.Centroid;
+import com.gmail.sharpcastle33.did.generator.ModuleGenerator;
 import com.sk89q.worldedit.math.Vector3;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CavernRoom extends Room {
@@ -14,20 +17,20 @@ public class CavernRoom extends Room {
 	private final int minSpread;
 	private final int maxSpread;
 	private final int centroidSizeVariance;
-	private final int nextLocationScale;
-	private final int nextLocationOffset;
+	private final int minTurn;
+	private final int maxTurn;
 
-	public CavernRoom(char symbol, List<String> tags, int minCentroids, int maxCentroids, int minSpread, int maxSpread
-			, int centroidSizeVariance, int nextLocationScale, int nextLocationOffset) {
+	public CavernRoom(char symbol, List<String> tags, int minCentroids, int maxCentroids, int minSpread, int maxSpread, int centroidSizeVariance, int minTurn, int maxTurn) {
 		super(symbol, RoomType.CAVERN, tags);
 		this.minCentroids = minCentroids;
 		this.maxCentroids = maxCentroids;
 		this.minSpread = minSpread;
 		this.maxSpread = maxSpread;
 		this.centroidSizeVariance = centroidSizeVariance;
-		this.nextLocationScale = nextLocationScale;
-		this.nextLocationOffset = nextLocationOffset;
+		this.minTurn = minTurn;
+		this.maxTurn = maxTurn;
 	}
+
 
 	public CavernRoom(char symbol, ConfigurationSection map) {
 		super(symbol, RoomType.CAVERN, map);
@@ -45,31 +48,15 @@ public class CavernRoom extends Room {
 		if (centroidSizeVariance < 0) {
 			throw new InvalidConfigException("Invalid centroid size variance");
 		}
-		this.nextLocationScale = map.getInt("nextLocationScale", 1);
-		this.nextLocationOffset = map.getInt("nextLocationOffset", 3);
+		this.minTurn = map.getInt("minTurn", 0);
+		this.maxTurn = map.getInt("maxTurn", 90);
 	}
 
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
-		switch (ctx.rand.nextInt(4)) {
-			case 0:
-				return location.add(nextLocationScale * caveRadius - nextLocationOffset, 0, 0);
-			case 1:
-				return location.add(-nextLocationScale * caveRadius + nextLocationOffset, 0, 0);
-			case 2:
-				return location.add(0, 0, nextLocationScale * caveRadius - nextLocationOffset);
-			case 3:
-				return location.add(0, 0, -nextLocationScale * caveRadius + nextLocationOffset);
-			default:
-				throw new AssertionError("What?");
-		}
-	}
+	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
+								   List<String> tags, List<List<Vector3>> roomLocations) {
+		List<Centroid> centroids = new ArrayList<>();
 
-	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts) {
 		int count = minCentroids + ctx.rand.nextInt(maxCentroids - minCentroids + 1);
 
 		int spread = caveRadius - 1;
@@ -98,6 +85,68 @@ public class CavernRoom extends Room {
 
 			centroids.add(new Centroid(location.add(tx, ty, tz), spread + sizeMod, tags));
 		}
+
+		if (count > 0) {
+			double minDot = Double.POSITIVE_INFINITY;
+			Vector3 minPos = null;
+			for (Centroid centroid : centroids) {
+				double dot = centroid.pos.dot(direction);
+				if (dot < minDot) {
+					minDot = dot;
+					minPos = centroid.pos;
+				}
+			}
+			assert minPos != null;
+
+			Vector3 shift = location.subtract(minPos);
+			for (Centroid centroid : centroids) {
+				centroid.pos = centroid.pos.add(shift);
+			}
+
+			Util.ensureConnected(centroids, caveRadius, pos -> new Centroid(pos, caveRadius, tags));
+		}
+
+		return new Object[] {centroids};
+	}
+
+	@Override
+	public Vector3 adjustDirection(CaveGenContext ctx, Vector3 direction, Object[] userData) {
+		double angle = minTurn + ctx.rand.nextDouble() * (maxTurn - minTurn);
+		if (ctx.rand.nextBoolean()) {
+			angle = -angle;
+		}
+		return Util.rotateAroundY(direction, Math.toRadians(angle));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
+								  Object[] userData) {
+		List<Centroid> centroids = (List<Centroid>) userData[0];
+		if (centroids.size() > 0) {
+			double maxDot = Double.NEGATIVE_INFINITY;
+			Vector3 maxPos = null;
+			for (Centroid centroid : centroids) {
+				double dot  = centroid.pos.dot(direction);
+				if (dot > maxDot) {
+					maxDot = dot;
+					maxPos = centroid.pos;
+				}
+			}
+			assert maxPos != null;
+
+			return ModuleGenerator.vary(ctx, maxPos).add(direction.multiply(caveRadius));
+		}
+
+		return super.adjustLocation(ctx, location, direction, caveRadius, userData);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
+							 List<String> tags, Object[] userData, List<Centroid> centroids,
+							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+		centroids.addAll((List<Centroid>) userData[0]);
 	}
 
 	@Override
@@ -107,7 +156,7 @@ public class CavernRoom extends Room {
 		map.set("minSpread", minSpread);
 		map.set("maxSpread", maxSpread);
 		map.set("centroidSizeVariance", centroidSizeVariance);
-		map.set("nextLocationScale", nextLocationScale);
-		map.set("nextLocationOffset", nextLocationOffset);
+		map.set("minTurn", minTurn);
+		map.set("maxTurn", maxTurn);
 	}
 }
