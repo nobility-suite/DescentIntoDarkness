@@ -278,17 +278,109 @@ public class DescentIntoDarkness extends JavaPlugin {
 			throw new InvalidConfigException("Tried to inherit from cave style \"" + styleName + "\" which does not exist");
 		}
 
-		List<String> parents = caveStyle.getStringList("inherit");
-		if (!caveStyle.contains("__builtin_no_default_inherit") && !parents.contains("default")) {
-			parents.add("default");
+		class InheritanceData {
+			final String name;
+			final Set<String> mergeTop = new HashSet<>();
+			final Set<String> mergeBottom = new HashSet<>();
+
+			InheritanceData(String name) {
+				this.name = name;
+			}
 		}
-		for (String parent : parents) {
-			inlineCaveStyleInheritance(parent, styleStack, processedStyles);
-			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent);
+		List<InheritanceData> parents = new ArrayList<>();
+		List<?> inheritList = caveStyle.getList("inherit");
+		if (inheritList != null) {
+			for (Object parent : inheritList) {
+				if (parent instanceof Map || parent instanceof ConfigurationSection) {
+					@SuppressWarnings("unchecked")
+					Map<String, Object> map = parent instanceof Map ? (Map<String, Object>) parent : ((ConfigurationSection) parent).getValues(false);
+					Object name = map.get("name");
+					if (name == null) {
+						throw new InvalidConfigException("Complex inherit must have a \"name\"");
+					}
+					InheritanceData data = new InheritanceData(name.toString());
+					Object merge = map.get("merge");
+					if (merge instanceof Map || merge instanceof ConfigurationSection) {
+						@SuppressWarnings("unchecked")
+						Map<String, Object> mergeMap = merge instanceof Map ? (Map<String, Object>) merge : ((ConfigurationSection) merge).getValues(false);
+						mergeMap.forEach((key, val) -> {
+							String strVal = String.valueOf(val);
+							if (strVal.equals("top")) {
+								data.mergeTop.add(key);
+							} else if (strVal.equals("bottom")) {
+								data.mergeBottom.add(key);
+							} else {
+								throw new InvalidConfigException("Complex inherit merge must be either \"top\" or \"bottom\"");
+							}
+						});
+					}
+					parents.add(data);
+				} else {
+					parents.add(new InheritanceData(parent.toString()));
+				}
+			}
+		}
+
+		if (!caveStyle.contains("__builtin_no_default_inherit") && parents.stream().noneMatch(it -> it.name.equals("default"))) {
+			parents.add(new InheritanceData("default"));
+		}
+		for (InheritanceData parent : parents) {
+			inlineCaveStyleInheritance(parent.name, styleStack, processedStyles);
+			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent.name);
 			assert parentStyle != null;
 			parentStyle.getValues(false).forEach((key, val) -> {
 				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key)) {
-					if (!caveStyle.contains(key)) {
+					if (caveStyle.contains(key)) {
+						if (parent.mergeTop.contains(key)) {
+							Object ourVal = caveStyle.get(key);
+							if (val instanceof List) {
+								if (!(ourVal instanceof List)) {
+									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
+								}
+								//noinspection unchecked
+								((List<Object>) ourVal).addAll((List<Object>) val);
+							} else if (val instanceof Map || val instanceof ConfigurationSection) {
+								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
+									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
+								}
+								@SuppressWarnings("unchecked")
+								Map<String, Object> parentVal = val instanceof Map ? (Map<String, Object>) val : ((ConfigurationSection) val).getValues(false);
+								if (ourVal instanceof Map) {
+									//noinspection unchecked
+									((Map<String, Object>) ourVal).putAll(parentVal);
+								} else {
+									parentVal.forEach(((ConfigurationSection) ourVal)::set);
+								}
+							} else {
+								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
+							}
+						} else if (parent.mergeBottom.contains(key)) {
+							Object ourVal = caveStyle.get(key);
+							if (val instanceof List) {
+								if (!(ourVal instanceof List)) {
+									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
+								}
+								@SuppressWarnings("unchecked")
+								List<Object> newVal = new ArrayList<>((List<Object>) val);
+								//noinspection unchecked
+								newVal.addAll((List<Object>) ourVal);
+								caveStyle.set(key, newVal);
+							} else if (val instanceof Map || val instanceof ConfigurationSection) {
+								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
+									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
+								}
+								@SuppressWarnings("unchecked")
+								Map<String, Object> parentVal = val instanceof Map ? (Map<String, Object>) val : ((ConfigurationSection) val).getValues(false);
+								@SuppressWarnings("unchecked")
+								Map<String, Object> ourMap = ourVal instanceof Map ? (Map<String, Object>) ourVal : ((ConfigurationSection) ourVal).getValues(false);
+								Map<String, Object> newMap = new LinkedHashMap<>(parentVal);
+								newMap.putAll(ourMap);
+								caveStyle.set(key, newMap);
+							} else {
+								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
+							}
+						}
+					} else {
 						caveStyle.set(key, val);
 					}
 				}
