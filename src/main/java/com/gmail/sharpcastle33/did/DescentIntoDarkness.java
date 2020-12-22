@@ -41,6 +41,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 public class DescentIntoDarkness extends JavaPlugin {
 
@@ -189,16 +191,20 @@ public class DescentIntoDarkness extends JavaPlugin {
 			getLogger().log(Level.SEVERE, "Failed to write default cave style", e);
 		}
 
-		File[] caveStyleFiles = caveStylesDir.listFiles((dir, name) -> name.endsWith(".yml"));
+		List<File> caveStyleFiles;
+		try {
+			caveStyleFiles = Files.walk(caveStylesDir.toPath()).map(Path::toFile).collect(Collectors.toList());
+		} catch (IOException e) {
+			e.printStackTrace();
+			return;
+		}
 		caveStylesConfig = new MemoryConfiguration();
-		if (caveStyleFiles != null) {
-			for (File caveStyleFile : caveStyleFiles) {
-				YamlConfiguration localConfig = YamlConfiguration.loadConfiguration(caveStyleFile);
-				if (localConfig.getKeys(false).stream().anyMatch(caveStylesConfig::contains)) {
-					Bukkit.getLogger().log(Level.SEVERE, "Failed to load config file " + caveStyleFile.getName() + " because it contains keys already present in a previously loaded file");
-				} else {
-					localConfig.getValues(true).forEach(caveStylesConfig::set);
-				}
+		for (File caveStyleFile : caveStyleFiles) {
+			YamlConfiguration localConfig = YamlConfiguration.loadConfiguration(caveStyleFile);
+			if (localConfig.getKeys(false).stream().anyMatch(caveStylesConfig::contains)) {
+				Bukkit.getLogger().log(Level.SEVERE, "Failed to load config file " + caveStyleFile.getName() + " because it contains keys already present in a previously loaded file");
+			} else {
+				localConfig.getValues(true).forEach(caveStylesConfig::set);
 			}
 		}
 		this.caveStyles = null;
