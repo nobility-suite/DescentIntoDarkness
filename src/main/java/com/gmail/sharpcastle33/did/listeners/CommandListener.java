@@ -236,7 +236,11 @@ public class CommandListener implements TabExecutor {
 				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed"));
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to generate cave", throwable);
 			} else {
-				DescentIntoDarkness.plugin.runSyncLater(() -> p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s));
+				DescentIntoDarkness.plugin.runSyncLater(() -> {
+					p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
+					p.sendMessage(ChatColor.GREEN + "Cave seed: " + seed.getAsLong());
+					Bukkit.getLogger().log(Level.INFO, "Generated cave with seed " + seed.getAsLong());
+				});
 			}
 		});
 	}

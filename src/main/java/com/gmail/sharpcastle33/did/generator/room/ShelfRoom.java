@@ -89,16 +89,18 @@ public class ShelfRoom extends Room {
 		int shelfRadius = Math.max(caveRadius, 5);
 		int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 		Vector3 next = location;
+		Vector3 newLocation = location;
 		for (int i = 0; i < shelfSize; i++) {
 			next = generateRoom(smallRoom, ctx, next, direction, shelfRadius, tags, centroids, roomStarts, roomLocations);
 			next = ModuleGenerator.vary(ctx, next);
+			newLocation = next;
 			next = next.add(direction.multiply(shelfRadius));
 		}
 
 		shelf = generateRoom(largeRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
 		shelf = generateRoom(smallRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
 
-		return next;
+		return newLocation;
 	}
 
 	private Vector3 generateRoom(Room room, CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
