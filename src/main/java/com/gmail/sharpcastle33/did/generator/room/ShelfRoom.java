@@ -106,6 +106,7 @@ public class ShelfRoom extends Room {
 								 List<List<Vector3>> roomLocations) {
 		Object[] userData = room.createUserData(ctx, location, direction, caveRadius, tags, roomLocations);
 		room.addCentroids(ctx, location, direction, caveRadius, tags, userData, centroids, roomStarts, roomLocations);
+		direction = room.adjustDirection(ctx, direction, userData);
 		return room.adjustLocation(ctx, location, direction, caveRadius, userData);
 	}
 
