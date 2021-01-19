@@ -35,6 +35,7 @@ public class CaveGenContext implements AutoCloseable {
 	private boolean debug;
 	private final PackedBlockStorage blockStorage;
 	private final Set<BlockVector2> accessedChunks = new HashSet<>();
+	private final Deque<Transform> blockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> inverseBlockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> locationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> inverseLocationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
@@ -109,19 +110,32 @@ public class CaveGenContext implements AutoCloseable {
 			return style.getBaseBlock().toImmutableState();
 		}
 		ensureChunkGenerated(pos);
-		return blockStorage.getBlock(pos);
+		BlockState block = blockStorage.getBlock(pos);
+		block = (BlockState) Util.transformBlock(block, getBlockTransform());
+		return block;
 	}
 
 	public void pushTransform(Transform blockTransform, Transform locationTransform) {
+		blockTransformStack.push(getBlockTransform().combine(blockTransform));
 		inverseBlockTransformStack.push(blockTransform.inverse().combine(getInverseBlockTransform()));
 		locationTransformStack.push(getLocationTransform().combine(locationTransform));
 		inverseLocationTransformStack.push(locationTransform.inverse().combine(getInverseLocationTransform()));
 	}
 
 	public void popTransform() {
+		blockTransformStack.pop();
 		inverseBlockTransformStack.pop();
 		locationTransformStack.pop();
 		inverseLocationTransformStack.pop();
+	}
+
+	/**
+	 * Gets the current world space -> local space block transform
+	 */
+	public Transform getBlockTransform() {
+		Transform transform = blockTransformStack.peek();
+		assert transform != null;
+		return transform;
 	}
 
 	/**
