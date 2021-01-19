@@ -197,7 +197,7 @@ public class CommandListener implements TabExecutor {
 			}
 			cave = CompletableFuture.completedFuture(c);
 		} else {
-			cave = caveTrackerManager.findFreeCave();
+			cave = caveTrackerManager.findFreeCave().caveFuture;
 		}
 
 		Player target;

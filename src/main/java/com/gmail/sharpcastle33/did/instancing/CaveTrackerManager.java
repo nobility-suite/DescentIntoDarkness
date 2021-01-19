@@ -123,29 +123,29 @@ public class CaveTrackerManager {
 		return caveStyle;
 	}
 
-	public CompletableFuture<CaveTracker> findFreeCave() {
+	public CaveCreationHandle findFreeCave() {
 		int caveId = nextInstanceId;
 		do {
 			CaveTracker cave = getCaveById(caveId);
 			if (cave != null && !cave.hasBeenJoined()) {
-				return CompletableFuture.completedFuture(cave);
+				return new CaveCreationHandle(caveId, CompletableFuture.completedFuture(cave));
 			}
 			caveId = (caveId + 1) % instanceLimit;
 		} while (caveId != nextInstanceId);
 
 		CaveStyle randomStyle = getRandomStyle();
 		if (randomStyle == null) {
-			return Util.completeExceptionally(new RuntimeException("No cave styles to choose from"));
+			return CaveCreationHandle.createExceptionally(new RuntimeException("No cave styles to choose from"));
 		}
 		return createCave(randomStyle);
 	}
 
-	public CompletableFuture<CaveTracker> createCave(CaveStyle style) {
+	public CaveCreationHandle createCave(CaveStyle style) {
 		int oldInstanceId = nextInstanceId;
 		while (getCaveById(nextInstanceId) != null) {
 			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
 			if (nextInstanceId == oldInstanceId) {
-				return Util.completeExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
+				return CaveCreationHandle.createExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
 			}
 		}
 
@@ -153,7 +153,7 @@ public class CaveTrackerManager {
 
 		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
 
-		return DescentIntoDarkness.plugin.supplyAsync(() -> {
+		return new CaveCreationHandle(id, DescentIntoDarkness.plugin.supplyAsync(() -> {
 			BlockVector2 caveChunkCoords = getInstanceChunkCoords(id);
 			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, style.getStartY(), caveChunkCoords.getBlockZ() * 16);
 			Random rand = new Random();
@@ -176,7 +176,7 @@ public class CaveTrackerManager {
 				caveTrackers.add(caveTracker);
 				return caveTracker;
 			});
-		});
+		}));
 	}
 
 	public void deleteCave(CaveTracker caveTracker) {
@@ -363,6 +363,24 @@ public class CaveTrackerManager {
 			case 2: return BlockVector2.at(radius - d, radius).multiply(INSTANCE_WIDTH_CHUNKS);
 			case 3: return BlockVector2.at(-radius, radius - d).multiply(INSTANCE_WIDTH_CHUNKS);
 			default: throw new ArithmeticException("Earth is bad at math!");
+		}
+	}
+
+	public static class CaveCreationHandle {
+		public final int caveId;
+		public final CompletableFuture<CaveTracker> caveFuture;
+
+		public CaveCreationHandle(int caveId, CompletableFuture<CaveTracker> caveFuture) {
+			this.caveId = caveId;
+			this.caveFuture = caveFuture;
+		}
+
+		public static CaveCreationHandle createExceptionally(Throwable t) {
+			return new CaveCreationHandle(-1, Util.completeExceptionally(t));
+		}
+
+		public boolean isError() {
+			return caveFuture.isCompletedExceptionally();
 		}
 	}
 
