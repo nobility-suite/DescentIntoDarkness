@@ -1,10 +1,35 @@
 package com.gmail.sharpcastle33.did.listeners;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import java.util.Random;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Player;
+import org.bukkit.util.StringUtil;
+
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.sk89q.worldedit.EditSession;
@@ -12,31 +37,16 @@ import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.Player;
-
-import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 
 import net.md_5.bungee.api.ChatColor;
-import org.bukkit.util.StringUtil;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.OptionalInt;
-import java.util.OptionalLong;
-import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 public class CommandListener implements TabExecutor {
+	
+	private HashMap<UUID,Long> playerSeeds;
+	
+	public CommandListener() {
+		this.playerSeeds = new HashMap<UUID,Long>();
+	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if (!(sender instanceof Player)) {
@@ -45,6 +55,10 @@ public class CommandListener implements TabExecutor {
 		}
 
 		Player p = (Player) sender;
+		
+		if(args.length == 0) {
+			caveMenu(p,args);
+		}
 
 		switch (args[0]) {
 			case "delete":
@@ -66,9 +80,75 @@ public class CommandListener implements TabExecutor {
 				DescentIntoDarkness.plugin.reload();
 				p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
 				break;
+			case "reroll":
+				Random rand = new Random();
+				long seed = rand.nextLong();
+				playerSeeds.put(p.getUniqueId(), seed);
+				break;
+			case "select":
+				select(p,args);
+				break;
 		}
 
 		return true;
+	}
+	
+	private void select(Player p, String[] args) {
+		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
+		
+		Random rand = new Random();
+		long seed;
+		
+		int selected = Integer.parseInt(args[1]);
+		
+		int options = 5;
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
+		
+		for(int i = 0; i < options; i++) {
+			indexes.add(rand.nextInt(DescentIntoDarkness.plugin.getCaveStyles().size()));
+		}
+		NavigableMap<String,CaveStyle> nm = DescentIntoDarkness.plugin.getCaveStyles();
+		ArrayList<CaveStyle> styles = new ArrayList<CaveStyle>();
+		styles.addAll((Collection<? extends CaveStyle>) nm.entrySet());
+		
+		CaveStyle style =  styles.get(indexes.get(selected));
+
+		caveTrackerManager.createCave(style);
+		p.sendMessage(ChatColor.GREEN + "Creating cave...");
+	}
+	
+	private void caveMenu(Player p, String[] args) {
+		Random rand = new Random();
+		long seed;
+		
+		if(!playerSeeds.containsKey(p.getUniqueId())) {
+			seed = rand.nextLong();
+			playerSeeds.put(p.getUniqueId(), seed);
+		}else seed = playerSeeds.get(p.getUniqueId());
+		
+		int options = 5;
+		ArrayList<Integer> indexes = new ArrayList<Integer>();
+		
+		for(int i = 0; i < options; i++) {
+			indexes.add(rand.nextInt(DescentIntoDarkness.plugin.getCaveStyles().size()));
+		}
+		
+		p.sendMessage(ChatColor.BLUE + "[]===============[] " + ChatColor.BOLD + "Cave Selector" + ChatColor.RESET + ChatColor.BLUE + " []===============[] ");
+		p.sendMessage(ChatColor.GRAY +  "" + ChatColor.ITALIC + "Alpha Version 1.0");
+		p.sendMessage(ChatColor.GRAY +  "" + ChatColor.ITALIC + "This menu will be replaced with a UI in the future...");
+		p.sendMessage(ChatColor.GRAY +  "" + ChatColor.ITALIC + "You can refresh these options with /descent reroll");
+
+		NavigableMap<String,CaveStyle> nm = DescentIntoDarkness.plugin.getCaveStyles();
+		
+		for(int i = 0; i < indexes.size(); i++) {			
+		
+			ArrayList<CaveStyle> styles = new ArrayList<CaveStyle>();
+			styles.addAll((Collection<? extends CaveStyle>) nm.entrySet());
+			CaveStyle cs = styles.get(indexes.get(i));
+			
+			p.sendMessage(ChatColor.BLUE + "Cave: " + ChatColor.WHITE + "[" + i + "], " + cs.getName());
+			
+		}
 	}
 
 	private void delete(Player p, String[] args) {

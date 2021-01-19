@@ -85,18 +85,18 @@ public class CaveTrackerManager {
 			generatingCave.set(false);
 			return;
 		}
-		CaveStyle style = getRandomStyle();
-		if (style == null) {
-			generatingCave.set(false);
-			return;
-		}
-		createCave(style).whenComplete((cave, throwable) -> {
-			if (throwable != null) {
-				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
-			}
-			generatingCave.set(false);
-			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
-		});
+//		CaveStyle style = getRandomStyle();
+//		if (style == null) {
+//			generatingCave.set(false);
+//			return;
+//		}
+//		createCave(style).whenComplete((cave, throwable) -> {
+//			if (throwable != null) {
+//				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
+//			}
+//			generatingCave.set(false);
+//			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
+//		});
 	}
 
 	private CaveStyle getRandomStyle() {
