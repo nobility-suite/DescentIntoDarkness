@@ -32,6 +32,7 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
+import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager.CaveCreationHandle;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -113,8 +114,10 @@ public class CommandListener implements TabExecutor {
 		
 		CaveStyle style =  styles.get(indexes.get(selected));
 
-		caveTrackerManager.createCave(style);
-		p.sendMessage(ChatColor.GREEN + "Creating cave...");
+		int id = -1;
+		
+		CaveCreationHandle cch = caveTrackerManager.createCave(style);
+		p.sendMessage(ChatColor.GREEN + "Creating cave... Cave ID: " + ChatColor.WHITE + cch.caveId);
 	}
 	
 	private void caveMenu(Player p, String[] args) {
