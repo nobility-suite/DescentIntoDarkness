@@ -108,8 +108,7 @@ public class CommandListener implements TabExecutor {
 			indexes.add(rand.nextInt(DescentIntoDarkness.plugin.getCaveStyles().size()));
 		}
 		NavigableMap<String,CaveStyle> nm = DescentIntoDarkness.plugin.getCaveStyles();
-		ArrayList<CaveStyle> styles = new ArrayList<CaveStyle>();
-		styles.addAll((Collection<? extends CaveStyle>) nm.entrySet());
+		ArrayList<CaveStyle> styles = new ArrayList<>(nm.values());
 		
 		CaveStyle style =  styles.get(indexes.get(selected));
 
@@ -140,10 +139,9 @@ public class CommandListener implements TabExecutor {
 
 		NavigableMap<String,CaveStyle> nm = DescentIntoDarkness.plugin.getCaveStyles();
 		
-		for(int i = 0; i < indexes.size(); i++) {			
-		
-			ArrayList<CaveStyle> styles = new ArrayList<CaveStyle>();
-			styles.addAll((Collection<? extends CaveStyle>) nm.entrySet());
+		for(int i = 0; i < indexes.size(); i++) {
+
+			ArrayList<CaveStyle> styles = new ArrayList<>(nm.values());
 			CaveStyle cs = styles.get(indexes.get(i));
 			
 			p.sendMessage(ChatColor.BLUE + "Cave: " + ChatColor.WHITE + "[" + i + "], " + cs.getName());
