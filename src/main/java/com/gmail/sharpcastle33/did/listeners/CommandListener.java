@@ -2,7 +2,6 @@ package com.gmail.sharpcastle33.did.listeners;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,10 +17,13 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.util.StringUtil;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
@@ -125,6 +127,21 @@ public class CommandListener implements TabExecutor {
 		
 		CaveCreationHandle cch = caveTrackerManager.createCave(style);
 		p.sendMessage(ChatColor.GREEN + "Creating cave... Cave ID: " + ChatColor.WHITE + cch.caveId);
+		
+		World world = p.getWorld();
+		Villager v = (Villager) world.spawnEntity(p.getLocation(), EntityType.VILLAGER);
+		v.setAdult();
+		v.setAI(false);
+		v.setPersistent(true);
+		v.setCustomName(ChatColor.BLUE + "Cave: " + ChatColor.WHITE + style.getName() + " [" + cch.caveId + "]");
+		
+		//TODO despawn villager
+		
+		//TODO implement portal
+		
+		//TODO subtitle message
+		
+		//TODO prevent villager trading
 	}
 	
 	private void caveMenu(Player p, String[] args) {
