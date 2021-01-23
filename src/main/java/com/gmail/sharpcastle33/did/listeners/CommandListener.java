@@ -97,8 +97,16 @@ public class CommandListener implements TabExecutor {
 	private void select(Player p, String[] args) {
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
 		
-		Random rand = new Random();
 		long seed;
+		if(playerSeeds.containsKey(p.getUniqueId())) {
+			 seed = playerSeeds.get(p.getUniqueId());
+		}else {
+			p.sendMessage(ChatColor.RED + "No options to select. Type /descent");
+			return;
+		}
+		
+		Random rand = new Random(seed);
+		
 		
 		int selected = Integer.parseInt(args[1]);
 		
