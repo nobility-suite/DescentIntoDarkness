@@ -208,7 +208,7 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
-	private void join(Player p, String[] args) {
+	public static void join(Player p, String[] args) {
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
 		CompletableFuture<CaveTracker> cave;
 
