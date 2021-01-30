@@ -10,6 +10,7 @@ import com.sk89q.jnbt.NamedTag;
 import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
+import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.registry.state.PropertyKey;
 import com.sk89q.worldedit.util.Direction;
@@ -70,6 +71,24 @@ public class Util {
 		);
 	}
 
+	public static Transform toDirectionTransform(Transform transform) {
+		if (transform.isIdentity()) {
+			return transform;
+		}
+		if (transform instanceof AffineTransform) {
+			AffineTransform affine = (AffineTransform) transform;
+			double[] coefficients = affine.coefficients();
+			coefficients[3] = coefficients[7] = coefficients[11] = 0;
+			return new AffineTransform(coefficients);
+		}
+
+		Vector3 m3 = transform.apply(Vector3.ZERO);
+		Vector3 m0 = transform.apply(Vector3.UNIT_X).subtract(m3);
+		Vector3 m1 = transform.apply(Vector3.UNIT_Y).subtract(m3);
+		Vector3 m2 = transform.apply(Vector3.UNIT_Z).subtract(m3);
+		return new AffineTransform(m0.getX(), m1.getX(), m2.getX(), 0, m0.getY(), m1.getY(), m2.getY(), 0, m0.getZ(), m1.getZ(), m2.getZ(), 0);
+	}
+
 	public static Direction getOpposite(Direction dir) {
 		switch (dir) {
 			case NORTH: return Direction.SOUTH;
@@ -107,17 +126,17 @@ public class Util {
 				&& type.hasProperty(PropertyKey.EAST)
 				&& type.hasProperty(PropertyKey.DOWN)
 				&& type.hasProperty(PropertyKey.UP)) {
-			Direction newNorth = Direction.findClosest(applyDirection(transform, Direction.NORTH.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newNorth = Direction.findClosest(transform.apply(Direction.NORTH.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newNorth != null;
-			Direction newSouth = Direction.findClosest(applyDirection(transform, Direction.SOUTH.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newSouth = Direction.findClosest(transform.apply(Direction.SOUTH.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newSouth != null;
-			Direction newWest = Direction.findClosest(applyDirection(transform, Direction.WEST.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newWest = Direction.findClosest(transform.apply(Direction.WEST.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newWest != null;
-			Direction newEast = Direction.findClosest(applyDirection(transform, Direction.EAST.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newEast = Direction.findClosest(transform.apply(Direction.EAST.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newEast != null;
-			Direction newDown = Direction.findClosest(applyDirection(transform, Direction.DOWN.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newDown = Direction.findClosest(transform.apply(Direction.DOWN.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newDown != null;
-			Direction newUp = Direction.findClosest(applyDirection(transform, Direction.UP.toBlockVector()).toVector3(), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			Direction newUp = Direction.findClosest(transform.apply(Direction.UP.toVector()), Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
 			assert newUp != null;
 
 			Object northState = block.getState(PropertyKey.NORTH);

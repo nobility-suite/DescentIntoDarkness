@@ -116,6 +116,7 @@ public class CaveGenContext implements AutoCloseable {
 	}
 
 	public void pushTransform(Transform blockTransform, Transform locationTransform) {
+		blockTransform = Util.toDirectionTransform(blockTransform);
 		blockTransformStack.push(getBlockTransform().combine(blockTransform));
 		inverseBlockTransformStack.push(blockTransform.inverse().combine(getInverseBlockTransform()));
 		locationTransformStack.push(getLocationTransform().combine(locationTransform));

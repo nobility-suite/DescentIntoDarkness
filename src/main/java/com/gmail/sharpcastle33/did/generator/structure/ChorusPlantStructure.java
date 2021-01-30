@@ -132,8 +132,6 @@ public class ChorusPlantStructure extends Structure {
 	}
 
 	private BlockStateHolder<?> withConnectionProperties(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
-		// TODO: why doesn't this work with chorus fruit from the walls and ceiling?
-
 		BlockType blockType = block.getBlockType();
 		if (blockType.hasProperty(PropertyKey.UP) && canConnectTo(ctx, ctx.getBlock(pos.add(0, 1, 0)))) {
 			block = block.with(PropertyKey.UP, true);
