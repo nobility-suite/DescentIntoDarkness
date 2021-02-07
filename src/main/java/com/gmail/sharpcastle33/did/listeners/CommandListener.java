@@ -61,6 +61,7 @@ public class CommandListener implements TabExecutor {
 		
 		if(args.length == 0) {
 			caveMenu(p,args);
+			return true;
 		}
 
 		switch (args[0]) {
@@ -109,8 +110,13 @@ public class CommandListener implements TabExecutor {
 		
 		Random rand = new Random(seed);
 		
-		
-		int selected = Integer.parseInt(args[1]);
+		int selected = -1;
+		try {
+			selected = Integer.parseInt(args[1]);
+		}catch(Exception e) {
+			p.sendMessage(ChatColor.DARK_RED + "Selected cave must be a number!");
+			return;
+		}
 		
 		int options = 5;
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
@@ -145,13 +151,17 @@ public class CommandListener implements TabExecutor {
 	}
 	
 	private void caveMenu(Player p, String[] args) {
-		Random rand = new Random();
+		Random rand;
 		long seed;
 		
 		if(!playerSeeds.containsKey(p.getUniqueId())) {
+			rand = new Random();
 			seed = rand.nextLong();
 			playerSeeds.put(p.getUniqueId(), seed);
-		}else seed = playerSeeds.get(p.getUniqueId());
+		}else {
+			seed = playerSeeds.get(p.getUniqueId());
+			rand = new Random(seed);
+		}
 		
 		int options = 5;
 		ArrayList<Integer> indexes = new ArrayList<Integer>();
