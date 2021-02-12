@@ -142,14 +142,21 @@ public class CaveTrackerManager {
 
 	public CaveCreationHandle createCave(CaveStyle style) {
 		int oldInstanceId = nextInstanceId;
+		Bukkit.getServer().getLogger().info("NextInstanceID: " + nextInstanceId + " Instance Limit: " + instanceLimit);
 		while (getCaveById(nextInstanceId) != null) {
 			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
 			if (nextInstanceId == oldInstanceId) {
 				return CaveCreationHandle.createExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
 			}
 		}
+		Bukkit.getServer().getLogger().info("Free ID found: " + nextInstanceId);
+
 
 		int id = nextInstanceId;
+		
+		for(CaveTracker t : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
+			Bukkit.getServer().getLogger().info("CaveTracker found, ID: " + t.getId() + " join time: " + t.getJoinTime());
+		}
 
 		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
 
@@ -174,6 +181,7 @@ public class CaveTrackerManager {
 			return DescentIntoDarkness.plugin.supplySyncNow(() -> {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
+				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
 				return caveTracker;
 			});
 		}));
@@ -293,9 +301,11 @@ public class CaveTrackerManager {
 	public CaveTracker getCaveById(int id) {
 		for (CaveTracker cave : caveTrackers) {
 			if (cave.getId() == id) {
+				Bukkit.getServer().getLogger().info("Checking ID " + id + "... taken.");
 				return cave;
 			}
 		}
+		Bukkit.getServer().getLogger().info("Checking ID " + id + "... available!");
 		return null;
 	}
 

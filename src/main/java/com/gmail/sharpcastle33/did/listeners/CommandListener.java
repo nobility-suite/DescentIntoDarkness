@@ -343,6 +343,10 @@ public class CommandListener implements TabExecutor {
 		}
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating Cave...");
+		
+		for(CaveTracker t : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
+			Bukkit.getServer().getLogger().info("CaveTracker found, ID: " + t.getId() + " " + t.getJoinTime());
+		}
 		DescentIntoDarkness.plugin.supplyAsync(() -> {
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed.getAsLong())).setDebug(debug)) {
 				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size.getAsInt());
