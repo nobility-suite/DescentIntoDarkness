@@ -2,6 +2,13 @@ name: DescentIntoDarkness
 main: com.gmail.sharpcastle33.did.DescentIntoDarkness
 version: ${project.version}
 api-version: 1.13
+depend:
+   - ProtocolLib
+   - FastAsyncWorldEdit
+   - Multiverse-Core
+   - MythicMobs
+softdepend:
+   - NobilityItems
 commands:
    did:
       description: Descent Into Darkness main command
