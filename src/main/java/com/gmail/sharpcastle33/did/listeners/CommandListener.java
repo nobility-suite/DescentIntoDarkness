@@ -71,6 +71,8 @@ public class CommandListener implements TabExecutor {
 			case "generate":
 				generate(p, args);
 				break;
+			case "debug":
+				debug(p,args);
 			case "join":
 				join(p, args);
 				break;
@@ -97,6 +99,17 @@ public class CommandListener implements TabExecutor {
 		return true;
 	}
 	
+	private void debug(Player p, String[] args) {
+		// TODO Auto-generated method stub
+		CaveTrackerManager ctm = DescentIntoDarkness.plugin.getCaveTrackerManager();
+		for(CaveTracker ct : ctm.getCaves()) {
+			if(ct.getPlayers().contains(p.getUniqueId())) {
+				p.sendMessage(ChatColor.GOLD + "You are currently connected to cave: " + ct.getId() + ", " + ct.getStyle().getName());
+			}
+		}
+		
+	}
+
 	private void select(Player p, String[] args) {
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.plugin.getCaveTrackerManager();
 		

@@ -46,6 +46,7 @@ public class CaveTrackerManager {
 	private final int instanceLimit;
 	private World theWorld;
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
+	private ArrayList<Integer> tempClaimedIDs;
 	private final Map<UUID, Location> overworldPlayerLocations = new HashMap<>();
 	private int nextInstanceId;
 	private Objective pollutionObjective;
@@ -61,6 +62,7 @@ public class CaveTrackerManager {
 		if (theWorld == null) {
 			throw new RuntimeException("Failed to create world");
 		}
+		tempClaimedIDs = new ArrayList<Integer>();
 	}
 
 	public void update() {
@@ -143,7 +145,7 @@ public class CaveTrackerManager {
 	public CaveCreationHandle createCave(CaveStyle style) {
 		int oldInstanceId = nextInstanceId;
 		Bukkit.getServer().getLogger().info("NextInstanceID: " + nextInstanceId + " Instance Limit: " + instanceLimit);
-		while (getCaveById(nextInstanceId) != null) {
+		while (getCaveById(nextInstanceId) != null || tempClaimedIDs.contains(nextInstanceId)) {
 			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
 			if (nextInstanceId == oldInstanceId) {
 				return CaveCreationHandle.createExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
@@ -153,6 +155,7 @@ public class CaveTrackerManager {
 
 
 		int id = nextInstanceId;
+		tempClaimedIDs.add(id);
 		
 		for(CaveTracker t : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
 			Bukkit.getServer().getLogger().info("CaveTracker found, ID: " + t.getId() + " join time: " + t.getJoinTime());
@@ -182,6 +185,7 @@ public class CaveTrackerManager {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
+				tempClaimedIDs.remove(id);
 				return caveTracker;
 			});
 		}));
