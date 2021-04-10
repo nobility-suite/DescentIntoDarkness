@@ -145,6 +145,13 @@ public class MobSpawnManager implements Runnable, Listener {
 		// deduct pollution
 		cave.addPlayerMobPollution(chosenPlayer.getUniqueId(), spawnEntry, -spawnEntry.getSingleMobCost());
 		cave.setSpawnCooldown(cave.getSpawnCooldown() + spawnEntry.getCooldown());
+		
+		Bukkit.getServer().getLogger().info("[Descent Mob Spawner]: Spawning " + spawnEntry.getName() + " for Player " + chosenPlayer.getName() + " in cave " + cave.getId());
+		
+		for(MobSpawnEntry t : cave.getStyle().getSpawnEntries()) {
+			
+			Bukkit.getServer().getLogger().info("Found MobSpawnEntry: " + t.getName() + " for cave style " + cave.getStyle().getName());
+		}
 
 		return true;
 	}
