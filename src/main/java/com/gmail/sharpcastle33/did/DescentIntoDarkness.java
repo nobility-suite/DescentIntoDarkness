@@ -389,7 +389,16 @@ public class DescentIntoDarkness extends JavaPlugin {
 							}
 						}
 					} else {
-						caveStyle.set(key, val);
+						// copy if necessary
+						Object newVal = val;
+						if (val instanceof List) {
+							newVal = new ArrayList<>((List<?>) val);
+						} else if (val instanceof Map) {
+							newVal = new LinkedHashMap<>((Map<?, ?>) val);
+						} else if (val instanceof ConfigurationSection) {
+							newVal = new LinkedHashMap<>(((ConfigurationSection) val).getValues(false));
+						}
+						caveStyle.set(key, newVal);
 					}
 				}
 			});
