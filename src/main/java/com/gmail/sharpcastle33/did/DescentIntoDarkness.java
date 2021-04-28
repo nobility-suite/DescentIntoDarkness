@@ -383,22 +383,23 @@ public class DescentIntoDarkness extends JavaPlugin {
 								Map<String, Object> ourMap = ourVal instanceof Map ? (Map<String, Object>) ourVal : ((ConfigurationSection) ourVal).getValues(false);
 								Map<String, Object> newMap = new LinkedHashMap<>(parentVal);
 								newMap.putAll(ourMap);
-								caveStyle.set(key, newMap);
+								caveStyle.set(key, null);
+								caveStyle.createSection(key, newMap);
 							} else {
 								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
 							}
 						}
 					} else {
 						// copy if necessary
-						Object newVal = val;
 						if (val instanceof List) {
-							newVal = new ArrayList<>((List<?>) val);
+							caveStyle.set(key, new ArrayList<>((List<?>) val));
 						} else if (val instanceof Map) {
-							newVal = new LinkedHashMap<>((Map<?, ?>) val);
+							caveStyle.createSection(key, (Map<?, ?>) val);
 						} else if (val instanceof ConfigurationSection) {
-							newVal = new LinkedHashMap<>(((ConfigurationSection) val).getValues(false));
+							caveStyle.createSection(key, ((ConfigurationSection) val).getValues(false));
+						} else {
+							caveStyle.set(key, val);
 						}
-						caveStyle.set(key, newVal);
 					}
 				}
 			});
