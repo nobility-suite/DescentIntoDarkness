@@ -1,7 +1,7 @@
 package com.gmail.sharpcastle33.did;
 
 import com.gmail.sharpcastle33.did.config.Biomes;
-import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.CaveStyles;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.DataPacks;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
@@ -26,11 +26,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.configuration.Configuration;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
@@ -41,25 +37,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 public class DescentIntoDarkness extends JavaPlugin {
 
@@ -68,12 +52,10 @@ public class DescentIntoDarkness extends JavaPlugin {
 	private Scoreboard scoreboard;
 
 	private FileConfiguration config = getConfig();
-	private LinkedHashMap<String, Integer> caveStyleWeights = null;
-	private Configuration caveStylesConfig;
-	private NavigableMap<String, CaveStyle> caveStyles = null;
 	private final Map<String, Clipboard> schematics = new HashMap<>();
+	private final CaveStyles caveStyles = new CaveStyles();
 
-	public static DescentIntoDarkness plugin;
+	public static DescentIntoDarkness instance;
 	public static Core multiverseCore;
 
 	@Override
@@ -112,7 +94,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	@Override
 	public void onEnable() {
-		plugin = this;
+		instance = this;
 		multiverseCore = (Core) Bukkit.getPluginManager().getPlugin("Multiverse-Core");
 		if (multiverseCore == null) {
 			throw new RuntimeException("DescentIntoDarkness depends on Multiverse-Core, which was not found");
@@ -129,13 +111,13 @@ public class DescentIntoDarkness extends JavaPlugin {
 		}
 		caveTrackerManager = new CaveTrackerManager(instanceLimit);
 		registerCommand("did", new CommandListener());
-		Bukkit.getPluginManager().registerEvents(new CaveEntranceListener(), plugin);
-		Bukkit.getPluginManager().registerEvents(new OreListener(), plugin);
-		Bukkit.getPluginManager().registerEvents(new PlayerListener(), plugin);
+		Bukkit.getPluginManager().registerEvents(new CaveEntranceListener(), instance);
+		Bukkit.getPluginManager().registerEvents(new OreListener(), instance);
+		Bukkit.getPluginManager().registerEvents(new PlayerListener(), instance);
 		mobSpawnManager = new MobSpawnManager();
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, mobSpawnManager, 0, 1);
-		Bukkit.getPluginManager().registerEvents(mobSpawnManager, plugin);
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, caveTrackerManager::update, 0, 20);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, mobSpawnManager, 0, 1);
+		Bukkit.getPluginManager().registerEvents(mobSpawnManager, instance);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, caveTrackerManager::update, 0, 20);
 
 		PacketListener.register();
 	}
@@ -174,59 +156,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 		DataPacks.reload();
 		Biomes.reload();
 
-		caveStyleWeights = new LinkedHashMap<>();
-		ConfigurationSection caveStylesSection = config.getConfigurationSection("caveStyles");
-		if (caveStylesSection != null) {
-			for (String style : caveStylesSection.getKeys(false)) {
-				caveStyleWeights.put(style, caveStylesSection.getInt(style, 10));
-			}
-		}
-
-		Bukkit.getLogger().info("Loading cave styles...");
-		File caveStylesDir = new File(getDataFolder(), "caveStyles");
-		//noinspection ResultOfMethodCallIgnored
-		caveStylesDir.mkdirs();
-
-		try {
-			Files.copy(Objects.requireNonNull(getResource("defaultCaveStyles.yml")), new File(caveStylesDir, "default.yml").toPath(), StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException e) {
-			getLogger().log(Level.SEVERE, "Failed to write default cave style", e);
-		}
-
-		List<File> caveStyleFiles;
-		try {
-			caveStyleFiles = Files.walk(caveStylesDir.toPath()).map(Path::toFile).collect(Collectors.toList());
-		} catch (IOException e) {
-			e.printStackTrace();
-			return;
-		}
-		caveStylesConfig = new MemoryConfiguration();
-		for (File caveStyleFile : caveStyleFiles) {
-			YamlConfiguration localConfig = YamlConfiguration.loadConfiguration(caveStyleFile);
-			if (localConfig.getKeys(false).stream().anyMatch(caveStylesConfig::contains)) {
-				Bukkit.getLogger().log(Level.SEVERE, "Failed to load config file " + caveStyleFile.getName() + " because it contains keys already present in a previously loaded file");
-			} else {
-				localConfig.getValues(true).forEach(caveStylesConfig::set);
-			}
-		}
-		this.caveStyles = null;
-		getCaveStyles();
+		caveStyles.reload(config);
 
 		Bukkit.getLogger().info("Reloaded DescentIntoDarkness config");
-	}
-
-	private FileConfiguration reloadConfig(String configName) {
-		File configFile = new File(getDataFolder(), configName + ".yml");
-		return YamlConfiguration.loadConfiguration(configFile);
-	}
-
-	private void saveConfig(String configName, FileConfiguration config) {
-		File configFile = new File(getDataFolder(), configName + ".yml");
-		try {
-			config.save(configFile);
-		} catch (IOException e) {
-			getLogger().log(Level.SEVERE, "Could not save " + configName + ".yml", e);
-		}
 	}
 
 	public int getCaveTimeLimit() {
@@ -237,175 +169,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 		return config.getInt("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
 	}
 
-	public LinkedHashMap<String, Integer> getCaveStyleWeights() {
-		return caveStyleWeights;
-	}
-
-	public NavigableMap<String, CaveStyle> getCaveStyles() {
-		if (caveStyles == null) {
-			caveStyles = new TreeMap<>();
-
-			try {
-				Set<String> styleStack = new HashSet<>();
-				Set<String> processedStyles = new HashSet<>();
-				for (String styleName : caveStylesConfig.getKeys(false)) {
-					inlineCaveStyleInheritance(styleName, styleStack, processedStyles);
-				}
-			} catch (InvalidConfigException e) {
-				getLogger().log(Level.SEVERE, "Failed to load cave styles", e);
-				return caveStyles;
-			}
-
-			for (String styleName : caveStylesConfig.getKeys(false)) {
-				try {
-					ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
-					if (value == null) {
-						throw new InvalidConfigException("Cave style \"" + styleName + "\" has invalid type");
-					}
-					caveStyles.put(styleName, CaveStyle.deserialize(styleName, value));
-				} catch (InvalidConfigException e) {
-					getLogger().log(Level.SEVERE, "Failed to load cave style " + styleName, e);
-				}
-			}
-		}
+	public CaveStyles getCaveStyles() {
 		return caveStyles;
-	}
-
-	private void inlineCaveStyleInheritance(String styleName, Set<String> styleStack, Set<String> processedStyles) {
-		if (styleStack.contains(styleName)) {
-			throw new InvalidConfigException("Detected cyclic cave style inheritance");
-		}
-		if (processedStyles.contains(styleName)) {
-			return;
-		}
-		styleStack.add(styleName);
-		processedStyles.add(styleName);
-
-		ConfigurationSection caveStyle = caveStylesConfig.getConfigurationSection(styleName);
-		if (caveStyle == null) {
-			throw new InvalidConfigException("Tried to inherit from cave style \"" + styleName + "\" which does not exist");
-		}
-
-		class InheritanceData {
-			final String name;
-			final Set<String> mergeTop = new HashSet<>();
-			final Set<String> mergeBottom = new HashSet<>();
-
-			InheritanceData(String name) {
-				this.name = name;
-			}
-		}
-		List<InheritanceData> parents = new ArrayList<>();
-		List<?> inheritList = caveStyle.getList("inherit");
-		if (inheritList != null) {
-			for (Object parent : inheritList) {
-				if (parent instanceof Map || parent instanceof ConfigurationSection) {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> map = parent instanceof Map ? (Map<String, Object>) parent : ((ConfigurationSection) parent).getValues(false);
-					Object name = map.get("name");
-					if (name == null) {
-						throw new InvalidConfigException("Complex inherit must have a \"name\"");
-					}
-					InheritanceData data = new InheritanceData(name.toString());
-					Object merge = map.get("merge");
-					if (merge instanceof Map || merge instanceof ConfigurationSection) {
-						@SuppressWarnings("unchecked")
-						Map<String, Object> mergeMap = merge instanceof Map ? (Map<String, Object>) merge : ((ConfigurationSection) merge).getValues(false);
-						mergeMap.forEach((key, val) -> {
-							String strVal = String.valueOf(val);
-							if (strVal.equals("top")) {
-								data.mergeTop.add(key);
-							} else if (strVal.equals("bottom")) {
-								data.mergeBottom.add(key);
-							} else {
-								throw new InvalidConfigException("Complex inherit merge must be either \"top\" or \"bottom\"");
-							}
-						});
-					}
-					parents.add(data);
-				} else {
-					parents.add(new InheritanceData(parent.toString()));
-				}
-			}
-		}
-
-		if (!caveStyle.contains("__builtin_no_default_inherit") && parents.stream().noneMatch(it -> it.name.equals("default"))) {
-			parents.add(new InheritanceData("default"));
-		}
-		for (InheritanceData parent : parents) {
-			inlineCaveStyleInheritance(parent.name, styleStack, processedStyles);
-			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent.name);
-			assert parentStyle != null;
-			parentStyle.getValues(false).forEach((key, val) -> {
-				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key)) {
-					if (caveStyle.contains(key)) {
-						if (parent.mergeTop.contains(key)) {
-							Object ourVal = caveStyle.get(key);
-							if (val instanceof List) {
-								if (!(ourVal instanceof List)) {
-									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
-								}
-								//noinspection unchecked
-								((List<Object>) ourVal).addAll((List<Object>) val);
-							} else if (val instanceof Map || val instanceof ConfigurationSection) {
-								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
-									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
-								}
-								@SuppressWarnings("unchecked")
-								Map<String, Object> parentVal = val instanceof Map ? (Map<String, Object>) val : ((ConfigurationSection) val).getValues(false);
-								if (ourVal instanceof Map) {
-									//noinspection unchecked
-									((Map<String, Object>) ourVal).putAll(parentVal);
-								} else {
-									parentVal.forEach(((ConfigurationSection) ourVal)::set);
-								}
-							} else {
-								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
-							}
-						} else if (parent.mergeBottom.contains(key)) {
-							Object ourVal = caveStyle.get(key);
-							if (val instanceof List) {
-								if (!(ourVal instanceof List)) {
-									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
-								}
-								@SuppressWarnings("unchecked")
-								List<Object> newVal = new ArrayList<>((List<Object>) val);
-								//noinspection unchecked
-								newVal.addAll((List<Object>) ourVal);
-								caveStyle.set(key, newVal);
-							} else if (val instanceof Map || val instanceof ConfigurationSection) {
-								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
-									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
-								}
-								@SuppressWarnings("unchecked")
-								Map<String, Object> parentVal = val instanceof Map ? (Map<String, Object>) val : ((ConfigurationSection) val).getValues(false);
-								@SuppressWarnings("unchecked")
-								Map<String, Object> ourMap = ourVal instanceof Map ? (Map<String, Object>) ourVal : ((ConfigurationSection) ourVal).getValues(false);
-								Map<String, Object> newMap = new LinkedHashMap<>(parentVal);
-								newMap.putAll(ourMap);
-								caveStyle.set(key, null);
-								caveStyle.createSection(key, newMap);
-							} else {
-								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
-							}
-						}
-					} else {
-						// copy if necessary
-						if (val instanceof List) {
-							caveStyle.set(key, new ArrayList<>((List<?>) val));
-						} else if (val instanceof Map) {
-							caveStyle.createSection(key, (Map<?, ?>) val);
-						} else if (val instanceof ConfigurationSection) {
-							caveStyle.createSection(key, ((ConfigurationSection) val).getValues(false));
-						} else {
-							caveStyle.set(key, val);
-						}
-					}
-				}
-			});
-		}
-
-		styleStack.remove(styleName);
 	}
 
 	public Clipboard getSchematic(String name) {
@@ -521,20 +286,5 @@ public class DescentIntoDarkness extends JavaPlugin {
 			future.complete(result);
 		});
 		return future;
-	}
-
-	private static List<Material> ALL_MATERIALS;
-
-	public static List<Material> getAllMaterials() {
-		// I can't find a better way of doing this
-		if (ALL_MATERIALS == null) {
-			ALL_MATERIALS = new ArrayList<>();
-			for (Material material : Material.values()) {
-				if (!material.name().startsWith("LEGACY_")) {
-					ALL_MATERIALS.add(material);
-				}
-			}
-		}
-		return ALL_MATERIALS;
 	}
 }

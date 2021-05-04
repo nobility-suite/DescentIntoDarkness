@@ -77,7 +77,7 @@ public class CaveTrackerManager {
 		for (CaveTracker cave : caveTrackers) {
 			if (cave.hasBeenJoined()) {
 				long aliveTime = cave.getWorld().getFullTime() - cave.getJoinTime();
-				if (aliveTime > DescentIntoDarkness.plugin.getCaveTimeLimit()) {
+				if (aliveTime > DescentIntoDarkness.instance.getCaveTimeLimit()) {
 					deleteCave(cave);
 					break;
 				}
@@ -102,24 +102,24 @@ public class CaveTrackerManager {
 	}
 
 	private CaveStyle getRandomStyle() {
-		if (DescentIntoDarkness.plugin.getCaveStyleWeights().isEmpty()) {
+		if (DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().isEmpty()) {
 			return null;
 		}
 
-		int totalWeight = DescentIntoDarkness.plugin.getCaveStyleWeights().values().stream().mapToInt(Integer::intValue).sum();
+		int totalWeight = DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().values().stream().mapToInt(Integer::intValue).sum();
 		int randVal = new Random().nextInt(totalWeight);
 		String chosenStyle = null;
-		for (Map.Entry<String, Integer> entry : DescentIntoDarkness.plugin.getCaveStyleWeights().entrySet()) {
+		for (Map.Entry<String, Integer> entry : DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().entrySet()) {
 			randVal -= entry.getValue();
 			if (randVal < 0) {
 				chosenStyle = entry.getKey();
 			}
 		}
 
-		CaveStyle caveStyle = DescentIntoDarkness.plugin.getCaveStyles().get(chosenStyle);
+		CaveStyle caveStyle = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().get(chosenStyle);
 		if (caveStyle == null || caveStyle.isAbstract()) {
 			Bukkit.getLogger().log(Level.SEVERE, "Cannot instantiate cave style: " + chosenStyle);
-			DescentIntoDarkness.plugin.getCaveStyleWeights().remove(chosenStyle);
+			DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().remove(chosenStyle);
 			return getRandomStyle();
 		}
 		return caveStyle;
@@ -157,13 +157,13 @@ public class CaveTrackerManager {
 		int id = nextInstanceId;
 		tempClaimedIDs.add(id);
 		
-		for(CaveTracker t : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
+		for(CaveTracker t : DescentIntoDarkness.instance.getCaveTrackerManager().getCaves()) {
 			Bukkit.getServer().getLogger().info("CaveTracker found, ID: " + t.getId() + " join time: " + t.getJoinTime());
 		}
 
 		Bukkit.getLogger().log(Level.INFO, "Generating cave with ID " + id);
 
-		return new CaveCreationHandle(id, DescentIntoDarkness.plugin.supplyAsync(() -> {
+		return new CaveCreationHandle(id, DescentIntoDarkness.instance.supplyAsync(() -> {
 			BlockVector2 caveChunkCoords = getInstanceChunkCoords(id);
 			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, style.getStartY(), caveChunkCoords.getBlockZ() * 16);
 			Random rand = new Random();
@@ -181,7 +181,7 @@ public class CaveTrackerManager {
 				spawnPoint.add(0, -1, 0);
 			}
 			spawnPoint.add(0, 1, 0);
-			return DescentIntoDarkness.plugin.supplySyncNow(() -> {
+			return DescentIntoDarkness.instance.supplySyncNow(() -> {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
@@ -335,9 +335,9 @@ public class CaveTrackerManager {
 
 	public Objective getPollutionObjective() {
 		if (pollutionObjective == null) {
-			pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().getObjective("pollution");
+			pollutionObjective = DescentIntoDarkness.instance.getScoreboard().getObjective("pollution");
 			if (pollutionObjective == null) {
-				pollutionObjective = DescentIntoDarkness.plugin.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
+				pollutionObjective = DescentIntoDarkness.instance.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
 			}
 			// Temporary, for debug
 			pollutionObjective.setDisplaySlot(DisplaySlot.SIDEBAR);

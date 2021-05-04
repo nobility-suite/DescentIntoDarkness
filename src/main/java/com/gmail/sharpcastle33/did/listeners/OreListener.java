@@ -28,7 +28,7 @@ public class OreListener implements Listener {
 	@EventHandler
 	public void oreBreak(BlockBreakEvent event) {
 		Player player = event.getPlayer();
-		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(player);
+		CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(player);
 		if (cave == null) {
 			return;
 		}
@@ -53,7 +53,7 @@ public class OreListener implements Listener {
 					cave.setBlockBreakCount(pos, 0);
 				}
 
-				MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
+				MobSpawnEntry spawnEntry = DescentIntoDarkness.instance.getMobSpawnManager().getRandomSpawnEntry(cave);
 				if (spawnEntry != null) {
 					cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, ore.getPollution());
 				}
@@ -84,7 +84,7 @@ public class OreListener implements Listener {
 		}
 
 		if (!isOre) {
-			MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
+			MobSpawnEntry spawnEntry = DescentIntoDarkness.instance.getMobSpawnManager().getRandomSpawnEntry(cave);
 			if (spawnEntry != null) {
 				cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, cave.getStyle().getBlockBreakPollution());
 			}
@@ -94,12 +94,12 @@ public class OreListener implements Listener {
 	@EventHandler
 	public void blockPlace(BlockPlaceEvent event) {
 		Player player = event.getPlayer();
-		CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(player);
+		CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(player);
 		if (cave == null) {
 			return;
 		}
 
-		MobSpawnEntry spawnEntry = DescentIntoDarkness.plugin.getMobSpawnManager().getRandomSpawnEntry(cave);
+		MobSpawnEntry spawnEntry = DescentIntoDarkness.instance.getMobSpawnManager().getRandomSpawnEntry(cave);
 		if (spawnEntry != null) {
 			cave.addPlayerMobPollution(player.getUniqueId(), spawnEntry, cave.getStyle().getBlockPlacePollution());
 		}

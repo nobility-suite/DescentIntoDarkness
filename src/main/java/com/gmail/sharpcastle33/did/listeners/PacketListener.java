@@ -96,7 +96,7 @@ public class PacketListener {
 	public static void register() {
 		ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
 
-		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.plugin, PacketType.Play.Server.LOGIN)) {
+		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.LOGIN)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
 				Biomes.addNotifiedPlayer(event.getPlayer().getUniqueId());
@@ -128,7 +128,7 @@ public class PacketListener {
 			}
 		});
 
-		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.plugin, PacketType.Play.Server.MAP_CHUNK)) {
+		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.MAP_CHUNK)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
 				event.getPacket().getIntegerArrays().modify(0, biomes -> {
@@ -138,7 +138,7 @@ public class PacketListener {
 					if (!Biomes.isPlayerNotified(event.getPlayer().getUniqueId())) {
 						return biomes;
 					}
-					CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
+					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
 					if (cave == null) {
 						return biomes;
 					}
@@ -148,11 +148,11 @@ public class PacketListener {
 			}
 		});
 
-		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.plugin, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
+		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
 				event.getPacket().getModifier().withType(DIMENSION_TYPE).modify(0, dim -> {
-					CaveTracker cave = DescentIntoDarkness.plugin.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
+					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
 					if (cave != null) {
 						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
 					} else {

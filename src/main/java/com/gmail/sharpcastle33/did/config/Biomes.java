@@ -63,7 +63,7 @@ public class Biomes {
 		Bukkit.getLogger().info("Loading biomes...");
 		biomeRawIds.clear();
 		biomeJsons.clear();
-		int customBiomeIdStart = DescentIntoDarkness.plugin.getCustomBiomeIdStart();
+		int customBiomeIdStart = DescentIntoDarkness.instance.getCustomBiomeIdStart();
 		int biomeCount = 0;
 
 		MessageDigest digest;

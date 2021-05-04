@@ -13,7 +13,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 public class PlayerListener implements Listener {
 	@EventHandler
 	public void onMVPlayerRespawn(MVRespawnEvent event) {
-		Location newLocation = DescentIntoDarkness.plugin.getCaveTrackerManager().respawnPlayer(event.getPlayer());
+		Location newLocation = DescentIntoDarkness.instance.getCaveTrackerManager().respawnPlayer(event.getPlayer());
 		if (newLocation != null) {
 			event.setRespawnLocation(newLocation);
 		}
@@ -22,7 +22,7 @@ public class PlayerListener implements Listener {
 	@EventHandler
 	public void onPlayerRespawn(PlayerRespawnEvent event) {
 		if (event.isBedSpawn()) { // MV-Core does not handle this case
-			Location newLocation = DescentIntoDarkness.plugin.getCaveTrackerManager().respawnPlayer(event.getPlayer());
+			Location newLocation = DescentIntoDarkness.instance.getCaveTrackerManager().respawnPlayer(event.getPlayer());
 			if (newLocation != null) {
 				event.setRespawnLocation(newLocation);
 			}
@@ -38,8 +38,8 @@ public class PlayerListener implements Listener {
 
 	@EventHandler
 	public void onPlayerPortal(PlayerPortalEvent event) {
-		if (CaveTrackerManager.isCaveWorld(event.getFrom().getWorld()) && !DescentIntoDarkness.plugin.getCaveTrackerManager().isLeavingCave()) {
-			DescentIntoDarkness.plugin.getCaveTrackerManager().teleportPlayerTo(event.getPlayer(), null);
+		if (CaveTrackerManager.isCaveWorld(event.getFrom().getWorld()) && !DescentIntoDarkness.instance.getCaveTrackerManager().isLeavingCave()) {
+			DescentIntoDarkness.instance.getCaveTrackerManager().teleportPlayerTo(event.getPlayer(), null);
 			event.setCancelled(true);
 		}
 	}

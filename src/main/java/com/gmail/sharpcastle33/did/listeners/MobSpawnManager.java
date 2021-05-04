@@ -279,7 +279,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			}
 		}
 
-		for (CaveTracker cave : DescentIntoDarkness.plugin.getCaveTrackerManager().getCaves()) {
+		for (CaveTracker cave : DescentIntoDarkness.instance.getCaveTrackerManager().getCaves()) {
 			spawnMobs(cave);
 		}
 	}

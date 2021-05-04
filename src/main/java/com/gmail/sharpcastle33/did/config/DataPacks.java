@@ -31,7 +31,7 @@ public class DataPacks {
 		namespaces.clear();
 		int datapackCount = 0;
 		try {
-			Path datapacksFolder = DescentIntoDarkness.plugin.getDataFolder().toPath().resolve("datapacks");
+			Path datapacksFolder = DescentIntoDarkness.instance.getDataFolder().toPath().resolve("datapacks");
 			Files.createDirectories(datapacksFolder);
 
 			for (Path datapackFile : (Iterable<Path>) Files.list(datapacksFolder)::iterator) {

@@ -27,7 +27,7 @@ public class SchematicStructure extends Structure {
 		super(name, StructureType.SCHEMATIC, map);
 		this.schematics = ConfigUtil.deserializeSingleableList(ConfigUtil.require(map, "schematics"),
 				schematicName -> {
-			Clipboard data = DescentIntoDarkness.plugin.getSchematic(schematicName);
+			Clipboard data = DescentIntoDarkness.instance.getSchematic(schematicName);
 			if (data == null) {
 				throw new InvalidConfigException("Unknown schematic: " + schematicName);
 			}

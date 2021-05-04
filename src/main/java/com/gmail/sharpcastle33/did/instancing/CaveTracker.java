@@ -40,9 +40,9 @@ public class CaveTracker {
 		this.start = start;
 		this.style = style;
 
-		Team team = DescentIntoDarkness.plugin.getScoreboard().getTeam("cave_" + id);
+		Team team = DescentIntoDarkness.instance.getScoreboard().getTeam("cave_" + id);
 		if (team == null) {
-			team = DescentIntoDarkness.plugin.getScoreboard().registerNewTeam("cave_" + id);
+			team = DescentIntoDarkness.instance.getScoreboard().registerNewTeam("cave_" + id);
 		}
 		this.team = team;
 	}
@@ -114,7 +114,7 @@ public class CaveTracker {
 		//noinspection ConstantConditions - Bukkit derp
 		String name = offlinePlayer != null && offlinePlayer.getName() != null ? offlinePlayer.getName() : player.toString();
 		name += "_" + spawnEntry.getName();
-		return DescentIntoDarkness.plugin.getCaveTrackerManager().getPollutionObjective().getScore(name);
+		return DescentIntoDarkness.instance.getCaveTrackerManager().getPollutionObjective().getScore(name);
 	}
 
 	public Team getTeam() {
