@@ -6,6 +6,7 @@ import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,22 +20,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class CaveStyles {
-	private LinkedHashMap<String, Integer> caveStyleWeights = null;
+	private Weights caveStyleWeights = null;
 	private Configuration caveStylesConfig;
 	private NavigableMap<String, CaveStyle> caveStyles = null;
 
 	public void reload(ConfigurationSection config) {
-		caveStyleWeights = new LinkedHashMap<>();
+		caveStyleWeights = new Weights();
 		ConfigurationSection caveStylesSection = config.getConfigurationSection("caveStyles");
 		if (caveStylesSection != null) {
 			for (String style : caveStylesSection.getKeys(false)) {
-				caveStyleWeights.put(style, caveStylesSection.getInt(style, 10));
+				caveStyleWeights.weights.put(style, caveStylesSection.getInt(style, 10));
 			}
 		}
 
@@ -69,7 +71,7 @@ public class CaveStyles {
 		getCaveStylesByName();
 	}
 
-	public LinkedHashMap<String, Integer> getCaveStyleWeights() {
+	public Weights getWeights() {
 		return caveStyleWeights;
 	}
 
@@ -238,5 +240,27 @@ public class CaveStyles {
 		}
 
 		styleStack.remove(styleName);
+	}
+
+	public static class Weights {
+		private final LinkedHashMap<String, Integer> weights = new LinkedHashMap<>();
+
+		@Nullable
+		public String getRandom(Random rand) {
+			int totalWeight = weights.values().stream().mapToInt(Integer::intValue).sum();
+			int randVal = rand.nextInt(totalWeight);
+			for (Map.Entry<String, Integer> entry : weights.entrySet()) {
+				randVal -= entry.getValue();
+				if (randVal < 0) {
+					return entry.getKey();
+				}
+			}
+
+			return null;
+		}
+
+		public void remove(String style) {
+			weights.remove(style);
+		}
 	}
 }

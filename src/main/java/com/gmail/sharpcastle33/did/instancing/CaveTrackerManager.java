@@ -102,24 +102,15 @@ public class CaveTrackerManager {
 	}
 
 	private CaveStyle getRandomStyle() {
-		if (DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().isEmpty()) {
+		String chosenStyle = DescentIntoDarkness.instance.getCaveStyles().getWeights().getRandom(new Random());
+		if (chosenStyle == null) {
 			return null;
-		}
-
-		int totalWeight = DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().values().stream().mapToInt(Integer::intValue).sum();
-		int randVal = new Random().nextInt(totalWeight);
-		String chosenStyle = null;
-		for (Map.Entry<String, Integer> entry : DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().entrySet()) {
-			randVal -= entry.getValue();
-			if (randVal < 0) {
-				chosenStyle = entry.getKey();
-			}
 		}
 
 		CaveStyle caveStyle = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().get(chosenStyle);
 		if (caveStyle == null || caveStyle.isAbstract()) {
 			Bukkit.getLogger().log(Level.SEVERE, "Cannot instantiate cave style: " + chosenStyle);
-			DescentIntoDarkness.instance.getCaveStyles().getCaveStyleWeights().remove(chosenStyle);
+			DescentIntoDarkness.instance.getCaveStyles().getWeights().remove(chosenStyle);
 			return getRandomStyle();
 		}
 		return caveStyle;
