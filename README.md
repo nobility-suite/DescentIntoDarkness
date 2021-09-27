@@ -6,9 +6,12 @@ Descent is inteded for use as an instanced system. Cave systems are generated in
 
 *Descent is an experimental concept plugin for CivEx: reddit.com/r/civex *
 
+A video showcase of some of the caves created by Samnrad can be found [here: Video](https://www.reddit.com/r/CivEx/comments/l8z72a/descent_trailer_2/)
+
 ---
 
-![Image 1](https://raw.githubusercontent.com/nobility-suite/DescentIntoDarkness/master/img/2020-02-19_16.22.12.png)
+![Image 0](https://raw.githubusercontent.com/nobility-suite/DescentIntoDarkness/master/img/Screenshot_from_2020-08-13_21-44-05.png)
+
 
 The vision behind Descent is to provide players with a new, engaging mining experience. Instead of grinding aimlessly, Descent allows you to create instanced subterranean "dungeon runs," which become more challenging the deeper players explore and the longer they stay.
 
@@ -16,3 +19,6 @@ Descent is intended to have a survival atmosphere. Caves are not filled with ene
 
 A hidden risk score tracks how cautious players are, and determines when to ramp up the difficulty.
 
+![Image 1](https://raw.githubusercontent.com/nobility-suite/DescentIntoDarkness/master/img/2020-02-19_16.22.12.png)
+
+![Image 2](https://raw.githubusercontent.com/nobility-suite/DescentIntoDarkness/master/img/2020-02-19_16.22.38.png)
