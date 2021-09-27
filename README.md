@@ -6,6 +6,9 @@ Descent is inteded for use as an instanced system. Cave systems are generated in
 
 *Descent is an experimental concept plugin for CivEx: reddit.com/r/civex *
 
+
+**Video Showcase**
+
 A video showcase of some of the caves created by Samnrad can be found [here: Video](https://www.reddit.com/r/CivEx/comments/l8z72a/descent_trailer_2/)
 
 ---
