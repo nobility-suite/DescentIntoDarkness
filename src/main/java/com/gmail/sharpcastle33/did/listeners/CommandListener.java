@@ -325,7 +325,7 @@ public class CommandListener implements TabExecutor {
 
 		Location pos = p.getLocation();
 		DescentIntoDarkness.instance.runAsync(() -> {
-			try (EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(BukkitAdapter.adapt(p.getWorld()), -1)) {
+			try (EditSession session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(p.getWorld()))) {
 				CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius.getAsInt(), yRadius.getAsInt());
 			}
 		}).whenComplete((v, throwable) -> {

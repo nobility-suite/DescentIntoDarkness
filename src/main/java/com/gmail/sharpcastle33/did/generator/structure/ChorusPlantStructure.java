@@ -1,12 +1,12 @@
 package com.gmail.sharpcastle33.did.generator.structure;
 
+import com.fastasyncworldedit.core.registry.state.PropertyKey;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.registry.state.PropertyKey;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;

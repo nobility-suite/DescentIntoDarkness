@@ -1,19 +1,17 @@
 package com.gmail.sharpcastle33.did;
 
+import com.fastasyncworldedit.core.registry.state.PropertyKey;
 import com.gmail.sharpcastle33.did.generator.Centroid;
-import com.sk89q.jnbt.CompoundTag;
-import com.sk89q.jnbt.DoubleTag;
-import com.sk89q.jnbt.ListTagBuilder;
-import com.sk89q.jnbt.NBTInputStream;
-import com.sk89q.jnbt.NBTOutputStream;
-import com.sk89q.jnbt.NamedTag;
 import com.sk89q.worldedit.extent.transform.BlockTransformExtent;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.math.transform.AffineTransform;
 import com.sk89q.worldedit.math.transform.Transform;
-import com.sk89q.worldedit.registry.state.PropertyKey;
 import com.sk89q.worldedit.util.Direction;
+import com.sk89q.worldedit.util.nbt.BinaryTagIO;
+import com.sk89q.worldedit.util.nbt.CompoundBinaryTag;
+import com.sk89q.worldedit.util.nbt.DoubleBinaryTag;
+import com.sk89q.worldedit.util.nbt.ListBinaryTag;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -26,10 +24,9 @@ import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -43,8 +40,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.logging.Level;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 public class Util {
 
@@ -146,12 +141,12 @@ public class Util {
 			Object downState = block.getState(PropertyKey.DOWN);
 			Object upState = block.getState(PropertyKey.UP);
 
-			block = block.with(PropertyKey.valueOf(newNorth.name().toUpperCase(Locale.ROOT)), northState);
-			block = block.with(PropertyKey.valueOf(newSouth.name().toUpperCase(Locale.ROOT)), southState);
-			block = block.with(PropertyKey.valueOf(newWest.name().toUpperCase(Locale.ROOT)), westState);
-			block = block.with(PropertyKey.valueOf(newEast.name().toUpperCase(Locale.ROOT)), eastState);
-			block = block.with(PropertyKey.valueOf(newDown.name().toUpperCase(Locale.ROOT)), downState);
-			block = block.with(PropertyKey.valueOf(newUp.name().toUpperCase(Locale.ROOT)), upState);
+			block = block.with(PropertyKey.getByName(newNorth.name().toLowerCase(Locale.ROOT)), northState);
+			block = block.with(PropertyKey.getByName(newSouth.name().toLowerCase(Locale.ROOT)), southState);
+			block = block.with(PropertyKey.getByName(newWest.name().toLowerCase(Locale.ROOT)), westState);
+			block = block.with(PropertyKey.getByName(newEast.name().toLowerCase(Locale.ROOT)), eastState);
+			block = block.with(PropertyKey.getByName(newDown.name().toLowerCase(Locale.ROOT)), downState);
+			block = block.with(PropertyKey.getByName(newUp.name().toLowerCase(Locale.ROOT)), upState);
 
 			return block;
 		}
@@ -181,18 +176,13 @@ public class Util {
 			return false;
 		}
 
-		NamedTag playerData;
-		try (NBTInputStream in = new NBTInputStream(new GZIPInputStream(new FileInputStream(playerFile)))) {
-			playerData = in.readNamedTag();
+		CompoundBinaryTag playerTag;
+		try {
+			playerTag = BinaryTagIO.reader().read(playerFile.toPath(), BinaryTagIO.Compression.GZIP);
 		} catch (IOException e) {
 			Bukkit.getLogger().log(Level.SEVERE, "Could not teleport offline player", e);
 			return false;
 		}
-		if (!(playerData.getTag() instanceof CompoundTag)) {
-			Bukkit.getLogger().log(Level.SEVERE, "Corrupted player data");
-			return false;
-		}
-		CompoundTag playerTag = (CompoundTag) playerData.getTag();
 
 		World destWorld = destination.getWorld();
 		if (destWorld != null) {
@@ -204,21 +194,19 @@ public class Util {
 				default: id = 0; break;
 			}
 			UUID uuid = destWorld.getUID();
-			playerTag = playerTag.createBuilder()
+			playerTag = playerTag
 					.putInt("Dimension", id)
 					.putLong("WorldUUIDLeast", uuid.getLeastSignificantBits())
-					.putLong("WorldUUIDMost", uuid.getMostSignificantBits())
-					.build();
+					.putLong("WorldUUIDMost", uuid.getMostSignificantBits());
 		}
 
-		playerTag = playerTag.createBuilder().put("Pos", ListTagBuilder.createWith(
-				new DoubleTag(destination.getX()),
-				new DoubleTag(destination.getY()),
-				new DoubleTag(destination.getZ())).build()).build();
+		playerTag = playerTag.put("Pos", ListBinaryTag.from(Arrays.asList(
+				DoubleBinaryTag.of(destination.getX()),
+				DoubleBinaryTag.of(destination.getY()),
+				DoubleBinaryTag.of(destination.getZ()))));
 
-		try (NBTOutputStream out = new NBTOutputStream(new GZIPOutputStream(new FileOutputStream(playerFile)))) {
-			out.writeNamedTag("", playerTag);
-			out.flush();
+		try {
+			BinaryTagIO.writer().write(playerTag, playerFile.toPath(), BinaryTagIO.Compression.GZIP);
 		} catch (IOException e) {
 			Bukkit.getLogger().log(Level.SEVERE, "Could not teleport offline player", e);
 			return false;

@@ -63,7 +63,7 @@ public class CaveGenContext implements AutoCloseable {
 	}
 
 	public static CaveGenContext create(World world, CaveStyle style, Random rand) {
-		EditSession session = WorldEdit.getInstance().getEditSessionFactory().getEditSession(world, -1);
+		EditSession session = WorldEdit.getInstance().newEditSession(world);
 		return new CaveGenContext(session, style, rand);
 	}
 
