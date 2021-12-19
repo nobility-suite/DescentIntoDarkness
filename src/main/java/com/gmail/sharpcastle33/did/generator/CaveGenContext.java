@@ -15,6 +15,7 @@ import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
 import com.sk89q.worldedit.world.World;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -174,8 +175,28 @@ public class CaveGenContext implements AutoCloseable {
 			}
 
 			@Override
+			public BlockState getBlock(int x, int y, int z) {
+				return CaveGenContext.this.getBlock(BlockVector3.at(x, y, z));
+			}
+
+			@Override
+			public BaseBlock getFullBlock(BlockVector3 position) {
+				return CaveGenContext.this.getBlock(position).toBaseBlock();
+			}
+
+			@Override
+			public BaseBlock getFullBlock(int x, int y, int z) {
+				return CaveGenContext.this.getBlock(BlockVector3.at(x, y, z)).toBaseBlock();
+			}
+
+			@Override
 			public <T extends BlockStateHolder<T>> boolean setBlock(BlockVector3 location, T block) throws WorldEditException {
 				return CaveGenContext.this.setBlock(location, block);
+			}
+
+			@Override
+			public <T extends BlockStateHolder<T>> boolean setBlock(int x, int y, int z, T block) throws WorldEditException {
+				return CaveGenContext.this.setBlock(BlockVector3.at(x, y, z), block);
 			}
 		};
 	}
