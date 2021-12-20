@@ -8,6 +8,7 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.util.Direction;
+import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
@@ -161,16 +162,26 @@ public class ChorusPlantStructure extends Structure {
 			}
 		}
 
+		BlockState blockAbove = ctx.getBlock(pos.add(0, 1, 0));
+		if (blockAbove.getBlockType() == stemBlock.getBlockType() || blockAbove.getBlockType() == flowerBlock.getBlockType()) {
+			return canReplace(ctx, blockAbove);
+		}
+
 		return true;
 	}
 
 	@Override
 	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
-		ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock));
-		int radius = minRadius + ctx.rand.nextInt(maxRadius - minRadius + 1);
-		int numLayers = minNumLayers + ctx.rand.nextInt(maxNumLayers - minNumLayers + 1);
-		generate(ctx, pos, pos, radius, 0, numLayers, force);
+		if (canReplace(ctx, ctx.getBlock(pos))
+				&& canReplace(ctx, ctx.getBlock(pos.add(0, 1, 0)))
+				&& isSurroundedByAir(ctx, pos.add(0, 1, 0), null)
+		) {
+			ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock));
+			int radius = minRadius + ctx.rand.nextInt(maxRadius - minRadius + 1);
+			int numLayers = minNumLayers + ctx.rand.nextInt(maxNumLayers - minNumLayers + 1);
+			generate(ctx, pos, pos, radius, 0, numLayers, force);
+		}
 	}
 
 	private void generate(CaveGenContext ctx, BlockVector3 pos, BlockVector3 rootPos, int radius, int layer, int numLayers, boolean force) {
@@ -181,7 +192,8 @@ public class ChorusPlantStructure extends Structure {
 
 		for (int i = 0; i < length; i++) {
 			BlockVector3 offsetPos = pos.add(0, i + 1, 0);
-			if (!force && !isSurroundedByAir(ctx, offsetPos, null)) {
+			if (!force && (!canReplace(ctx, ctx.getBlock(offsetPos)) || !isSurroundedByAir(ctx, offsetPos, null))) {
+				ctx.setBlock(pos.add(0, i, 0), flowerBlock);
 				return;
 			}
 
@@ -190,7 +202,6 @@ public class ChorusPlantStructure extends Structure {
 		}
 
 		boolean extended = false;
-		BlockVector3 offsetPos = pos;
 		if (layer < numLayers) {
 			double flowerChanceHere = layer == 0 ? initialFlowerChance : flowerChance;
 			if (ctx.rand.nextDouble() >= flowerChanceHere) {
@@ -202,18 +213,23 @@ public class ChorusPlantStructure extends Structure {
 				for (int i = 0; i < branchFactor; i++) {
 					Direction direction = Direction.valuesOf(Direction.Flag.CARDINAL).get(ctx.rand.nextInt(4));
 					int hLength = minHLength + ctx.rand.nextInt(maxHLength - minHLength + 1);
-					for (int j = 0; j < hLength; j++) {
-						offsetPos = pos.add(0, length, 0).add(direction.toBlockVector().multiply(j));
+					for (int j = 1; j < hLength; j++) {
+						BlockVector3 offsetPos = pos.add(0, length, 0).add(direction.toBlockVector().multiply(j));
 						if (Math.abs(offsetPos.getX() - rootPos.getX()) < radius
 								&& Math.abs(offsetPos.getZ() - rootPos.getZ()) < radius && canReplace(ctx, ctx.getBlock(offsetPos))
 								&& canReplace(ctx, ctx.getBlock(offsetPos.add(0, -1, 0)))
 								&& isSurroundedByAir(ctx, offsetPos, Util.getOpposite(direction))) {
+							extended = true;
 							ctx.setBlock(offsetPos, withConnectionProperties(ctx, offsetPos, stemBlock));
 							ctx.setBlock(offsetPos.subtract(direction.toBlockVector()), withConnectionProperties(ctx, offsetPos.subtract(direction.toBlockVector()), stemBlock));
 							if (j == hLength - 1) {
-								extended = true;
 								generate(ctx, offsetPos, rootPos, radius, layer + 1, numLayers, force);
 							}
+						} else {
+							if (j != 1) {
+								ctx.setBlock(offsetPos.subtract(direction.toBlockVector()), flowerBlock);
+							}
+							break;
 						}
 					}
 				}
@@ -221,7 +237,7 @@ public class ChorusPlantStructure extends Structure {
 		}
 
 		if (!extended) {
-			ctx.setBlock(offsetPos, flowerBlock);
+			ctx.setBlock(pos.add(0, length, 0), flowerBlock);
 		}
 
 	}
