@@ -63,8 +63,7 @@ public class RavineRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		int length = minLength + ctx.rand.nextInt(maxLength - minLength + 1);
 		int height = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
 		int width = minWidth + ctx.rand.nextInt(maxWidth - minWidth + 1);
@@ -73,29 +72,26 @@ public class RavineRoom extends Room {
 			turn = -turn;
 		}
 		// move the origin to the center of the ravine
-		Vector3 origin = location.add(direction.multiply(width * 0.5));
-		Vector3 entrance = getRandomEntranceLocation(ctx, origin, direction, length, height, width, turn);
+		Vector3 origin = roomData.location.add(roomData.direction.multiply(width * 0.5));
+		Vector3 entrance = getRandomEntranceLocation(ctx, origin, roomData.direction, length, height, width, turn);
 		// entrance should in fact be at location, move the origin of the ravine
-		origin = origin.add(location.subtract(entrance));
+		origin = origin.add(roomData.location.subtract(entrance));
 		return new Object[]{length, height, width, turn, origin};
 	}
 
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx, RoomData roomData, Object[] userData) {
 		int length = (Integer) userData[0];
 		int height = (Integer) userData[1];
 		int width = (Integer) userData[2];
 		double turn = (Double) userData[3];
 		Vector3 origin = (Vector3) userData[4];
 		// Get an exit location by getting an entrance location but inverting stuff
-		return getRandomEntranceLocation(ctx, origin, direction.multiply(-1), length, height, width, -turn);
+		return getRandomEntranceLocation(ctx, origin, roomData.direction.multiply(-1), length, height, width, -turn);
 	}
 
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		int length = (Integer) userData[0];
 		int height = (Integer) userData[1];
 		int width = (Integer) userData[2];
@@ -105,7 +101,7 @@ public class RavineRoom extends Room {
 		double turnPerBlock = Math.toRadians(turn / length);
 		for (int dir : new int[]{-1, 1}) {
 			Vector3 localPosition = origin;
-			Vector3 localDirection = Util.rotateAroundY(direction, Math.PI / 2 * dir);
+			Vector3 localDirection = Util.rotateAroundY(roomData.direction, Math.PI / 2 * dir);
 			int distanceSinceCentroids = dir == -1 ? Integer.MAX_VALUE - 1 : 0;
 
 			for (int distance = 0; distance < length / 2; distance++) {
@@ -127,7 +123,7 @@ public class RavineRoom extends Room {
 							Vector3 centroidPos = localPosition.add(
 									horizontalVector.multiply(-localWidth * 0.5 + gap * 0.5 + x * localWidth / numCentroidsAcross)
 							).add(0, gap * 0.5 + (double) y * height / numCentroidsVertically, 0);
-							centroids.add(new Centroid(centroidPos, centroidRadius, tags));
+							centroids.add(new Centroid(centroidPos, centroidRadius, roomData));
 						}
 					}
 				}

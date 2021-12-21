@@ -2,7 +2,6 @@ package com.gmail.sharpcastle33.did.generator.room;
 
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.Centroid;
-import com.sk89q.worldedit.math.Vector3;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.List;
@@ -17,10 +16,8 @@ public class SimpleRoom extends Room {
 	}
 
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
-		centroids.add(new Centroid(location, caveRadius, tags));
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
+		centroids.add(new Centroid(roomData.location, roomData.caveRadius, roomData));
 	}
 
 	@Override

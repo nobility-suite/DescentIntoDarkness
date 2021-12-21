@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import com.gmail.sharpcastle33.did.generator.room.Room;
+import com.gmail.sharpcastle33.did.generator.room.RoomData;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -17,7 +18,7 @@ import org.bukkit.Bukkit;
 
 public class ModuleGenerator {
 
-	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids, List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public static void read(CaveGenContext ctx, LayoutGenerator.Layout layout, Vector3 start, Vector3 dir, int caveRadius, List<Centroid> centroids, List<List<Vector3>> roomLocations) {
 		String cave = layout.getValue();
 		Bukkit.getLogger().log(Level.INFO, "Beginning module generation... " + cave.length() + " modules.");
 		Bukkit.getLogger().log(Level.INFO, "Cave string: " + cave);
@@ -25,33 +26,41 @@ public class ModuleGenerator {
 		Map<Character, Room> rooms = ctx.style.getRooms().stream()
 				.collect(Collectors.groupingBy(Room::getSymbol, Collectors.reducing(null, (a, b) -> a == null ? b : a)));
 
-		int roomStartIndex = roomStarts.size();
-
 		List<Vector3> theseRoomLocations = new ArrayList<>();
 		roomLocations.add(theseRoomLocations);
 
 		Vector3 location = start;
 		for (int i = 0; i < cave.length(); i++) {
-			roomStarts.add(centroids.size());
 			Room room = rooms.get(cave.charAt(i));
 			List<String> tags = new ArrayList<>(layout.getTags().get(i));
 			tags.addAll(room.getTags());
-			Object[] userData = room.createUserData(ctx, location, dir, caveRadius, tags, roomLocations);
-			room.addCentroids(ctx, location, dir, caveRadius, tags, userData, centroids, roomStarts, roomLocations);
-			dir = room.adjustDirection(ctx, dir, userData);
-			location = room.adjustLocation(ctx, location, dir, caveRadius, userData);
+			int roomIndex = centroids.isEmpty() ? 0 : centroids.get(centroids.size() - 1).roomIndex + 1;
+			RoomData roomData = new RoomData(location, dir, caveRadius, tags, roomLocations, roomIndex);
+			Object[] userData = room.createUserData(ctx, roomData);
+			room.addCentroids(ctx, roomData, userData, centroids);
+			dir = room.adjustDirection(ctx, roomData, userData);
+			roomData = roomData.withDirection(dir);
+			location = room.adjustLocation(ctx, roomData, userData);
 			theseRoomLocations.add(location);
 		}
 
-		for (int i = roomStartIndex; i < roomStarts.size(); i++) {
-			int roomStart = roomStarts.get(i);
-			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
+		int roomStart = 0;
+		while (roomStart < centroids.size()) {
+			int roomIndex = centroids.get(roomStart).roomIndex;
+			int roomEnd;
+			roomEnd = roomStart;
+			while (roomEnd < centroids.size() && centroids.get(roomEnd).roomIndex == roomIndex) {
+				roomEnd++;
+			}
+
 			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
 			int minRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
 			int maxRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
 			for (Centroid centroid : roomCentroids) {
 				deleteCentroid(ctx, centroid, minRoomY, maxRoomY);
 			}
+
+			roomStart = roomEnd;
 		}
 	}
 

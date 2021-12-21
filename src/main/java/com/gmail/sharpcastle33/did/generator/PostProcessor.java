@@ -21,18 +21,26 @@ public class PostProcessor {
 
 	private static final int STRUCTURE_CHANCE_ADJUST = 6 * 6;
 
-	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<Integer> roomStarts, List<List<Vector3>> roomLocations) throws WorldEditException {
+	public static void postProcess(CaveGenContext ctx, List<Centroid> centroids, List<List<Vector3>> roomLocations) throws WorldEditException {
 		Bukkit.getLogger().log(Level.WARNING, "Beginning smoothing pass... " + centroids.size() + " centroids.");
 
-		for (int i = 0; i < roomStarts.size(); i++) {
-			int roomStart = roomStarts.get(i);
-			int roomEnd = i == roomStarts.size() - 1 ? centroids.size() : roomStarts.get(i + 1);
+		int roomStart = 0;
+		while (roomStart < centroids.size()) {
+			int roomIndex = centroids.get(roomStart).roomIndex;
+			int roomEnd;
+			roomEnd = roomStart;
+			while (roomEnd < centroids.size() && centroids.get(roomEnd).roomIndex == roomIndex) {
+				roomEnd++;
+			}
+
 			List<Centroid> roomCentroids = centroids.subList(roomStart, roomEnd);
 			int minRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() - centroid.size).min().orElse(0);
 			int maxRoomY = roomCentroids.stream().mapToInt(centroid -> centroid.pos.getBlockY() + centroid.size).max().orElse(255);
 			for (Centroid centroid : roomCentroids) {
 				smooth(ctx, centroid, minRoomY, maxRoomY);
 			}
+
+			roomStart = roomEnd;
 		}
 
 		Bukkit.getLogger().log(Level.WARNING, "Beginning painter pass...");

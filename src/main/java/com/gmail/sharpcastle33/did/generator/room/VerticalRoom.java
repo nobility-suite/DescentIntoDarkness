@@ -38,35 +38,32 @@ public class VerticalRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		double pitch = minPitch + ctx.rand.nextDouble() * (maxPitch - minPitch);
 		int length = minLength + ctx.rand.nextInt(maxLength - minLength + 1);
 		return new Object[]{pitch, length};
 	}
 
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx,
+								  RoomData roomData, Object[] userData) {
 		double pitch = (Double) userData[0];
 		int length = (Integer) userData[1];
-		return location
-				.add(direction.multiply(length * caveRadius * Math.cos(pitch)))
-				.add(0, length * caveRadius * Math.sin(-pitch), 0);
+		return roomData.location
+				.add(roomData.direction.multiply(length * roomData.caveRadius * Math.cos(pitch)))
+				.add(0, length * roomData.caveRadius * Math.sin(-pitch), 0);
 	}
 
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		double pitch = (Double) userData[0];
 		int length = (Integer) userData[1];
 
-		Vector3 moveVec = direction.multiply(caveRadius * Math.cos(pitch))
-				.add(0, caveRadius * Math.sin(-pitch), 0);
-		Vector3 pos = location;
+		Vector3 moveVec = roomData.direction.multiply(roomData.caveRadius * Math.cos(pitch))
+				.add(0, roomData.caveRadius * Math.sin(-pitch), 0);
+		Vector3 pos = roomData.location;
 		for (int i = 0; i < length; i++) {
-			centroids.add(new Centroid(pos, caveRadius, tags));
+			centroids.add(new Centroid(pos, roomData.caveRadius, roomData));
 			pos = pos.add(moveVec);
 		}
 	}

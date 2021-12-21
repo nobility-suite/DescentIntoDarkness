@@ -36,19 +36,19 @@ public abstract class Room {
 		return tags;
 	}
 
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		return null;
 	}
 
-	public Vector3 adjustDirection(CaveGenContext ctx, Vector3 direction, Object[] userData) {
-		return direction;
+	public Vector3 adjustDirection(CaveGenContext ctx, RoomData roomData, Object[] userData) {
+		return roomData.direction;
 	}
 
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, Object[] userData) {
-		return ModuleGenerator.vary(ctx, location).add(direction.multiply(caveRadius));
+	public Vector3 adjustLocation(CaveGenContext ctx, RoomData roomData, Object[] userData) {
+		return ModuleGenerator.vary(ctx, roomData.location).add(roomData.direction.multiply(roomData.caveRadius));
 	}
 
-	public abstract void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius, List<String> tags, Object[] userData, List<Centroid> centroids, List<Integer> roomStarts, List<List<Vector3>> roomLocations);
+	public abstract void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids);
 
 	public final void serialize(ConfigurationSection map) {
 		map.set("type", ConfigUtil.enumToString(type));

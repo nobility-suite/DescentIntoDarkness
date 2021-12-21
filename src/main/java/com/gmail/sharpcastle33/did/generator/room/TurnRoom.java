@@ -26,15 +26,13 @@ public class TurnRoom extends Room {
 	}
 
 	@Override
-	public Vector3 adjustDirection(CaveGenContext ctx, Vector3 direction, Object[] userData) {
-		return Util.rotateAroundY(direction, Math.toRadians(minAngle + ctx.rand.nextDouble() * (maxAngle - minAngle)));
+	public Vector3 adjustDirection(CaveGenContext ctx, RoomData roomData, Object[] userData) {
+		return Util.rotateAroundY(roomData.direction, Math.toRadians(minAngle + ctx.rand.nextDouble() * (maxAngle - minAngle)));
 	}
 
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
-		centroids.add(new Centroid(location, caveRadius, tags));
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
+		centroids.add(new Centroid(roomData.location, roomData.caveRadius, roomData));
 	}
 
 	@Override

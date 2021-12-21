@@ -68,8 +68,7 @@ public class PitMineRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		int numSteps = minSteps + ctx.rand.nextInt(maxSteps - minSteps + 1);
 		List<Step> steps = new ArrayList<>(numSteps);
 		int radius = (minBaseWidth + ctx.rand.nextInt(maxBaseWidth - minBaseWidth + 1) + 1) / 2;
@@ -77,7 +76,7 @@ public class PitMineRoom extends Room {
 		for (int i = 0; i < numSteps; i++) {
 			int height = minStepHeight + ctx.rand.nextInt(maxStepHeight - minStepHeight + 1);
 			steps.add(new Step(
-					location.add(0, dy, 0),
+					roomData.location.add(0, dy, 0),
 					radius + minStepVariance + ctx.rand.nextDouble() * (maxStepVariance - minStepVariance),
 					radius + minStepVariance + ctx.rand.nextDouble() * (maxStepVariance - maxStepVariance),
 					2 * Math.PI * ctx.rand.nextDouble(),
@@ -88,10 +87,10 @@ public class PitMineRoom extends Room {
 		}
 
 		int entranceStep = ctx.rand.nextInt(numSteps);
-		Vector3 entrancePos = steps.get(entranceStep).getEdge(Math.PI + Math.atan2(direction.getZ(),
-				direction.getX()));
+		Vector3 entrancePos = steps.get(entranceStep).getEdge(Math.PI + Math.atan2(roomData.direction.getZ(),
+				roomData.direction.getX()));
 		// entrancePos should actually be at location, shift everything by this vector
-		Vector3 shift = location.subtract(entrancePos);
+		Vector3 shift = roomData.location.subtract(entrancePos);
 		for (Step step : steps) {
 			step.center = step.center.add(shift);
 		}
@@ -101,20 +100,19 @@ public class PitMineRoom extends Room {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx,
+								  RoomData roomData, Object[] userData) {
 		List<Step> steps = (List<Step>) userData[0];
 		Step exitStep = steps.get(ctx.rand.nextInt(steps.size()));
-		double exitAngle = Math.atan2(direction.getZ(), direction.getX());
+		double exitAngle = Math.atan2(roomData.direction.getZ(), roomData.direction.getX());
 		exitAngle += -Math.PI / 2 + ctx.rand.nextDouble() * Math.PI; // -90 to 90 degrees
 		return exitStep.getEdge(exitAngle);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx,
+							 RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		List<Step> steps = (List<Step>) userData[0];
 		for (Step step : steps) {
 			int centroidWidth = Math.max(3, Math.min(10, Math.min(step.height, (int) Math.ceil(Math.min(step.rx,
@@ -134,7 +132,7 @@ public class PitMineRoom extends Room {
 					for (int y = 0; y < numCentroidsVertically; y++) {
 						centroids.add(new Centroid(xzPos.add(0,
 								gap * 0.5 + (double) y * step.height / numCentroidsVertically, 0), centroidRadius,
-								tags));
+								roomData));
 					}
 				}
 			}

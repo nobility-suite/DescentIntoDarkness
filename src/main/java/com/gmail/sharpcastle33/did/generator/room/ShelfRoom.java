@@ -40,89 +40,75 @@ public class ShelfRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		List<Centroid> centroids = new ArrayList<>();
-		List<Integer> roomStarts = new ArrayList<>();
 		Vector3 newLocation;
 		if (ctx.rand.nextBoolean()) {
-			newLocation = generateFromBottom(ctx, location, direction, caveRadius, tags, centroids, roomStarts,
-					roomLocations);
+			newLocation = generateFromBottom(ctx, roomData, centroids);
 		} else {
-			newLocation = generateFromTop(ctx, location, direction, caveRadius, tags, centroids, roomStarts,
-					roomLocations);
+			newLocation = generateFromTop(ctx, roomData, centroids);
 		}
-		Util.ensureConnected(centroids, caveRadius, pos -> new Centroid(pos, caveRadius, tags));
+		Util.ensureConnected(centroids, roomData.caveRadius, pos -> new Centroid(pos, roomData.caveRadius, roomData));
 		return new Object[]{newLocation, centroids};
 	}
 
-	private Vector3 generateFromBottom(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-									   List<String> tags, List<Centroid> centroids, List<Integer> roomStarts,
-									   List<List<Vector3>> roomLocations) {
-		Vector3 next = location;
-		next = generateRoom(largeRoom, ctx, next, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
-		next = generateRoom(smallRoom, ctx, next, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
+	private Vector3 generateFromBottom(CaveGenContext ctx, RoomData roomData, List<Centroid> centroids) {
+		Vector3 next = roomData.location;
+		next = generateRoom(largeRoom, ctx, roomData.withLocation(next), centroids);
+		next = generateRoom(smallRoom, ctx, roomData.withLocation(next), centroids);
 
-		Vector3 shelf = location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
+		Vector3 shelf = roomData.location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
 		int dir = ctx.rand.nextBoolean() ? 1 : -1;
-		shelf = shelf.add(Util.rotateAroundY(direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
+		shelf = shelf.add(Util.rotateAroundY(roomData.direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
 
-		int shelfRadius = Math.max(caveRadius, 5);
+		int shelfRadius = Math.max(roomData.caveRadius, 5);
 		int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
 		for (int i = 0; i < shelfSize; i++) {
-			shelf = generateRoom(smallRoom, ctx, shelf, direction, shelfRadius, tags, centroids, roomStarts,
-					roomLocations);
+			shelf = generateRoom(smallRoom, ctx, roomData.withLocation(shelf).withCaveRadius(shelfRadius), centroids);
 			shelf = ModuleGenerator.vary(ctx, shelf);
-			shelf = shelf.add(direction.multiply(shelfRadius));
+			shelf = shelf.add(roomData.direction.multiply(shelfRadius));
 		}
 
 		return next;
 	}
 
-	private Vector3 generateFromTop(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-									List<String> tags, List<Centroid> centroids, List<Integer> roomStarts,
-									List<List<Vector3>> roomLocations) {
-		Vector3 shelf = location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
+	private Vector3 generateFromTop(CaveGenContext ctx, RoomData roomData, List<Centroid> centroids) {
+		Vector3 shelf = roomData.location.add(0, minShelfHeight + ctx.rand.nextInt(maxShelfHeight - minShelfHeight + 1), 0);
 		int dir = ctx.rand.nextBoolean() ? 1 : -1;
-		shelf = shelf.add(Util.rotateAroundY(direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
+		shelf = shelf.add(Util.rotateAroundY(roomData.direction, Math.PI / 2 + ctx.rand.nextDouble() * Math.PI / 18 * dir));
 
-		int shelfRadius = Math.max(caveRadius, 5);
+		int shelfRadius = Math.max(roomData.caveRadius, 5);
 		int shelfSize = minShelfSize + ctx.rand.nextInt(maxShelfSize - minShelfSize + 1);
-		Vector3 next = location;
-		Vector3 newLocation = location;
+		Vector3 next = roomData.location;
+		Vector3 newLocation = roomData.location;
 		for (int i = 0; i < shelfSize; i++) {
-			next = generateRoom(smallRoom, ctx, next, direction, shelfRadius, tags, centroids, roomStarts, roomLocations);
+			next = generateRoom(smallRoom, ctx, roomData.withLocation(next).withCaveRadius(shelfRadius), centroids);
 			next = ModuleGenerator.vary(ctx, next);
 			newLocation = next;
-			next = next.add(direction.multiply(shelfRadius));
+			next = next.add(roomData.direction.multiply(shelfRadius));
 		}
 
-		shelf = generateRoom(largeRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
-		shelf = generateRoom(smallRoom, ctx, shelf, direction, caveRadius, tags, centroids, roomStarts, roomLocations);
+		shelf = generateRoom(largeRoom, ctx, roomData.withLocation(shelf), centroids);
+		shelf = generateRoom(smallRoom, ctx, roomData.withLocation(shelf), centroids);
 
 		return newLocation;
 	}
 
-	private Vector3 generateRoom(Room room, CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								 List<String> tags, List<Centroid> centroids, List<Integer> roomStarts,
-								 List<List<Vector3>> roomLocations) {
-		Object[] userData = room.createUserData(ctx, location, direction, caveRadius, tags, roomLocations);
-		room.addCentroids(ctx, location, direction, caveRadius, tags, userData, centroids, roomStarts, roomLocations);
-		direction = room.adjustDirection(ctx, direction, userData);
-		return room.adjustLocation(ctx, location, direction, caveRadius, userData);
+	private Vector3 generateRoom(Room room, CaveGenContext ctx, RoomData roomData, List<Centroid> centroids) {
+		Object[] userData = room.createUserData(ctx, roomData);
+		room.addCentroids(ctx, roomData, userData, centroids);
+		Vector3 direction = room.adjustDirection(ctx, roomData, userData);
+		return room.adjustLocation(ctx, roomData.withDirection(direction), userData);
 	}
 
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx, RoomData roomData, Object[] userData) {
 		return (Vector3) userData[0];
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		centroids.addAll((List<Centroid>) userData[1]);
 	}
 

@@ -53,13 +53,12 @@ public class CavernRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		List<Centroid> centroids = new ArrayList<>();
 
 		int count = minCentroids + ctx.rand.nextInt(maxCentroids - minCentroids + 1);
 
-		int spread = caveRadius - 1;
+		int spread = roomData.caveRadius - 1;
 		if (spread < minSpread) {
 			spread = minSpread;
 		} else if (spread > maxSpread) {
@@ -83,14 +82,14 @@ public class CavernRoom extends Room {
 				sizeMod = -sizeMod;
 			}
 
-			centroids.add(new Centroid(location.add(tx, ty, tz), spread + sizeMod, tags));
+			centroids.add(new Centroid(roomData.location.add(tx, ty, tz), spread + sizeMod, roomData));
 		}
 
 		if (count > 0) {
 			double minDot = Double.POSITIVE_INFINITY;
 			Vector3 minPos = null;
 			for (Centroid centroid : centroids) {
-				double dot = centroid.pos.dot(direction);
+				double dot = centroid.pos.dot(roomData.direction);
 				if (dot < minDot) {
 					minDot = dot;
 					minPos = centroid.pos;
@@ -98,36 +97,36 @@ public class CavernRoom extends Room {
 			}
 			assert minPos != null;
 
-			Vector3 shift = location.subtract(minPos);
+			Vector3 shift = roomData.location.subtract(minPos);
 			for (Centroid centroid : centroids) {
 				centroid.pos = centroid.pos.add(shift);
 			}
 
-			Util.ensureConnected(centroids, caveRadius, pos -> new Centroid(pos, caveRadius, tags));
+			Util.ensureConnected(centroids, roomData.caveRadius, pos -> new Centroid(pos, roomData.caveRadius, roomData));
 		}
 
 		return new Object[] {centroids};
 	}
 
 	@Override
-	public Vector3 adjustDirection(CaveGenContext ctx, Vector3 direction, Object[] userData) {
+	public Vector3 adjustDirection(CaveGenContext ctx, RoomData roomData, Object[] userData) {
 		double angle = minTurn + ctx.rand.nextDouble() * (maxTurn - minTurn);
 		if (ctx.rand.nextBoolean()) {
 			angle = -angle;
 		}
-		return Util.rotateAroundY(direction, Math.toRadians(angle));
+		return Util.rotateAroundY(roomData.direction, Math.toRadians(angle));
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx,
+								  RoomData roomData, Object[] userData) {
 		List<Centroid> centroids = (List<Centroid>) userData[0];
 		if (centroids.size() > 0) {
 			double maxDot = Double.NEGATIVE_INFINITY;
 			Vector3 maxPos = null;
 			for (Centroid centroid : centroids) {
-				double dot  = centroid.pos.dot(direction);
+				double dot  = centroid.pos.dot(roomData.direction);
 				if (dot > maxDot) {
 					maxDot = dot;
 					maxPos = centroid.pos;
@@ -135,17 +134,16 @@ public class CavernRoom extends Room {
 			}
 			assert maxPos != null;
 
-			return ModuleGenerator.vary(ctx, maxPos).add(direction.multiply(caveRadius));
+			return ModuleGenerator.vary(ctx, maxPos).add(roomData.direction.multiply(roomData.caveRadius));
 		}
 
-		return super.adjustLocation(ctx, location, direction, caveRadius, userData);
+		return super.adjustLocation(ctx, roomData, userData);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx,
+							 RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		centroids.addAll((List<Centroid>) userData[0]);
 	}
 

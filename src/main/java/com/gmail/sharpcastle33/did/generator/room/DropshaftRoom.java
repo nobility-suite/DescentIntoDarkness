@@ -38,32 +38,28 @@ public class DropshaftRoom extends Room {
 	}
 
 	@Override
-	public Object[] createUserData(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								   List<String> tags, List<List<Vector3>> roomLocations) {
+	public Object[] createUserData(CaveGenContext ctx, RoomData roomData) {
 		return new Object[]{minDepth + ctx.rand.nextInt(maxDepth - minDepth + 1)};
 	}
 
 	@Override
-	public Vector3 adjustLocation(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-								  Object[] userData) {
+	public Vector3 adjustLocation(CaveGenContext ctx, RoomData roomData, Object[] userData) {
 		int depth = (Integer) userData[0];
-		if (caveRadius <= 5) {
-			return location.add(0, -(depth - 4), 0);
+		if (roomData.caveRadius <= 5) {
+			return roomData.location.add(0, -(depth - 4), 0);
 		} else {
-			return location.add(0, -(depth - 2), 0);
+			return roomData.location.add(0, -(depth - 2), 0);
 		}
 	}
 
 	@Override
-	public void addCentroids(CaveGenContext ctx, Vector3 location, Vector3 direction, int caveRadius,
-							 List<String> tags, Object[] userData, List<Centroid> centroids,
-							 List<Integer> roomStarts, List<List<Vector3>> roomLocations) {
+	public void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids) {
 		int depth = (Integer) userData[0];
 		int i = 0;
-		int radius = caveRadius >= 4 ? caveRadius - 1 : caveRadius;
-		Vector3 loc = location;
+		int radius = roomData.caveRadius >= 4 ? roomData.caveRadius - 1 : roomData.caveRadius;
+		Vector3 loc = roomData.location;
 		while (i < depth) {
-			centroids.add(new Centroid(loc, radius, tags));
+			centroids.add(new Centroid(loc, radius, roomData));
 			loc = ModuleGenerator.vary(ctx, loc);
 			int step = minStep + ctx.rand.nextInt(maxStep - minStep + 1);
 			loc = loc.add(0, -step, 0);
