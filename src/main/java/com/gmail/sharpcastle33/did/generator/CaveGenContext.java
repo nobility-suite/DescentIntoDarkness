@@ -41,6 +41,7 @@ public class CaveGenContext implements AutoCloseable {
 	private final Deque<Transform> locationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> inverseLocationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private Region limit = null;
+	private boolean canceled = false;
 
 	private CaveGenContext(EditSession session, CaveStyle style, Random rand) {
 		this.session = session;
@@ -201,8 +202,19 @@ public class CaveGenContext implements AutoCloseable {
 		};
 	}
 
+	public boolean cancel() {
+		canceled = true;
+		session.cancel();
+		return true;
+	}
+
 	@Override
 	public void close() {
+		if (canceled) {
+			session.close();
+			return;
+		}
+
 		// fill chunks neighboring accessed chunks
 		Bukkit.getLogger().log(Level.INFO, "Filling neighbor chunks...");
 		Set<BlockVector2> filledChunks = new HashSet<>(accessedChunks);

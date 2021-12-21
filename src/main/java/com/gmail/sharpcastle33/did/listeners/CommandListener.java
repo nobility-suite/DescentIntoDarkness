@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import com.fastasyncworldedit.core.internal.exception.FaweException;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -46,7 +47,8 @@ import net.md_5.bungee.api.ChatColor;
 
 public class CommandListener implements TabExecutor {
 	
-	private HashMap<UUID,Long> playerSeeds;
+	private final HashMap<UUID,Long> playerSeeds;
+	private CaveGenContext currentCaveGen;
 	
 	public CommandListener() {
 		this.playerSeeds = new HashMap<UUID,Long>();
@@ -71,6 +73,9 @@ public class CommandListener implements TabExecutor {
 				break;
 			case "generate":
 				generate(p, args);
+				break;
+			case "cancel":
+				cancel(p, args);
 				break;
 			case "debug":
 				debug(p,args);
@@ -232,6 +237,12 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
+	private void cancel(Player p, String[] args) {
+		if (currentCaveGen != null) {
+			currentCaveGen.cancel();
+		}
+	}
+
 	public static void join(Player p, String[] args) {
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
 		CompletableFuture<CaveTracker> cave;
@@ -346,6 +357,11 @@ public class CommandListener implements TabExecutor {
 		if (!seed.isPresent()) return;
 		boolean debug = args.length > 5 && Boolean.parseBoolean(args[5]);
 
+		if (currentCaveGen != null) {
+			p.sendMessage(ChatColor.DARK_RED + "Already generating cave");
+			return;
+		}
+
 		CaveStyle style = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().get(styleName);
 		if (style == null) {
 			p.sendMessage(ChatColor.DARK_RED + "No such cave style " + styleName);
@@ -363,12 +379,19 @@ public class CommandListener implements TabExecutor {
 		}
 		DescentIntoDarkness.instance.supplyAsync(() -> {
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, new Random(seed.getAsLong())).setDebug(debug)) {
+				currentCaveGen = ctx;
 				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size.getAsInt());
 			}
 		}).whenComplete((s, throwable) -> {
+			currentCaveGen = null;
 			if (throwable != null) {
-				DescentIntoDarkness.instance.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed"));
-				Bukkit.getLogger().log(Level.SEVERE, "Failed to generate cave", throwable);
+				if (throwable instanceof FaweException && ((FaweException) throwable).getType() == FaweException.Type.MANUAL) {
+					p.sendMessage(ChatColor.GREEN + "Canceled cave generation");
+					Bukkit.getLogger().log(Level.INFO, "Canceled cave generation");
+				} else {
+					DescentIntoDarkness.instance.runSyncLater(() -> p.sendMessage(ChatColor.DARK_RED + "Failed"));
+					Bukkit.getLogger().log(Level.SEVERE, "Failed to generate cave", throwable);
+				}
 			} else {
 				DescentIntoDarkness.instance.runSyncLater(() -> {
 					p.sendMessage(ChatColor.GREEN + "Done! Cave layout: " + s);
@@ -384,7 +407,7 @@ public class CommandListener implements TabExecutor {
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {
-			return StringUtil.copyPartialMatches(args[0], Arrays.asList("delete", "generate", "join", "leave", "list", "reload"), new ArrayList<>());
+			return StringUtil.copyPartialMatches(args[0], Arrays.asList("delete", "generate", "cancel", "join", "leave", "list", "reload"), new ArrayList<>());
 		} else {
 			switch (args[0]) {
 				case "generate":
