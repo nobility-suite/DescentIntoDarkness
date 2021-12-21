@@ -240,6 +240,8 @@ public class CommandListener implements TabExecutor {
 	private void cancel(Player p, String[] args) {
 		if (currentCaveGen != null) {
 			currentCaveGen.cancel();
+		} else {
+			p.sendMessage(ChatColor.DARK_RED + "No cave generation in progress");
 		}
 	}
 
