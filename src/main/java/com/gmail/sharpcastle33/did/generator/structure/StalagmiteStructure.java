@@ -3,17 +3,18 @@ package com.gmail.sharpcastle33.did.generator.structure;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
+import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.util.Direction;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.List;
 
 public class StalagmiteStructure extends Structure {
-	private final BlockStateHolder<?> block;
+	private final BlockProvider block;
 	private final int floorToCeilingSearchRange;
 	private final float maxColumnRadiusToCaveHeightRatio;
 	private final int minColumnRadius;
@@ -32,7 +33,7 @@ public class StalagmiteStructure extends Structure {
 
 	protected StalagmiteStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.STALAGMITE, map);
-		this.block = ConfigUtil.parseBlock(ConfigUtil.requireString(map, "block"));
+		this.block = ConfigUtil.parseBlockProvider(ConfigUtil.require(map, "block"));
 		this.floorToCeilingSearchRange = map.getInt("floorToCeilingSearchRange", 30);
 		if (floorToCeilingSearchRange < 1 || floorToCeilingSearchRange > 512) {
 			throw new InvalidConfigException("floorToCeilingSearchRange must be 1-512");
@@ -88,27 +89,7 @@ public class StalagmiteStructure extends Structure {
 	}
 
 	@Override
-	protected void serialize0(ConfigurationSection map) {
-		map.set("block", block);
-		map.set("floorToCeilingSearchRange", floorToCeilingSearchRange);
-		map.set("maxColumnRadiusToCaveHeightRatio", maxColumnRadiusToCaveHeightRatio);
-		map.set("minColumnRadius", minColumnRadius);
-		map.set("maxColumnRadius", maxColumnRadius);
-		map.set("minStalagmiteBluntness", minStalagmiteBluntness);
-		map.set("maxStalagmiteBluntness", maxStalagmiteBluntness);
-		map.set("minStalactiteBluntness", minStalactiteBluntness);
-		map.set("maxStalactiteBluntness", maxStalactiteBluntness);
-		map.set("minHeightScale", minHeightScale);
-		map.set("maxHeightScale", maxHeightScale);
-		map.set("minWindSpeed", minWindSpeed);
-		map.set("maxWindSpeed", maxWindSpeed);
-		map.set("minRadiusForWind", minRadiusForWind);
-		map.set("minBluntnessForWind", minBluntnessForWind);
-		map.set("hasStalactite", hasStalactite);
-	}
-
-	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
+	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 
 		if (!force && !canReplace(ctx, ctx.getBlock(pos))) {
@@ -164,10 +145,10 @@ public class StalagmiteStructure extends Structure {
 		boolean roomForStalactite = stalactiteGenerator.adjustScale(ctx, windModifier);
 
 		if ((force || roomForStalagmite) && hasStalactite) {
-			stalagmiteGenerator.generate(ctx, windModifier);
+			stalagmiteGenerator.generate(ctx, centroid, windModifier);
 		}
 		if (force || roomForStalactite) {
-			stalactiteGenerator.generate(ctx, windModifier);
+			stalactiteGenerator.generate(ctx, centroid, windModifier);
 		}
 	}
 
@@ -267,7 +248,7 @@ public class StalagmiteStructure extends Structure {
 			return (int) getHeightFromHDistance(hDistance, this.radius, this.heightScale, this.bluntness);
 		}
 
-		private void generate(CaveGenContext ctx, WindModifier wind) {
+		private void generate(CaveGenContext ctx, Centroid centroid, WindModifier wind) {
 			for (int x = -this.radius; x <= this.radius; x++) {
 				for (int z = -this.radius; z <= this.radius; z++) {
 					float hDistance = (float)Math.sqrt(x * x + z * z);
@@ -283,7 +264,7 @@ public class StalagmiteStructure extends Structure {
 								BlockVector3 windModifiedPos = wind.modify(pos);
 								if (canReplace(ctx, ctx.getBlock(windModifiedPos))) {
 									placedBlock = true;
-									ctx.setBlock(windModifiedPos, block);
+									ctx.setBlock(windModifiedPos, block.get(ctx, centroid));
 								} else if (placedBlock && !canReplace(ctx, ctx.getBlock(windModifiedPos))) {
 									break;
 								}

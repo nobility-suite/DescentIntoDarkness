@@ -172,10 +172,22 @@ defaultPainterSteps:
   __builtin_no_default_inherit: true
   abstract: true
   painterSteps:
-    - replace_floor minecraft:stone minecraft:gravel
-    - replace_all minecraft:stone minecraft:andesite 0.2
-    - replace_all minecraft:stone minecraft:cobblestone 0.2
-    - replace_all minecraft:stone minecraft:mossy_cobblestone 0.05
+    - type: replace_floor
+      old: minecraft:stone
+      new: minecraft:gravel
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:andesite
+      chance: 0.2
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:cobblestone
+      chance: 0.2
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:mossy_cobblestone
+      chance: 0.05
+
 
 defaultStructures:
   __builtin_no_default_inherit: true
@@ -276,15 +288,45 @@ defaultMobSpawning:
 # The debug cave type
 debug:
   painterSteps:
-    - <forward> replace_all minecraft:stone minecraft:white_wool
-    - <turn_left> replace_all minecraft:stone minecraft:orange_wool
-    - <turn_right> replace_all minecraft:stone minecraft:magenta_wool
-    - <branch> replace_all minecraft:stone minecraft:light_blue_wool
-    - <small_branch> replace_all minecraft:stone minecraft:yellow_wool
-    - <dropshaft> replace_all minecraft:stone minecraft:lime_wool
-    - <large_cavern> replace_all minecraft:stone minecraft:pink_wool
-    - <cavern> replace_all minecraft:stone minecraft:gray_wool
-    - <shelf> replace_all minecraft:stone minecraft:light_gray_wool
-    - <ravine> replace_all minecraft:stone minecraft:cyan_wool
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:white_wool
+      tags: forward
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:orange_wool
+      tags: turn_left
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:magenta_wool
+      tags: turn_right
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:light_blue_wool
+      tags: branch
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:yellow_wool
+      tags: small_branch
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:lime_wool
+      tags: dropshaft
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:pink_wool
+      tags: large_cavern
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:gray_wool
+      tags: cavern
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:light_gray_wool
+      tags: shelf
+    - type: replace_all
+      old: minecraft:stone
+      new: minecraft:cyan_wool
+      tags: ravine
   structures: {}
   spawnEntries: {}

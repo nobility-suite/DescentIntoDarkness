@@ -1,9 +1,7 @@
 package com.gmail.sharpcastle33.did.config;
 
-import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.gmail.sharpcastle33.did.provider.BlockPredicate;
 import org.bukkit.configuration.ConfigurationSection;
-
-import java.util.List;
 
 public final class MobSpawnEntry {
 	private final String name;
@@ -19,8 +17,8 @@ public final class MobSpawnEntry {
 	private final double xSize;
 	private final double ySize;
 	private final double zSize;
-	private final List<BlockStateHolder<?>> canSpawnOn;
-	private final List<BlockStateHolder<?>> canSpawnIn;
+	private final BlockPredicate canSpawnOn;
+	private final BlockPredicate canSpawnIn;
 	private final boolean centeredSpawn;
 	private final boolean randomRotation;
 
@@ -38,8 +36,8 @@ public final class MobSpawnEntry {
 			double xSize,
 			double ySize,
 			double zSize,
-			List<BlockStateHolder<?>> canSpawnOn,
-			List<BlockStateHolder<?>> canSpawnIn,
+			BlockPredicate canSpawnOn,
+			BlockPredicate canSpawnIn,
 			boolean centeredSpawn,
 			boolean randomRotation) {
 		this.name = name;
@@ -113,11 +111,11 @@ public final class MobSpawnEntry {
 		return zSize;
 	}
 
-	public List<BlockStateHolder<?>> getCanSpawnOn() {
+	public BlockPredicate getCanSpawnOn() {
 		return canSpawnOn;
 	}
 
-	public List<BlockStateHolder<?>> getCanSpawnIn() {
+	public BlockPredicate getCanSpawnIn() {
 		return canSpawnIn;
 	}
 
@@ -142,25 +140,6 @@ public final class MobSpawnEntry {
 		return name.equals(((MobSpawnEntry) obj).name);
 	}
 
-	public void serialize(ConfigurationSection map) {
-		map.set("mob", mob);
-		map.set("singleMobCost", singleMobCost);
-		map.set("minPackCost", minPackCost);
-		map.set("maxPackCost", maxPackCost);
-		map.set("weight", weight);
-		map.set("minDistance", minDistance);
-		map.set("maxDistance", maxDistance);
-		map.set("cooldown", cooldown);
-		map.set("despawnRange", despawnRange);
-		if (xSize != 0) map.set("xSize", xSize);
-		if (ySize != 0) map.set("ySize", ySize);
-		if (zSize != 0) map.set("zSize", zSize);
-		if (canSpawnOn != null) map.set("canSpawnOn", ConfigUtil.serializeSingleableList(canSpawnOn, BlockStateHolder::getAsString));
-		if (canSpawnIn != null) map.set("canSpawnIn", ConfigUtil.serializeSingleableList(canSpawnIn, BlockStateHolder::getAsString));
-		map.set("centeredSpawn", centeredSpawn);
-		map.set("randomRotation", randomRotation);
-	}
-
 	public static MobSpawnEntry deserialize(String name, ConfigurationSection map) {
 		String mob = ConfigUtil.requireString(map, "mob");
 		int singleMobCost = map.getInt("singleMobCost", 50);
@@ -174,8 +153,8 @@ public final class MobSpawnEntry {
 		double xSize = map.getDouble("xSize", 0);
 		double ySize = map.getDouble("ySize", 0);
 		double zSize = map.getDouble("zSize",0);
-		List<BlockStateHolder<?>> canSpawnOn = ConfigUtil.deserializeSingleableList(map.get("canSpawnOn"), ConfigUtil::parseBlock, () -> null);
-		List<BlockStateHolder<?>> canSpawnIn = ConfigUtil.deserializeSingleableList(map.get("canSpawnIn"), ConfigUtil::parseBlock, () -> null);
+		BlockPredicate canSpawnOn = map.contains("canSpawnOn") ? ConfigUtil.parseBlockPredicate(map.get("canSpawnOn")) : block -> block.getMaterial().isSolid();
+		BlockPredicate canSpawnIn = map.contains("canSpawnIn") ? ConfigUtil.parseBlockPredicate(map.get("canSpawnIn")) : block -> !block.getMaterial().isMovementBlocker() && block.getMaterial().isLiquid();
 		boolean centeredSpawn = map.getBoolean("centeredSpawn", false);
 		boolean randomRotation = map.getBoolean("randomRotation", true);
 		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown, despawnRange, xSize, ySize, zSize, canSpawnOn, canSpawnIn, centeredSpawn, randomRotation);

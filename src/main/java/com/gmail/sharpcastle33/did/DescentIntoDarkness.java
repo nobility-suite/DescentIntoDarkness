@@ -1,5 +1,6 @@
 package com.gmail.sharpcastle33.did;
 
+import com.comphenix.protocol.reflect.ExactReflection;
 import com.gmail.sharpcastle33.did.config.Biomes;
 import com.gmail.sharpcastle33.did.config.CaveStyles;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
@@ -12,6 +13,7 @@ import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.did.listeners.PacketListener;
 import com.gmail.sharpcastle33.did.listeners.PlayerListener;
+import com.google.common.base.Charsets;
 import com.onarandombox.MultiverseCore.api.Core;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
@@ -27,6 +29,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
@@ -37,6 +40,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -151,7 +157,6 @@ public class DescentIntoDarkness extends JavaPlugin {
 	public void reload() {
 		schematics.clear();
 		reloadConfig();
-		config = getConfig();
 
 		DataPacks.reload();
 		Biomes.reload();
@@ -159,6 +164,35 @@ public class DescentIntoDarkness extends JavaPlugin {
 		caveStyles.reload(config);
 
 		Bukkit.getLogger().info("Reloaded DescentIntoDarkness config");
+	}
+
+	private static final Field CONFIG_FILE_FIELD = ExactReflection.fromClass(JavaPlugin.class, true).getField("configFile");
+
+	@Override
+	public void reloadConfig() {
+		File configFile;
+		try {
+			configFile = (File) CONFIG_FILE_FIELD.get(this);
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
+		config = ConfigUtil.loadConfiguration(configFile);
+
+		final InputStream defConfigStream = getResource("config.yml");
+		if (defConfigStream == null) {
+			return;
+		}
+
+		config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defConfigStream, Charsets.UTF_8)));
+	}
+
+	@NotNull
+	@Override
+	public FileConfiguration getConfig() {
+		if (config == null) {
+			reloadConfig();
+		}
+		return config;
 	}
 
 	public int getCaveTimeLimit() {

@@ -157,12 +157,12 @@ public class CaveTrackerManager {
 		return new CaveCreationHandle(id, DescentIntoDarkness.instance.supplyAsync(() -> {
 			BlockVector2 caveChunkCoords = getInstanceChunkCoords(id);
 			BlockVector3 spawnPos = BlockVector3.at(caveChunkCoords.getBlockX() * 16, style.getStartY(), caveChunkCoords.getBlockZ() * 16);
-			Random rand = new Random();
+			long seed = new Random().nextLong() ^ System.nanoTime();
 			CuboidRegion limit = new CuboidRegion(
 					spawnPos.multiply(1, 0, 1).subtract(8 * INSTANCE_WIDTH_CHUNKS - 32, 0, 8 * INSTANCE_WIDTH_CHUNKS - 32),
 					spawnPos.multiply(1, 0, 1).add(8 * INSTANCE_WIDTH_CHUNKS - 32, 255, 8 * INSTANCE_WIDTH_CHUNKS - 32)
 			);
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, rand).limit(limit)) {
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, seed).limit(limit)) {
 				CaveGenerator.generateCave(ctx, spawnPos.toVector3());
 			} catch (WorldEditException e) {
 				throw new RuntimeException("Could not generate cave", e);

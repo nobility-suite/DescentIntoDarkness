@@ -52,7 +52,7 @@ public class PostProcessor {
 				if (painterStep.areTagsInverted()
 						? painterStep.getTags().stream().noneMatch(centroid.tags::contains)
 						: painterStep.getTags().stream().anyMatch(centroid.tags::contains)) {
-					painterStep.apply(ctx, centroid.pos.toBlockPoint(), centroid.size + 4, pos -> {
+					painterStep.apply(ctx, centroid, pos -> {
 						if (paintedBlocks.contains(pos)) {
 							return false;
 						}
@@ -72,7 +72,7 @@ public class PostProcessor {
 		}
 
 		if (!centroids.isEmpty()) {
-			generatePortal(ctx, centroids.get(0).pos.toBlockPoint(), 100);
+			generatePortal(ctx, centroids.get(0), 100);
 		}
 
 		if (ctx.isDebug()) {
@@ -115,7 +115,7 @@ public class PostProcessor {
 							if(amt >= 13) {
 								//Bukkit.getServer().getLogger().log(Level.WARNING,"count: " + amt);
 								if(ctx.rand.nextInt(100) < 95) {
-									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), centroid, minRoomY, maxRoomY));
+									ctx.setBlock(pos, ctx.style.getAirBlock(pos.getBlockY(), centroid, minRoomY, maxRoomY).get(ctx, centroid));
 								}
 							}
 						}
@@ -192,7 +192,7 @@ public class PostProcessor {
 					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
 						int randomYRotation = ctx.rand.nextInt(4) * 90;
 						ctx.pushTransform(structure.getBlockTransform(randomYRotation, pos, dir), structure.getPositionTransform(randomYRotation, pos, dir));
-						structure.place(ctx, pos, false);
+						structure.place(ctx, pos, centroid, false);
 						ctx.popTransform();
 					}
 				}
@@ -200,7 +200,7 @@ public class PostProcessor {
 		}
 	}
 
-	private static void generatePortal(CaveGenContext ctx, BlockVector3 firstCentroid, int caveRadius) {
+	private static void generatePortal(CaveGenContext ctx, Centroid firstCentroid, int caveRadius) {
 		if (ctx.style.getPortals().isEmpty()) {
 			return;
 		}
@@ -209,10 +209,10 @@ public class PostProcessor {
 		if (ctx.rand.nextDouble() < zeroChance) {
 			return;
 		}
-		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid, caveRadius);
+		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid.pos.toBlockPoint(), caveRadius);
 		int randomYRotation = ctx.rand.nextInt(4) * 90;
 		ctx.pushTransform(portal.getBlockTransform(randomYRotation, pos, Direction.DOWN), portal.getPositionTransform(randomYRotation, pos, Direction.DOWN));
-		portal.place(ctx, pos, true);
+		portal.place(ctx, pos, firstCentroid, true);
 		ctx.popTransform();
 	}
 

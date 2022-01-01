@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import com.gmail.sharpcastle33.did.generator.room.Room;
 import com.gmail.sharpcastle33.did.generator.room.RoomData;
+import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -71,12 +72,12 @@ public class ModuleGenerator {
 		int r = centroid.size;
 
 		for(int ty = -r; ty <= r; ty++) {
-			BlockStateHolder<?> airBlock = ctx.style.getAirBlock(ty + y, centroid, minRoomY, maxRoomY);
+			BlockProvider airBlock = ctx.style.getAirBlock(ty + y, centroid, minRoomY, maxRoomY);
 			for(int tx = -r; tx <= r; tx++){
 				for(int tz = -r; tz <= r; tz++){
 					if(tx * tx  +  ty * ty  +  tz * tz <= r * r){
 						if (((tx != 0 || ty != 0) && (tx != 0 || tz != 0) && (ty != 0 || tz != 0)) || (Math.abs(tx + ty + tz) != r)) {
-							ctx.setBlock(BlockVector3.at(tx + x, ty + y, tz + z), airBlock);
+							ctx.setBlock(BlockVector3.at(tx + x, ty + y, tz + z), airBlock.get(ctx, centroid));
 						}
 					}
 				}
@@ -91,7 +92,7 @@ public class ModuleGenerator {
 		return loc.add(x,y,z);
 	}
 
-	public static int generateOreCluster(CaveGenContext ctx, BlockVector3 loc, int radius, Predicate<BlockStateHolder<?>> oldBlocks, BlockStateHolder<?> ore) throws MaxChangedBlocksException {
+	public static int generateOreCluster(CaveGenContext ctx, Centroid centroid, BlockVector3 loc, int radius, Predicate<BlockStateHolder<?>> oldBlocks, BlockProvider ore) throws MaxChangedBlocksException {
 		int x = loc.getBlockX();
 		int y = loc.getBlockY();
 		int z = loc.getBlockZ();
@@ -109,7 +110,7 @@ public class ModuleGenerator {
 									if(ctx.rand.nextBoolean())
 										continue;
 								}
-								ctx.setBlock(pos, ore);
+								ctx.setBlock(pos, ore.get(ctx, centroid));
 								count++;
 							}
 

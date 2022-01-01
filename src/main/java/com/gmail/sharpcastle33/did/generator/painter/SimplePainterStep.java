@@ -1,22 +1,25 @@
 package com.gmail.sharpcastle33.did.generator.painter;
 
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.sk89q.worldedit.MaxChangedBlocksException;
 import com.sk89q.worldedit.math.BlockVector3;
+import org.bukkit.configuration.ConfigurationSection;
 
-import java.util.List;
 import java.util.function.Predicate;
 
 public abstract class SimplePainterStep extends PainterStep {
-	public SimplePainterStep(PainterStepType type, List<String> tags, boolean tagsInverted) {
-		super(type, tags, tagsInverted);
+	public SimplePainterStep(PainterStepType type, ConfigurationSection map) {
+		super(type, map);
 	}
 
 	@Override
-	public void apply(CaveGenContext ctx, BlockVector3 center, int radius, Predicate<BlockVector3> canTryToPaint) throws MaxChangedBlocksException {
+	public void apply(CaveGenContext ctx, Centroid centroid, Predicate<BlockVector3> canTryToPaint) throws MaxChangedBlocksException {
+		BlockVector3 center = centroid.pos.toBlockPoint();
 		int x = center.getBlockX();
 		int y = center.getBlockY();
 		int z = center.getBlockZ();
+		int radius = centroid.size + 4;
 
 		for (int ty = getMinY(radius); ty <= getMaxY(radius); ty++) {
 			for (int tx = -radius; tx <= radius; tx++) {
@@ -28,7 +31,7 @@ public abstract class SimplePainterStep extends PainterStep {
 
 						BlockVector3 pos = BlockVector3.at(tx+x, ty+y, tz+z);
 						if (!ctx.style.isTransparentBlock(ctx.getBlock(pos)) && canEverApplyToPos(ctx, pos) && canTryToPaint.test(pos)) {
-							applyToBlock(ctx, pos);
+							applyToBlock(ctx, pos, centroid);
 						}
 					}
 				}
@@ -48,5 +51,5 @@ public abstract class SimplePainterStep extends PainterStep {
 		return true;
 	}
 
-	protected abstract void applyToBlock(CaveGenContext ctx, BlockVector3 pos);
+	protected abstract void applyToBlock(CaveGenContext ctx, BlockVector3 pos, Centroid centroid);
 }

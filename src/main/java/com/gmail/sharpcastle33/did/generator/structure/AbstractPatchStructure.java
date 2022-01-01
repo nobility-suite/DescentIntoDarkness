@@ -3,6 +3,7 @@ package com.gmail.sharpcastle33.did.generator.structure;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
@@ -28,16 +29,7 @@ public abstract class AbstractPatchStructure extends Structure {
 	}
 
 	@Override
-	protected void serialize0(ConfigurationSection map) {
-		map.set("spreadX", spreadX);
-		map.set("spreadY", spreadY);
-		map.set("spreadZ", spreadZ);
-		map.set("spreadLocal", spreadLocal);
-		map.set("tries", tries);
-	}
-
-	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
+	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		BlockVector3 origin = pos.subtract(getOriginPositionSide().toBlockVector());
 		BlockVector3 spread = BlockVector3.at(spreadX, spreadY, spreadZ);
 		if (!spreadLocal) {
@@ -52,11 +44,11 @@ public abstract class AbstractPatchStructure extends Structure {
 			if (canReplace(ctx, ctx.getBlock(offsetPos))) {
 				BlockStateHolder<?> blockBelow = ctx.getBlock(offsetPos.add(getOriginPositionSide().toBlockVector()));
 				if (canPlaceOn(ctx, blockBelow)) {
-					doPlace(ctx, offsetPos);
+					doPlace(ctx, offsetPos, centroid);
 				}
 			}
 		}
 	}
 
-	protected abstract void doPlace(CaveGenContext ctx, BlockVector3 pos);
+	protected abstract void doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid);
 }

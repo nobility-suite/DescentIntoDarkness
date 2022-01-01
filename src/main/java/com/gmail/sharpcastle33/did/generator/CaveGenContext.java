@@ -33,6 +33,7 @@ public class CaveGenContext implements AutoCloseable {
 	private final EditSession session;
 	public final CaveStyle style;
 	public final Random rand;
+	public final long caveSeed;
 	private boolean debug;
 	private final PackedBlockStorage blockStorage;
 	private final Set<BlockVector2> accessedChunks = new HashSet<>();
@@ -43,10 +44,11 @@ public class CaveGenContext implements AutoCloseable {
 	private Region limit = null;
 	private boolean canceled = false;
 
-	private CaveGenContext(EditSession session, CaveStyle style, Random rand) {
+	private CaveGenContext(EditSession session, CaveStyle style, long caveSeed) {
 		this.session = session;
 		this.style = style;
-		this.rand = rand;
+		this.rand = new Random(caveSeed);
+		this.caveSeed = caveSeed;
 		this.blockStorage = new PackedBlockStorage(style.getBaseBlock().toImmutableState());
 	}
 
@@ -64,9 +66,9 @@ public class CaveGenContext implements AutoCloseable {
 		return this;
 	}
 
-	public static CaveGenContext create(World world, CaveStyle style, Random rand) {
+	public static CaveGenContext create(World world, CaveStyle style, long caveSeed) {
 		EditSession session = WorldEdit.getInstance().newEditSession(world);
-		return new CaveGenContext(session, style, rand);
+		return new CaveGenContext(session, style, caveSeed);
 	}
 
 	private void ensureChunkGenerated(BlockVector3 blockPos) {

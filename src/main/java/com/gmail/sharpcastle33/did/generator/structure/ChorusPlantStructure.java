@@ -5,21 +5,21 @@ import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
+import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
-import com.sk89q.worldedit.world.block.BlockTypes;
-import com.sk89q.worldedit.world.block.FuzzyBlockState;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.List;
 
 public class ChorusPlantStructure extends Structure {
-	private final BlockStateHolder<?> stemBlock;
-	private final BlockStateHolder<?> flowerBlock;
+	private final BlockProvider stemBlock;
+	private final BlockProvider flowerBlock;
 	private final int minRadius;
 	private final int maxRadius;
 	private final int minVLength;
@@ -39,18 +39,8 @@ public class ChorusPlantStructure extends Structure {
 
 	protected ChorusPlantStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.CHORUS_PLANT, map);
-		String stemBlockStr = map.getString("stemBlock");
-		if (stemBlockStr == null) {
-			stemBlock = new FuzzyBlockState.Builder().type(BlockTypes.CHORUS_PLANT).build();
-		} else {
-			stemBlock = ConfigUtil.parseBlock(stemBlockStr);
-		}
-		String flowerBlockStr = map.getString("flowerBlock");
-		if (flowerBlockStr == null) {
-			flowerBlock = Util.requireDefaultState(BlockTypes.CHORUS_FLOWER).with(PropertyKey.AGE, 5);
-		} else {
-			flowerBlock = ConfigUtil.parseBlock(flowerBlockStr);
-		}
+		stemBlock = map.contains("stemBlock") ? ConfigUtil.parseBlockProvider(map.get("stemBlock")) : BlockProvider.CHORUS_PLANT;
+		flowerBlock = map.contains("flowerBlock") ? ConfigUtil.parseBlockProvider(map.get("flowerBlock")) : BlockProvider.CHORUS_FLOWER;
 		minRadius = map.getInt("minRadius", 8);
 		maxRadius = map.getInt("maxRadius", 8);
 		if (minRadius < 0 || maxRadius < minRadius) {
@@ -106,30 +96,8 @@ public class ChorusPlantStructure extends Structure {
 		return Direction.DOWN;
 	}
 
-	@Override
-	protected void serialize0(ConfigurationSection map) {
-		map.set("stemBlock", stemBlock.getAsString());
-		map.set("flowerBlock", flowerBlock.getAsString());
-		map.set("minRadius", minRadius);
-		map.set("maxRadius", maxRadius);
-		map.set("minVLength", minVLength);
-		map.set("maxVLength", maxVLength);
-		map.set("minHLength", minHLength);
-		map.set("maxHLength", maxHLength);
-		map.set("minInitialHeightBoost", minInitialHeightBoost);
-		map.set("maxInitialHeightBoost", maxInitialHeightBoost);
-		map.set("minBranchFactor", minBranchFactor);
-		map.set("maxBranchFactor", maxBranchFactor);
-		map.set("minInitialBranchFactorBoost", minInitialBranchFactorBoost);
-		map.set("maxInitialBranchFactorBoost", maxInitialBranchFactorBoost);
-		map.set("flowerChance", flowerChance);
-		map.set("initialFlowerChance", initialFlowerChance);
-		map.set("minNumLayers", minNumLayers);
-		map.set("maxNumLayers", maxNumLayers);
-	}
-
 	private boolean canConnectTo(CaveGenContext ctx, BlockStateHolder<?> block) {
-		return stemBlock.equalsFuzzy(block) || flowerBlock.equalsFuzzy(block) || canPlaceOn(ctx, block);
+		return stemBlock.canProduce(block) || flowerBlock.canProduce(block) || canPlaceOn(ctx, block);
 	}
 
 	private BlockStateHolder<?> withConnectionProperties(CaveGenContext ctx, BlockVector3 pos, BlockStateHolder<?> block) {
@@ -163,7 +131,7 @@ public class ChorusPlantStructure extends Structure {
 		}
 
 		BlockState blockAbove = ctx.getBlock(pos.add(0, 1, 0));
-		if (blockAbove.getBlockType() == stemBlock.getBlockType() || blockAbove.getBlockType() == flowerBlock.getBlockType()) {
+		if (stemBlock.canProduce(blockAbove) || flowerBlock.canProduce(blockAbove)) {
 			return canReplace(ctx, blockAbove);
 		}
 
@@ -171,20 +139,20 @@ public class ChorusPlantStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
+	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 		if (canReplace(ctx, ctx.getBlock(pos))
 				&& canReplace(ctx, ctx.getBlock(pos.add(0, 1, 0)))
 				&& isSurroundedByAir(ctx, pos.add(0, 1, 0), null)
 		) {
-			ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock));
+			ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock.get(ctx, centroid)));
 			int radius = minRadius + ctx.rand.nextInt(maxRadius - minRadius + 1);
 			int numLayers = minNumLayers + ctx.rand.nextInt(maxNumLayers - minNumLayers + 1);
-			generate(ctx, pos, pos, radius, 0, numLayers, force);
+			generate(ctx, centroid, pos, pos, radius, 0, numLayers, force);
 		}
 	}
 
-	private void generate(CaveGenContext ctx, BlockVector3 pos, BlockVector3 rootPos, int radius, int layer, int numLayers, boolean force) {
+	private void generate(CaveGenContext ctx, Centroid centroid, BlockVector3 pos, BlockVector3 rootPos, int radius, int layer, int numLayers, boolean force) {
 		int length = minVLength + ctx.rand.nextInt(maxVLength - minVLength + 1);
 		if (layer == 0) {
 			length += minInitialHeightBoost + ctx.rand.nextInt(maxInitialHeightBoost - minInitialHeightBoost + 1);
@@ -193,12 +161,13 @@ public class ChorusPlantStructure extends Structure {
 		for (int i = 0; i < length; i++) {
 			BlockVector3 offsetPos = pos.add(0, i + 1, 0);
 			if (!force && (!canReplace(ctx, ctx.getBlock(offsetPos)) || !isSurroundedByAir(ctx, offsetPos, null))) {
-				ctx.setBlock(pos.add(0, i, 0), flowerBlock);
+				ctx.setBlock(pos.add(0, i, 0), flowerBlock.get(ctx, centroid));
 				return;
 			}
 
-			ctx.setBlock(offsetPos, withConnectionProperties(ctx, offsetPos, stemBlock));
-			ctx.setBlock(offsetPos.add(0, -1, 0), withConnectionProperties(ctx, offsetPos.add(0, -1, 0), stemBlock));
+			ctx.setBlock(offsetPos, withConnectionProperties(ctx, offsetPos, stemBlock.get(ctx, centroid)));
+			BlockVector3 posBelow = offsetPos.add(0, -1, 0);
+			ctx.setBlock(posBelow, withConnectionProperties(ctx, posBelow, ctx.getBlock(posBelow)));
 		}
 
 		boolean extended = false;
@@ -220,14 +189,15 @@ public class ChorusPlantStructure extends Structure {
 								&& canReplace(ctx, ctx.getBlock(offsetPos.add(0, -1, 0)))
 								&& isSurroundedByAir(ctx, offsetPos, Util.getOpposite(direction))) {
 							extended = true;
-							ctx.setBlock(offsetPos, withConnectionProperties(ctx, offsetPos, stemBlock));
-							ctx.setBlock(offsetPos.subtract(direction.toBlockVector()), withConnectionProperties(ctx, offsetPos.subtract(direction.toBlockVector()), stemBlock));
+							ctx.setBlock(offsetPos, withConnectionProperties(ctx, offsetPos, stemBlock.get(ctx, centroid)));
+							BlockVector3 posBehind = offsetPos.subtract(direction.toBlockVector());
+							ctx.setBlock(posBehind, withConnectionProperties(ctx, posBehind, ctx.getBlock(posBehind)));
 							if (j == hLength - 1) {
-								generate(ctx, offsetPos, rootPos, radius, layer + 1, numLayers, force);
+								generate(ctx, centroid, offsetPos, rootPos, radius, layer + 1, numLayers, force);
 							}
 						} else {
 							if (j != 1) {
-								ctx.setBlock(offsetPos.subtract(direction.toBlockVector()), flowerBlock);
+								ctx.setBlock(offsetPos.subtract(direction.toBlockVector()), flowerBlock.get(ctx, centroid));
 							}
 							break;
 						}
@@ -237,7 +207,7 @@ public class ChorusPlantStructure extends Structure {
 		}
 
 		if (!extended) {
-			ctx.setBlock(pos.add(0, length, 0), flowerBlock);
+			ctx.setBlock(pos.add(0, length, 0), flowerBlock.get(ctx, centroid));
 		}
 
 	}

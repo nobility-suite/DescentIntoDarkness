@@ -50,14 +50,6 @@ public abstract class Room {
 
 	public abstract void addCentroids(CaveGenContext ctx, RoomData roomData, Object[] userData, List<Centroid> centroids);
 
-	public final void serialize(ConfigurationSection map) {
-		map.set("type", ConfigUtil.enumToString(type));
-		if (!tags.isEmpty()) {
-			map.set("tags", ConfigUtil.serializeSingleableList(tags, Function.identity()));
-		}
-		serialize0(map);
-	}
-
 	protected abstract void serialize0(ConfigurationSection map);
 
 	public static Room deserialize(char symbol, ConfigurationSection map) {

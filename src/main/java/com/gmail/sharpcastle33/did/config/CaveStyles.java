@@ -60,7 +60,7 @@ public class CaveStyles {
 		}
 		caveStylesConfig = new MemoryConfiguration();
 		for (File caveStyleFile : caveStyleFiles) {
-			YamlConfiguration localConfig = YamlConfiguration.loadConfiguration(caveStyleFile);
+			YamlConfiguration localConfig = ConfigUtil.loadConfiguration(caveStyleFile);
 			if (localConfig.getKeys(false).stream().anyMatch(caveStylesConfig::contains)) {
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to load config file " + caveStyleFile.getName() + " because it contains keys already present in a previously loaded file");
 			} else {
@@ -133,28 +133,22 @@ public class CaveStyles {
 		List<?> inheritList = caveStyle.getList("inherit");
 		if (inheritList != null) {
 			for (Object parent : inheritList) {
-				if (parent instanceof Map || parent instanceof ConfigurationSection) {
-					@SuppressWarnings("unchecked")
-					Map<String, Object> map = parent instanceof Map ? (Map<String, Object>) parent : ((ConfigurationSection) parent).getValues(false);
-					Object name = map.get("name");
-					if (name == null) {
-						throw new InvalidConfigException("Complex inherit must have a \"name\"");
-					}
-					InheritanceData data = new InheritanceData(name.toString());
-					Object merge = map.get("merge");
-					if (merge instanceof Map || merge instanceof ConfigurationSection) {
-						@SuppressWarnings("unchecked")
-						Map<String, Object> mergeMap = merge instanceof Map ? (Map<String, Object>) merge : ((ConfigurationSection) merge).getValues(false);
-						mergeMap.forEach((key, val) -> {
-							String strVal = String.valueOf(val);
-							if (strVal.equals("top")) {
+				if (ConfigUtil.isConfigurationSection(parent)) {
+					ConfigurationSection map = ConfigUtil.asConfigurationSection(parent);
+					String name = ConfigUtil.requireString(map, "name");
+					InheritanceData data = new InheritanceData(name);
+					ConfigurationSection mergeMap = map.getConfigurationSection("merge");
+					if (mergeMap != null) {
+						for (String key : mergeMap.getKeys(false)) {
+							String val = mergeMap.getString(key);
+							if ("top".equals(val)) {
 								data.mergeTop.add(key);
-							} else if (strVal.equals("bottom")) {
+							} else if ("bottom".equals(val)) {
 								data.mergeBottom.add(key);
 							} else {
 								throw new InvalidConfigException("Complex inherit merge must be either \"top\" or \"bottom\"");
 							}
-						});
+						}
 					}
 					parents.add(data);
 				} else {
@@ -181,17 +175,20 @@ public class CaveStyles {
 								}
 								//noinspection unchecked
 								((List<Object>) ourVal).addAll((List<Object>) val);
-							} else if (val instanceof Map || val instanceof ConfigurationSection) {
-								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
+							} else if (ConfigUtil.isConfigurationSection(val)) {
+								if (!ConfigUtil.isConfigurationSection(ourVal)) {
 									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
 								}
-								@SuppressWarnings("unchecked")
-								Map<String, Object> parentVal = val instanceof Map ? (Map<String, Object>) val : ((ConfigurationSection) val).getValues(false);
+								ConfigurationSection parentVal = ConfigUtil.asConfigurationSection(val);
 								if (ourVal instanceof Map) {
-									//noinspection unchecked
-									((Map<String, Object>) ourVal).putAll(parentVal);
+									for (String parentValKey : parentVal.getKeys(false)) {
+										//noinspection unchecked
+										((Map<String, Object>) ourVal).put(parentValKey, parentVal.get(parentValKey));
+									}
 								} else {
-									parentVal.forEach(((ConfigurationSection) ourVal)::set);
+									for (String parentValKey : parentVal.getKeys(false)) {
+										((ConfigurationSection) ourVal).set(parentValKey, parentVal.get(parentValKey));
+									}
 								}
 							} else {
 								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
@@ -207,8 +204,8 @@ public class CaveStyles {
 								//noinspection unchecked
 								newVal.addAll((List<Object>) ourVal);
 								caveStyle.set(key, newVal);
-							} else if (val instanceof Map || val instanceof ConfigurationSection) {
-								if (!(ourVal instanceof Map) && !(ourVal instanceof ConfigurationSection)) {
+							} else if (ConfigUtil.isConfigurationSection(val)) {
+								if (!ConfigUtil.isConfigurationSection(ourVal)) {
 									throw new InvalidConfigException("Cannot merge mismatching types under section \"" + key + "\"");
 								}
 								@SuppressWarnings("unchecked")

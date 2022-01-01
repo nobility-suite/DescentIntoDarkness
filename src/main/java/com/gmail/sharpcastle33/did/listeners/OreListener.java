@@ -37,7 +37,7 @@ public class OreListener implements Listener {
 		BlockVector3 pos = BukkitAdapter.asBlockVector(event.getBlock().getLocation());
 		boolean isOre = false;
 		for (Ore ore : cave.getStyle().getOres()) {
-			if (ore.getBlock().equalsFuzzy(block)) {
+			if (ore.getBlock().test(block)) {
 				isOre = true;
 				int blockBreakCount = cave.getBlockBreakCount(pos) + 1;
 				TextComponent numberPart = new TextComponent(blockBreakCount + "/" + ore.getBreakAmount());

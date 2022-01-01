@@ -1,14 +1,12 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.google.common.collect.Lists;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -16,25 +14,19 @@ import java.util.stream.Collectors;
 
 public final class BlockTypeRange<T extends Comparable<T>> {
 	private final List<Entry<T>> entries;
-	private final List<BlockStateHolder<?>> blocks;
 
-	private BlockTypeRange(List<Entry<T>> entries, List<BlockStateHolder<?>> blocks) {
+	private BlockTypeRange(List<Entry<T>> entries) {
 		this.entries = entries;
-		this.blocks = blocks;
 	}
 
 	@Nullable
-	public BlockStateHolder<?> get(T yLevel) {
+	public BlockProvider get(T yLevel) {
 		for (Entry<T> entry : entries) {
 			if (entry.min.compareTo(yLevel) <= 0 && yLevel.compareTo(entry.max) <= 0) {
 				return entry.block;
 			}
 		}
 		return null;
-	}
-
-	public List<BlockStateHolder<?>> getBlocks() {
-		return blocks;
 	}
 
 	public void validateRange(T min, T max, UnaryOperator<T> nextDown, UnaryOperator<T> nextUp) {
@@ -75,116 +67,41 @@ public final class BlockTypeRange<T extends Comparable<T>> {
 
 	private static <T extends Comparable<T>> BlockTypeRange<T> deserialize(Object val, Function<String, T> typeParser, T min, T max) {
 		List<Entry<T>> entries = new ArrayList<>();
-		List<BlockStateHolder<?>> blocks = new ArrayList<>();
 
-		if (val instanceof ConfigurationSection) {
-			ConfigurationSection map = (ConfigurationSection) val;
-			for (String blockStr : map.getKeys(false)) {
-				BlockStateHolder<?> block = ConfigUtil.parseBlock(blockStr);
-				String rangeVal = ConfigUtil.requireString(map, blockStr);
-				rangeVal = rangeVal.replace(" ", "");
-				for (String range : rangeVal.split(",")) {
-					String[] minMax = range.split("(?<!^)-", 2);
-					if (minMax.length == 2) {
-						entries.add(new Entry<>(typeParser.apply(minMax[0]), typeParser.apply(minMax[1]), block));
-					} else {
-						T tVal = typeParser.apply(minMax[0]);
-						entries.add(new Entry<>(tVal, tVal, block));
-					}
-				}
-				blocks.add(block);
+		if (val instanceof List) {
+			List<?> list = (List<?>) val;
+			for (Object entry : list) {
+				entries.add(parseEntry(entry, typeParser, min, max));
 			}
-		} else if (val instanceof String) {
-			BlockStateHolder<?> block = ConfigUtil.parseBlock((String) val);
-			entries.add(new Entry<>(min, max, block));
-			blocks.add(block);
 		} else {
-			throw new InvalidConfigException(val + " is not a block type range");
+			entries.add(parseEntry(val, typeParser, min, max));
 		}
 
-		return new BlockTypeRange<>(entries, blocks);
+		return new BlockTypeRange<>(entries);
 	}
 
-	public static BlockTypeRange<Integer> deserializePainter(int startArg, String[] args) {
-		List<Entry<Integer>> entries = new ArrayList<>();
-		LinkedHashSet<BlockStateHolder<?>> blocks = new LinkedHashSet<>();
-
-		for (int i = startArg; i < args.length - 1; i += 2) {
-			String[] minMax = args[i].split("(?<!^)-", 2);
-			BlockStateHolder<?> block = ConfigUtil.parseBlock(args[i + 1]);
-			if (minMax.length == 2) {
-				entries.add(new Entry<>(ConfigUtil.parseInt(minMax[0]), ConfigUtil.parseInt(minMax[1]), block));
-			} else {
-				int y = ConfigUtil.parseInt(minMax[0]);
-				entries.add(new Entry<>(y, y, block));
-			}
-			blocks.add(block);
+	private static <T extends Comparable<T>> Entry<T> parseEntry(Object val, Function<String, T> typeParser, T min, T max) {
+		if (ConfigUtil.isConfigurationSection(val)) {
+			ConfigurationSection section = ConfigUtil.asConfigurationSection(val);
+			T minVal = section.contains("min") ? typeParser.apply(section.getString("min")) : min;
+			T maxVal = section.contains("max") ? typeParser.apply(section.getString("max")) : max;
+			return new Entry<>(minVal, maxVal, ConfigUtil.parseBlockProvider(ConfigUtil.require(section, "block")));
+		} else if (val instanceof String) {
+			return new Entry<>(min, max, ConfigUtil.parseBlockProvider(val));
+		} else {
+			throw new IllegalArgumentException("Invalid entry type");
 		}
-
-		return new BlockTypeRange<>(entries, new ArrayList<>(blocks));
-	}
-
-	public void serialize(ConfigurationSection parentSection, String key) {
-		if (entries.size() == 1) {
-			parentSection.set(key, ConfigUtil.serializeBlock(entries.get(0).block));
-			return;
-		}
-
-		ConfigurationSection section = parentSection.createSection(key);
-		entries.stream()
-				.collect(Collectors.groupingBy((Entry<T> entry) -> entry.block, LinkedHashMap::new, Collectors.toList()))
-				.forEach((block, entries) -> section.set(ConfigUtil.serializeBlock(block), entries.stream()
-						.map(entry -> entry.min.equals(entry.max) ? String.valueOf(entry.min) : (entry.min + "-" + entry.max))
-						.collect(Collectors.joining(", "))));
-	}
-
-	public String serializePainter() {
-		return entries.stream().map(entry -> {
-			if (entry.min.equals(entry.max)) {
-				return entry.min + " " + ConfigUtil.serializeBlock(entry.block);
-			} else {
-				return entry.min + "-" + entry.max + " " + ConfigUtil.serializeBlock(entry.block);
-			}
-		}).collect(Collectors.joining(" "));
-	}
-
-	@Override
-	public int hashCode() {
-		return entries.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object other) {
-		if (other == this) return true;
-		if (other == null) return false;
-		if (other.getClass() != BlockTypeRange.class) return false;
-		BlockTypeRange<?> that = (BlockTypeRange<?>) other;
-		return entries.equals(that.entries);
 	}
 
 	public static final class Entry<T extends Comparable<T>> {
 		private final T min;
 		private final T max;
-		private final BlockStateHolder<?> block;
+		private final BlockProvider block;
 
-		public Entry(T min, T max, BlockStateHolder<?> block) {
+		public Entry(T min, T max, BlockProvider block) {
 			this.min = min;
 			this.max = max;
 			this.block = block;
-		}
-
-		@Override
-		public int hashCode() {
-			return 31 * (31 * min.hashCode() + max.hashCode()) + block.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object other) {
-			if (other == this) return true;
-			if (other == null) return false;
-			if (other.getClass() != Entry.class) return false;
-			Entry<?> that = (Entry<?>) other;
-			return min.equals(that.min) && max.equals(that.max) && block.equals(that.block);
 		}
 	}
 }

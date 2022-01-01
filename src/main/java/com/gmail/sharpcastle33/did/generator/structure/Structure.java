@@ -3,6 +3,8 @@ package com.gmail.sharpcastle33.did.generator.structure;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
+import com.gmail.sharpcastle33.did.provider.BlockPredicate;
 import com.google.common.collect.Lists;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -12,6 +14,7 @@ import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import org.bukkit.configuration.ConfigurationSection;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,10 +26,8 @@ public abstract class Structure {
 	private final StructureType type;
 	protected final List<StructurePlacementEdge> edges;
 	private final double count;
-	private final List<BlockStateHolder<?>> canPlaceOn;
-	private final List<BlockStateHolder<?>> cannotPlaceOn;
-	private final List<BlockStateHolder<?>> canReplace;
-	private final List<BlockStateHolder<?>> cannotReplace;
+	private final @Nullable BlockPredicate canPlaceOn;
+	private final @Nullable BlockPredicate canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
 	private final Direction originSide;
 	private final boolean shouldTransformBlocks;
@@ -53,10 +54,8 @@ public abstract class Structure {
 		} else {
 			this.count = map.getDouble("count", 1);
 		}
-		this.canPlaceOn = deserializePlacementRule(map.get("canPlaceOn"));
-		this.cannotPlaceOn = deserializePlacementRule(map.get("cannotPlaceOn"));
-		this.canReplace = deserializePlacementRule(map.get("canReplace"));
-		this.cannotReplace = deserializePlacementRule(map.get("cannotReplace"));
+		this.canPlaceOn = map.contains("canPlaceOn") ? ConfigUtil.parseBlockPredicate(map.get("canPlaceOn")) : null;
+		this.canReplace = map.contains("canReplace") ? ConfigUtil.parseBlockPredicate(map.get("canReplace")) : null;
 		String originSideVal = map.getString("originSide");
 		if (originSideVal == null) {
 			this.originSide = getDefaultOriginSide(edges);
@@ -101,12 +100,9 @@ public abstract class Structure {
 
 	public boolean canPlaceOn(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canPlaceOn == null) {
-			if (cannotPlaceOn == null) {
-				return !ctx.style.isTransparentBlock(block);
-			}
-			return cannotPlaceOn.stream().noneMatch(it -> it.equalsFuzzy(block));
+			return !ctx.style.isTransparentBlock(block);
 		} else {
-			return canPlaceOn.stream().anyMatch(it -> it.equalsFuzzy(block));
+			return canPlaceOn.test(block);
 		}
 	}
 
@@ -254,53 +250,18 @@ public abstract class Structure {
 		return tagsInverted;
 	}
 
-	public void serialize(ConfigurationSection map) {
-		map.set("type", ConfigUtil.enumToString(type));
-		map.set("edges", ConfigUtil.serializeSingleableList(edges, ConfigUtil::enumToString));
-		map.set("count", count);
-		if (canPlaceOn != null) {
-			map.set("canPlaceOn", ConfigUtil.serializeSingleableList(canPlaceOn, BlockStateHolder::getAsString));
-		}
-		if (cannotPlaceOn != null) {
-			map.set("cannotPlaceOn", ConfigUtil.serializeSingleableList(cannotPlaceOn, BlockStateHolder::getAsString));
-		}
-		if (canReplace != null) {
-			map.set("canReplace", ConfigUtil.serializeSingleableList(canReplace, BlockStateHolder::getAsString));
-		}
-		if (cannotReplace != null) {
-			map.set("cannotReplace", ConfigUtil.serializeSingleableList(cannotReplace, BlockStateHolder::getAsString));
-		}
-		map.set("originSide", ConfigUtil.enumToString(originSide));
-		map.set("shouldTransformBlocks", shouldTransformBlocks);
-		map.set("shouldTransformPosition", shouldTransformPosition);
-		map.set("randomRotation", randomRotation);
-		if (!tags.isEmpty()) {
-			map.set("tags", ConfigUtil.serializeSingleableList(tags, Function.identity()));
-		}
-		serialize0(map);
-	}
-
-	protected abstract void serialize0(ConfigurationSection map);
-
 	public static Structure deserialize(String name, ConfigurationSection map) {
 		StructureType type = ConfigUtil.parseEnum(StructureType.class, ConfigUtil.requireString(map, "type"));
 		return type.deserialize(name, map);
 	}
 
-	protected static List<BlockStateHolder<?>> deserializePlacementRule(Object rule) {
-		return ConfigUtil.deserializeSingleableList(rule, ConfigUtil::parseBlock, () -> null);
-	}
-
-	public abstract void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException;
+	public abstract void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException;
 
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {
-			if (cannotReplace == null) {
-				return defaultCanReplace(ctx, block);
-			}
-			return cannotReplace.stream().noneMatch(it -> it.equalsFuzzy(block));
+			return defaultCanReplace(ctx, block);
 		} else {
-			return canReplace.stream().anyMatch(it -> it.equalsFuzzy(block));
+			return canReplace.test(block);
 		}
 	}
 

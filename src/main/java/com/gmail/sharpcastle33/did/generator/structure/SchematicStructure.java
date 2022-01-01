@@ -5,6 +5,7 @@ import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
+import com.gmail.sharpcastle33.did.generator.Centroid;
 import com.sk89q.worldedit.WorldEditException;
 import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.function.operation.Operation;
@@ -47,13 +48,7 @@ public class SchematicStructure extends Structure {
 	}
 
 	@Override
-	protected void serialize0(ConfigurationSection map) {
-		map.set("schematics", ConfigUtil.serializeSingleableList(schematics, schematic -> schematic.name));
-		map.set("ignoreAir", ignoreAir);
-	}
-
-	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, boolean force) throws WorldEditException {
+	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		Schematic chosenSchematic = schematics.get(ctx.rand.nextInt(schematics.size()));
 		ClipboardHolder clipboardHolder = new ClipboardHolder(chosenSchematic.data);
 

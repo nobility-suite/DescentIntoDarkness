@@ -4,7 +4,6 @@ import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
-import com.sk89q.worldedit.world.registry.BlockMaterial;
 import io.lumine.xikage.mythicmobs.MythicMobs;
 import io.lumine.xikage.mythicmobs.adapters.bukkit.BukkitAdapter;
 import io.lumine.xikage.mythicmobs.api.bukkit.events.MythicMobSpawnEvent;
@@ -122,9 +121,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			}
 		}
 		Block blockBelow = cave.getWorld().getBlockAt(spawnLocation.getBlockX(), spawnLocation.getBlockY() - 1, spawnLocation.getBlockZ());
-		if (spawnEntry.getCanSpawnOn() == null
-				? !blockBelow.getType().isSolid()
-				: spawnEntry.getCanSpawnOn().stream().noneMatch(it -> it.equalsFuzzy(blockData2State(blockBelow.getBlockData())))) {
+		if (!spawnEntry.getCanSpawnOn().test(blockData2State(blockBelow.getBlockData()))) {
 			return false;
 		}
 
@@ -309,22 +306,13 @@ public class MobSpawnManager implements Runnable, Listener {
 		for (int x = (int)Math.floor(minX + 0.0001); x <= (int)Math.ceil(maxX - 0.0001); x++) {
 			for (int y = (int)Math.floor(minY + 0.0001); y <= (int)Math.ceil(maxY - 0.0001); y++) {
 				for (int z = (int)Math.floor(minZ + 0.0001); z <= (int)Math.ceil(maxZ - 0.0001); z++) {
-					if (!canSpawnIn(spawnEntry, blockData2State(world.getBlockAt(x, y, z).getBlockData()))) {
+					if (!spawnEntry.getCanSpawnIn().test(blockData2State(world.getBlockAt(x, y, z).getBlockData()))) {
 						return false;
 					}
 				}
 			}
 		}
 		return true;
-	}
-
-	private boolean canSpawnIn(MobSpawnEntry spawnEntry, BlockStateHolder<?> block) {
-		if (spawnEntry.getCanSpawnIn() == null) {
-			BlockMaterial material = block.getBlockType().getMaterial();
-			return !material.isMovementBlocker() && !material.isLiquid();
-		} else {
-			return spawnEntry.getCanSpawnIn().stream().anyMatch(it -> it.equalsFuzzy(block));
-		}
 	}
 
 	private static BlockStateHolder<?> blockData2State(BlockData data) {
