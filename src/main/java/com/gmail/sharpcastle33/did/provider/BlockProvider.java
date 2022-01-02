@@ -23,6 +23,8 @@ public interface BlockProvider {
 	BlockProvider CHORUS_PLANT = new Single(FuzzyBlockState.builder().type(BlockTypes.CHORUS_PLANT).build());
 	BlockProvider CHORUS_FLOWER = new Single(Util.requireDefaultState(BlockTypes.CHORUS_FLOWER).with(PropertyKey.AGE, 5));
 	BlockProvider GLOWSTONE = new Single(Util.requireDefaultState(BlockTypes.GLOWSTONE));
+	BlockProvider NETHER_PORTAL = new Single(Util.requireDefaultState(BlockTypes.NETHER_PORTAL));
+	BlockProvider OBSIDIAN = new Single(Util.requireDefaultState(BlockTypes.OBSIDIAN));
 
 	final class Single implements BlockProvider {
 		private final BlockStateHolder<?> block;

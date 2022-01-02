@@ -29,12 +29,13 @@ public abstract class AbstractPatchStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		BlockVector3 origin = pos.subtract(getOriginPositionSide().toBlockVector());
 		BlockVector3 spread = BlockVector3.at(spreadX, spreadY, spreadZ);
 		if (!spreadLocal) {
 			spread = Util.applyDirection(ctx.getLocationTransform(), spread).abs();
 		}
+		boolean placed = false;
 		for (int i = 0; i < tries; i++) {
 			BlockVector3 offsetPos = origin.add(
 					ctx.rand.nextInt(spread.getX() + 1) - ctx.rand.nextInt(spread.getX() + 1),
@@ -44,11 +45,13 @@ public abstract class AbstractPatchStructure extends Structure {
 			if (canReplace(ctx, ctx.getBlock(offsetPos))) {
 				BlockStateHolder<?> blockBelow = ctx.getBlock(offsetPos.add(getOriginPositionSide().toBlockVector()));
 				if (canPlaceOn(ctx, blockBelow)) {
-					doPlace(ctx, offsetPos, centroid);
+					placed |= doPlace(ctx, offsetPos, centroid);
 				}
 			}
 		}
+
+		return placed;
 	}
 
-	protected abstract void doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid);
+	protected abstract boolean doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid);
 }

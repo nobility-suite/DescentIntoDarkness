@@ -14,6 +14,8 @@ public enum StructureType {
 	TREE(TreeStructure::new),
 	STALAGMITE(StalagmiteStructure::new),
 	CHORUS_PLANT(ChorusPlantStructure::new),
+	WALL_PORTAL(WallPortalStructure::new),
+	FLOOR_PORTAL(FloorPortalStructure::new),
 	;
 
 	private final BiFunction<String, ConfigurationSection, Structure> deserializer;

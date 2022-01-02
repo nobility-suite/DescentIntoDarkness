@@ -85,14 +85,14 @@ public class TreeStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 
 		int trunkHeight = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
 
 		// check whether the tree can generate
 		if (!force && (pos.getY() < 1 || pos.getY() + trunkHeight + 1 > 256)) {
-			return;
+			return false;
 		}
 
 		boolean canGenerate = true;
@@ -119,7 +119,7 @@ public class TreeStructure extends Structure {
 		}
 
 		if (!force && !canGenerate) {
-			return;
+			return false;
 		}
 
 		if (dirt != null) {
@@ -223,6 +223,8 @@ public class TreeStructure extends Structure {
 				}
 			}
 		}
+
+		return true;
 	}
 
 	private boolean vinesCanReplace(CaveGenContext ctx, BlockStateHolder<?> block) {

@@ -89,11 +89,11 @@ public class StalagmiteStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
 
 		if (!force && !canReplace(ctx, ctx.getBlock(pos))) {
-			return;
+			return false;
 		}
 
 		BlockVector3 ceilingPos = pos;
@@ -108,7 +108,7 @@ public class StalagmiteStructure extends Structure {
 		boolean hasFloor = canPlaceOn(ctx, ctx.getBlock(ceilingPos));
 
 		if (!force && !hasFloor || !hasCeiling) {
-			return;
+			return false;
 		}
 
 		int height = ceilingPos.getY() - floorPos.getY() - 1;
@@ -116,7 +116,7 @@ public class StalagmiteStructure extends Structure {
 			if (force) {
 				height = 4;
 			} else {
-				return;
+				return false;
 			}
 		}
 
@@ -144,12 +144,17 @@ public class StalagmiteStructure extends Structure {
 		boolean roomForStalagmite = stalagmiteGenerator.adjustScale(ctx, windModifier);
 		boolean roomForStalactite = stalactiteGenerator.adjustScale(ctx, windModifier);
 
+		boolean placed = false;
 		if ((force || roomForStalagmite) && hasStalactite) {
+			placed = true;
 			stalagmiteGenerator.generate(ctx, centroid, windModifier);
 		}
 		if (force || roomForStalactite) {
+			placed = true;
 			stalactiteGenerator.generate(ctx, centroid, windModifier);
 		}
+
+		return placed;
 	}
 
 	private DripstoneGenerator createGenerator(CaveGenContext ctx, BlockVector3 pos, boolean isStalagmite, int scale) {

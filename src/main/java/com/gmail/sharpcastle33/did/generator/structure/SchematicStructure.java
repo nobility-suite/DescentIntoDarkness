@@ -48,18 +48,22 @@ public class SchematicStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		Schematic chosenSchematic = schematics.get(ctx.rand.nextInt(schematics.size()));
 		ClipboardHolder clipboardHolder = new ClipboardHolder(chosenSchematic.data);
 
 		BlockVector3 to = pos.subtract(getOriginPositionSide().toBlockVector());
-		if (force || canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
-			Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(ignoreAir).build();
-			Operations.complete(paste);
-			if (ctx.isDebug()) {
-				ctx.setBlock(to, Util.requireDefaultState(BlockTypes.DIAMOND_BLOCK));
-			}
+		if (!force && !canPlace(ctx, to, chosenSchematic.data, clipboardHolder.getTransform())) {
+			return false;
 		}
+
+		Operation paste = clipboardHolder.createPaste(ctx.asExtent()).to(to).ignoreAirBlocks(ignoreAir).build();
+		Operations.complete(paste);
+		if (ctx.isDebug()) {
+			ctx.setBlock(to, Util.requireDefaultState(BlockTypes.DIAMOND_BLOCK));
+		}
+
+		return true;
 	}
 
 	private boolean canPlace(CaveGenContext ctx, BlockVector3 to, Clipboard schematic, Transform transform) {

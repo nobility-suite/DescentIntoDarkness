@@ -10,6 +10,7 @@ default:
     - defaultRooms
     - defaultPainterSteps
     - defaultStructures
+    - defaultPortals
     - defaultMobSpawning
 
   maxLength: 90
@@ -23,8 +24,6 @@ default:
   centroidVaryMaxY: 0
 
   nether: false
-
-  portals: {}
 
 # If you want individual traits of the default cave type to override other things you inherit, you can also explicitly inherit these
 defaultBlockTypes:
@@ -220,6 +219,13 @@ defaultStructures:
       chance: 0.01
       ore: minecraft:emerald_ore
       radius: 3
+
+defaultPortals:
+  __builtin_no_default_inherit: true
+  abstract: true
+  portals:
+    default_portal:
+      type: floor_portal
 
 defaultMobSpawning:
   __builtin_no_default_inherit: true

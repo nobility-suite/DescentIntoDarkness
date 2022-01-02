@@ -38,7 +38,7 @@ public class GlowstoneStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		ctx.setBlock(pos, block.get(ctx, centroid));
 		Set<BlockVector3> placedGlowstone = new HashSet<>();
 		placedGlowstone.add(pos);
@@ -64,5 +64,7 @@ public class GlowstoneStructure extends Structure {
 				placedGlowstone.add(offsetPos);
 			}
 		}
+
+		return !placedGlowstone.isEmpty();
 	}
 }

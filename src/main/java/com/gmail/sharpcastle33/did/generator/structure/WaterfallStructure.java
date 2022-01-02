@@ -42,7 +42,7 @@ public class WaterfallStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		if (!force) {
 			int wallCount = 0;
 			for (Direction dir : Direction.valuesOf(Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT)) {
@@ -51,7 +51,7 @@ public class WaterfallStructure extends Structure {
 				}
 			}
 			if (wallCount != 5) {
-				return;
+				return false;
 			}
 		}
 
@@ -59,6 +59,8 @@ public class WaterfallStructure extends Structure {
 			simulateFluidTick(ctx, centroid, pos);
 		}
 		blockLevels.clear();
+
+		return true;
 	}
 
 	private void simulateFluidTick(CaveGenContext ctx, Centroid centroid, BlockVector3 pos) {

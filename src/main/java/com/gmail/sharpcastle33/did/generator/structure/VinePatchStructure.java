@@ -39,7 +39,7 @@ public class VinePatchStructure extends AbstractPatchStructure {
 	}
 
 	@Override
-	protected void doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid) {
+	protected boolean doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid) {
 		int height = minHeight + ctx.rand.nextInt(maxHeight - minHeight + 1);
 		int angle = vineRandomRotation ? ctx.rand.nextInt(4) * 90 : 0;
 		Transform transform = new AffineTransform().rotateY(angle);
@@ -55,5 +55,7 @@ public class VinePatchStructure extends AbstractPatchStructure {
 		if (placed) {
 			ctx.setBlock(offsetPos, Util.transformBlock(lastBlock.get(ctx, centroid), transform));
 		}
+
+		return placed;
 	}
 }

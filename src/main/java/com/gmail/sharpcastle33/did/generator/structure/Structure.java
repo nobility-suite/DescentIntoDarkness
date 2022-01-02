@@ -29,6 +29,7 @@ public abstract class Structure {
 	private final @Nullable BlockPredicate canPlaceOn;
 	private final @Nullable BlockPredicate canReplace;
 	private final List<Direction> validDirections = new ArrayList<>();
+	private final boolean snapToAxis;
 	private final Direction originSide;
 	private final boolean shouldTransformBlocks;
 	private final boolean shouldTransformPosition;
@@ -39,7 +40,7 @@ public abstract class Structure {
 	protected Structure(String name, StructureType type, ConfigurationSection map) {
 		this.name = name;
 		this.type = type;
-		this.edges = ConfigUtil.deserializeSingleableList(map.get("edges"), val -> ConfigUtil.parseEnum(StructurePlacementEdge.class, val), () -> Lists.newArrayList(StructurePlacementEdge.values()));
+		this.edges = ConfigUtil.deserializeSingleableList(map.get("edges"), val -> ConfigUtil.parseEnum(StructurePlacementEdge.class, val), this::getDefaultEdges);
 		if (map.contains("chance")) {
 			if (map.contains("count")) {
 				throw new InvalidConfigException("Structure contains both \"chance\" and \"count\"");
@@ -65,6 +66,7 @@ public abstract class Structure {
 				throw new InvalidConfigException("Invalid Direction: " + originSideVal);
 			}
 		}
+		this.snapToAxis = map.getBoolean("snapToAxis", shouldSnapToAxisByDefault());
 		this.shouldTransformBlocks = map.getBoolean("shouldTransformBlocks", shouldTransformBlocksByDefault());
 		this.shouldTransformPosition = map.getBoolean("shouldTransformPosition", shouldTransformPositionByDefault());
 		this.randomRotation = map.getBoolean("randomRotation", true);
@@ -106,12 +108,24 @@ public abstract class Structure {
 		}
 	}
 
+	protected List<StructurePlacementEdge> getDefaultEdges() {
+		return Lists.newArrayList(StructurePlacementEdge.values());
+	}
+
 	protected boolean shouldTransformBlocksByDefault() {
 		return false;
 	}
 
 	protected boolean shouldTransformPositionByDefault() {
 		return true;
+	}
+
+	protected boolean shouldSnapToAxisByDefault() {
+		return false;
+	}
+
+	public boolean shouldSnapToAxis() {
+		return snapToAxis;
 	}
 
 	protected Direction getDefaultOriginSide(List<StructurePlacementEdge> edges) {
@@ -255,7 +269,7 @@ public abstract class Structure {
 		return type.deserialize(name, map);
 	}
 
-	public abstract void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException;
+	public abstract boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException;
 
 	protected boolean canReplace(CaveGenContext ctx, BlockStateHolder<?> block) {
 		if (canReplace == null) {

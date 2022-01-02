@@ -139,17 +139,20 @@ public class ChorusPlantStructure extends Structure {
 	}
 
 	@Override
-	public void place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
+	public boolean place(CaveGenContext ctx, BlockVector3 pos, Centroid centroid, boolean force) throws WorldEditException {
 		pos = pos.add(0, 1, 0);
-		if (canReplace(ctx, ctx.getBlock(pos))
-				&& canReplace(ctx, ctx.getBlock(pos.add(0, 1, 0)))
-				&& isSurroundedByAir(ctx, pos.add(0, 1, 0), null)
+		if (!canReplace(ctx, ctx.getBlock(pos))
+				|| !canReplace(ctx, ctx.getBlock(pos.add(0, 1, 0)))
+				|| !isSurroundedByAir(ctx, pos.add(0, 1, 0), null)
 		) {
-			ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock.get(ctx, centroid)));
-			int radius = minRadius + ctx.rand.nextInt(maxRadius - minRadius + 1);
-			int numLayers = minNumLayers + ctx.rand.nextInt(maxNumLayers - minNumLayers + 1);
-			generate(ctx, centroid, pos, pos, radius, 0, numLayers, force);
+			return false;
 		}
+
+		ctx.setBlock(pos, withConnectionProperties(ctx, pos, stemBlock.get(ctx, centroid)));
+		int radius = minRadius + ctx.rand.nextInt(maxRadius - minRadius + 1);
+		int numLayers = minNumLayers + ctx.rand.nextInt(maxNumLayers - minNumLayers + 1);
+		generate(ctx, centroid, pos, pos, radius, 0, numLayers, force);
+		return true;
 	}
 
 	private void generate(CaveGenContext ctx, Centroid centroid, BlockVector3 pos, BlockVector3 rootPos, int radius, int layer, int numLayers, boolean force) {

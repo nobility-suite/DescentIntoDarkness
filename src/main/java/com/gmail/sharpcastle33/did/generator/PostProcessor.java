@@ -72,7 +72,7 @@ public class PostProcessor {
 		}
 
 		if (!centroids.isEmpty()) {
-			generatePortal(ctx, centroids.get(0), 100);
+			generatePortal(ctx, centroids.get(0));
 		}
 
 		if (ctx.isDebug()) {
@@ -144,8 +144,7 @@ public class PostProcessor {
 
 
 	public static void generateStructure(CaveGenContext ctx, List<Centroid> centroids, Structure structure) throws WorldEditException {
-		List<Direction> validDirections = structure.getValidDirections();
-		if (validDirections.isEmpty()) {
+		if (structure.getValidDirections().isEmpty()) {
 			return;
 		}
 		for (Centroid centroid : centroids) {
@@ -168,52 +167,69 @@ public class PostProcessor {
 				if (structure.areTagsInverted()
 						? structure.getTags().stream().noneMatch(centroid.tags::contains)
 						: structure.getTags().stream().anyMatch(centroid.tags::contains)) {
-					// pick a random point on the unit sphere until it's a valid direction
-					Vector3 vector;
-					Direction dir;
-					do {
-						vector = Vector3.at(ctx.rand.nextGaussian(), ctx.rand.nextGaussian(), ctx.rand.nextGaussian()).normalize().multiply(centroid.size);
-						dir = Direction.findClosest(vector, Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
-					} while (!validDirections.contains(dir));
-					assert dir != null; // stupid worldedit
-					double distanceToWall = dir.toVector().dot(vector);
-					Vector3 orthogonal = vector.subtract(dir.toVector().multiply(distanceToWall));
-					BlockVector3 origin = centroid.pos.add(orthogonal).toBlockPoint();
-
-					BlockVector3 pos;
-					if (dir == Direction.DOWN) {
-						pos = PostProcessor.getFloor(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
-					} else if (dir == Direction.UP) {
-						pos = PostProcessor.getCeiling(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
-					} else {
-						pos = PostProcessor.getWall(ctx, origin, (int) Math.ceil(distanceToWall) + 2, dir.toBlockVector());
-					}
-
-					if (structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-						int randomYRotation = ctx.rand.nextInt(4) * 90;
-						ctx.pushTransform(structure.getBlockTransform(randomYRotation, pos, dir), structure.getPositionTransform(randomYRotation, pos, dir));
-						structure.place(ctx, pos, centroid, false);
-						ctx.popTransform();
-					}
+					placeStructure(ctx, structure, centroid, false);
 				}
 			}
 		}
 	}
 
-	private static void generatePortal(CaveGenContext ctx, Centroid firstCentroid, int caveRadius) {
+	private static boolean placeStructure(CaveGenContext ctx, Structure structure, Centroid centroid, boolean force) {
+		List<Direction> validDirections = structure.getValidDirections();
+		if (validDirections.isEmpty()) {
+			return true;
+		}
+
+		Vector3 vector;
+		Direction dir;
+		if (structure.shouldSnapToAxis()) {
+			dir = validDirections.get(ctx.rand.nextInt(validDirections.size()));
+			vector = dir.toVector().multiply(centroid.size);
+		} else {
+			// pick a random point on the unit sphere until it's a valid direction
+			do {
+				vector = Vector3.at(ctx.rand.nextGaussian(), ctx.rand.nextGaussian(), ctx.rand.nextGaussian()).normalize().multiply(centroid.size);
+				dir = Direction.findClosest(vector, Direction.Flag.CARDINAL | Direction.Flag.UPRIGHT);
+			} while (!validDirections.contains(dir));
+			assert dir != null; // stupid worldedit
+		}
+		double distanceToWall = dir.toVector().dot(vector);
+		Vector3 orthogonal = vector.subtract(dir.toVector().multiply(distanceToWall));
+		BlockVector3 origin = centroid.pos.add(orthogonal).toBlockPoint();
+
+		BlockVector3 pos;
+		if (dir == Direction.DOWN) {
+			pos = PostProcessor.getFloor(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
+		} else if (dir == Direction.UP) {
+			pos = PostProcessor.getCeiling(ctx, origin, (int) Math.ceil(distanceToWall) + 2);
+		} else {
+			pos = PostProcessor.getWall(ctx, origin, (int) Math.ceil(distanceToWall) + 2, dir.toBlockVector());
+		}
+
+		if (!force && !structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
+			return false;
+		}
+
+		int randomYRotation = ctx.rand.nextInt(4) * 90;
+		ctx.pushTransform(structure.getBlockTransform(randomYRotation, pos, dir), structure.getPositionTransform(randomYRotation, pos, dir));
+		boolean placed = structure.place(ctx, pos, centroid, force);
+		ctx.popTransform();
+		return placed;
+	}
+
+	private static void generatePortal(CaveGenContext ctx, Centroid firstCentroid) {
 		if (ctx.style.getPortals().isEmpty()) {
 			return;
 		}
-		Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
-		double zeroChance = Math.exp(-portal.getCount());
-		if (ctx.rand.nextDouble() < zeroChance) {
-			return;
+		// 100 attempts to place a portal without force (in a nice location)
+		for (int i = 0; i < 100; i++) {
+			Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
+			if (placeStructure(ctx, portal, firstCentroid, false)) {
+				return;
+			}
 		}
-		BlockVector3 pos = PostProcessor.getFloor(ctx, firstCentroid.pos.toBlockPoint(), caveRadius);
-		int randomYRotation = ctx.rand.nextInt(4) * 90;
-		ctx.pushTransform(portal.getBlockTransform(randomYRotation, pos, Direction.DOWN), portal.getPositionTransform(randomYRotation, pos, Direction.DOWN));
-		portal.place(ctx, pos, firstCentroid, true);
-		ctx.popTransform();
+		// if we can't place a portal, try again with force
+		Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
+		placeStructure(ctx, portal, firstCentroid, true);
 	}
 
 	public static void generateWaterfalls(CaveGenContext ctx, List<Centroid> centroids, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {

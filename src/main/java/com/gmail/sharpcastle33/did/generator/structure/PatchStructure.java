@@ -16,7 +16,8 @@ public class PatchStructure extends AbstractPatchStructure {
 	}
 
 	@Override
-	protected void doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid) {
+	protected boolean doPlace(CaveGenContext ctx, BlockVector3 pos, Centroid centroid) {
 		ctx.setBlock(pos, block.get(ctx, centroid));
+		return true;
 	}
 }
