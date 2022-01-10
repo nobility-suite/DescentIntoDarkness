@@ -12,6 +12,7 @@ import com.sk89q.worldedit.util.nbt.BinaryTagIO;
 import com.sk89q.worldedit.util.nbt.CompoundBinaryTag;
 import com.sk89q.worldedit.util.nbt.DoubleBinaryTag;
 import com.sk89q.worldedit.util.nbt.ListBinaryTag;
+import com.sk89q.worldedit.world.block.BaseBlock;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockType;
@@ -108,11 +109,21 @@ public class Util {
 		}
 	}
 
+	public static BlockStateHolder<?> toRealImmutable(BlockStateHolder<?> holder) {
+		if (holder instanceof BaseBlock) {
+			// fixes FAWE bug where BaseBlock.toImmutableState() returns what it's holding, even if it's not immutable
+			return holder.toImmutableState().toImmutableState();
+		} else {
+			return holder.toImmutableState();
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public static <T extends BlockStateHolder<T>> BlockStateHolder<?> transformBlock(BlockStateHolder<?> block, Transform transform) {
 		if (transform.isIdentity()) {
 			return block;
 		}
+		block = toRealImmutable(block);
 
 		BlockType type = block.getBlockType();
 		if (type.hasProperty(PropertyKey.NORTH)

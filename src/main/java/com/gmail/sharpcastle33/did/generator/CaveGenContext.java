@@ -85,6 +85,7 @@ public class CaveGenContext implements AutoCloseable {
 	}
 
 	public boolean setBlock(BlockVector3 pos, BlockStateHolder<?> block) throws MaxChangedBlocksException {
+		block = Util.toRealImmutable(block);
 		pos = getInverseLocationTransform().apply(pos.toVector3()).toBlockPoint();
 		block = Util.transformBlock(block, getInverseBlockTransform());
 		if (pos.getBlockY() <= 0 || pos.getBlockY() >= 255) {
