@@ -2,6 +2,8 @@ package com.gmail.sharpcastle33.did.instancing;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.logging.Level;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.CaveStyleGroup;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
@@ -28,6 +31,7 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -46,15 +50,19 @@ public class CaveTrackerManager {
 	private final int instanceLimit;
 	private World theWorld;
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
+	private final EnumMap<DyeColor, ArrayList<CaveTracker>> unexploredCavesByGroup = new EnumMap<>(DyeColor.class);
 	private ArrayList<Integer> tempClaimedIDs;
 	private final Map<UUID, Location> overworldPlayerLocations = new HashMap<>();
 	private int nextInstanceId;
 	private Objective pollutionObjective;
 	private final AtomicBoolean generatingCave = new AtomicBoolean(false);
-	private ThreadLocal<Boolean> isLeavingCave = new ThreadLocal<>();
+	private final ThreadLocal<Boolean> isLeavingCave = new ThreadLocal<>();
 
 	public CaveTrackerManager(int instanceLimit) {
 		this.instanceLimit = instanceLimit;
+		for (DyeColor group : DyeColor.values()) {
+			unexploredCavesByGroup.put(group, new ArrayList<>());
+		}
 	}
 
 	public void initialize() {
@@ -62,7 +70,7 @@ public class CaveTrackerManager {
 		if (theWorld == null) {
 			throw new RuntimeException("Failed to create world");
 		}
-		tempClaimedIDs = new ArrayList<Integer>();
+		tempClaimedIDs = new ArrayList<>();
 	}
 
 	public void update() {
@@ -87,22 +95,44 @@ public class CaveTrackerManager {
 			generatingCave.set(false);
 			return;
 		}
-//		CaveStyle style = getRandomStyle();
-//		if (style == null) {
-//			generatingCave.set(false);
-//			return;
-//		}
-//		createCave(style).whenComplete((cave, throwable) -> {
-//			if (throwable != null) {
-//				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
-//			}
-//			generatingCave.set(false);
-//			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
-//		});
+		DyeColor color = getMostAppropriateColor();
+		if (color == null) {
+			generatingCave.set(false);
+			return;
+		}
+		CaveStyle style = getRandomStyle(color);
+		if (style == null) {
+			generatingCave.set(false);
+			return;
+		}
+		createCave(style).caveFuture.whenComplete((cave, throwable) -> {
+			if (throwable != null) {
+				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
+			}
+			generatingCave.set(false);
+			Bukkit.getLogger().log(Level.INFO, "Cave " + cave.getId() + " is ready to join!");
+		});
 	}
 
-	private CaveStyle getRandomStyle() {
-		String chosenStyle = DescentIntoDarkness.instance.getCaveStyles().getWeights().getRandom(new Random());
+	@Nullable
+	private DyeColor getMostAppropriateColor() {
+		int totalWeight = DescentIntoDarkness.instance.getCaveStyles().getGroups().values().stream()
+				.filter(value -> !value.getCaveWeights().isEmpty())
+				.mapToInt(CaveStyleGroup::getGroupWeight)
+				.sum();
+		return DescentIntoDarkness.instance.getCaveStyles().getGroups().entrySet().stream()
+				.filter(entry -> !entry.getValue().getCaveWeights().isEmpty())
+				.min(Comparator.comparingInt(entry -> unexploredCavesByGroup.get(entry.getKey()).size() * totalWeight / entry.getValue().getGroupWeight()))
+				.map(Map.Entry::getKey)
+				.orElse(null);
+	}
+
+	private CaveStyle getRandomStyle(DyeColor color) {
+		CaveStyleGroup group = DescentIntoDarkness.instance.getCaveStyles().getGroups().get(color);
+		if (group == null) {
+			return null;
+		}
+		String chosenStyle = group.getCaveWeights().getRandom(new Random());
 		if (chosenStyle == null) {
 			return null;
 		}
@@ -110,27 +140,16 @@ public class CaveTrackerManager {
 		CaveStyle caveStyle = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().get(chosenStyle);
 		if (caveStyle == null || caveStyle.isAbstract()) {
 			Bukkit.getLogger().log(Level.SEVERE, "Cannot instantiate cave style: " + chosenStyle);
-			DescentIntoDarkness.instance.getCaveStyles().getWeights().remove(chosenStyle);
-			return getRandomStyle();
+			group.getCaveWeights().remove(chosenStyle);
+			return getRandomStyle(color);
 		}
 		return caveStyle;
 	}
 
-	public CaveCreationHandle findFreeCave() {
-		int caveId = nextInstanceId;
-		do {
-			CaveTracker cave = getCaveById(caveId);
-			if (cave != null && !cave.hasBeenJoined()) {
-				return new CaveCreationHandle(caveId, CompletableFuture.completedFuture(cave));
-			}
-			caveId = (caveId + 1) % instanceLimit;
-		} while (caveId != nextInstanceId);
-
-		CaveStyle randomStyle = getRandomStyle();
-		if (randomStyle == null) {
-			return CaveCreationHandle.createExceptionally(new RuntimeException("No cave styles to choose from"));
-		}
-		return createCave(randomStyle);
+	@Nullable
+	public CaveTracker findFreeCave(DyeColor color) {
+		ArrayList<CaveTracker> caves = unexploredCavesByGroup.get(color);
+		return caves.isEmpty() ? null : caves.get(0);
 	}
 
 	public CaveCreationHandle createCave(CaveStyle style) {

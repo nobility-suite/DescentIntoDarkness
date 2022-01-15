@@ -19,6 +19,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -238,12 +239,21 @@ public class ConfigUtil {
 	}
 
 	public static <T extends Enum<T>> T parseEnum(Class<T> type, String val) {
+		T result = tryParseEnum(type, val);
+		if (result == null) {
+			throw new InvalidConfigException("Invalid " + type.getSimpleName() + ": " + val);
+		}
+		return result;
+	}
+
+	@Nullable
+	public static <T extends Enum<T>> T tryParseEnum(Class<T> type, String val) {
 		for (T enumVal : type.getEnumConstants()) {
 			if (enumVal.name().equals(val.toUpperCase(Locale.ROOT))) {
 				return enumVal;
 			}
 		}
-		throw new InvalidConfigException("Invalid " + type.getSimpleName() + ": " + val);
+		return null;
 	}
 
 	public static <T> List<T> deserializeSingleableList(Object val, Function<String, T> parseFunction, Supplier<List<T>> defaultSupplier) {

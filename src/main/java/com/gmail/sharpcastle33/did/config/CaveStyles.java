@@ -2,6 +2,7 @@ package com.gmail.sharpcastle33.did.config;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.configuration.Configuration;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,16 +29,20 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class CaveStyles {
-	private Weights caveStyleWeights = null;
+	private final Map<DyeColor, CaveStyleGroup> groups = new HashMap<>();
 	private Configuration caveStylesConfig;
 	private NavigableMap<String, CaveStyle> caveStyles = null;
 
 	public void reload(ConfigurationSection config) {
-		caveStyleWeights = new Weights();
-		ConfigurationSection caveStylesSection = config.getConfigurationSection("caveStyles");
-		if (caveStylesSection != null) {
-			for (String style : caveStylesSection.getKeys(false)) {
-				caveStyleWeights.weights.put(style, caveStylesSection.getInt(style, 10));
+		groups.clear();
+		ConfigurationSection caveStylesGroupsSection = config.getConfigurationSection("caveStyleGroups");
+		if (caveStylesGroupsSection != null) {
+			for (String colorName : caveStylesGroupsSection.getKeys(false)) {
+				DyeColor color = ConfigUtil.tryParseEnum(DyeColor.class, colorName);
+				ConfigurationSection groupSection = caveStylesGroupsSection.getConfigurationSection(colorName);
+				if (color != null && groupSection != null) {
+					groups.put(color, new CaveStyleGroup(groupSection));
+				}
 			}
 		}
 
@@ -71,8 +77,8 @@ public class CaveStyles {
 		getCaveStylesByName();
 	}
 
-	public Weights getWeights() {
-		return caveStyleWeights;
+	public Map<DyeColor, CaveStyleGroup> getGroups() {
+		return groups;
 	}
 
 	public NavigableMap<String, CaveStyle> getCaveStylesByName() {
@@ -256,8 +262,16 @@ public class CaveStyles {
 			return null;
 		}
 
+		public void put(String key, int weight) {
+			weights.put(key, weight);
+		}
+
 		public void remove(String style) {
 			weights.remove(style);
+		}
+
+		public boolean isEmpty() {
+			return weights.isEmpty();
 		}
 	}
 }

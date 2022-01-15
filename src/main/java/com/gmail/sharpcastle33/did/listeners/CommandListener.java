@@ -5,18 +5,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import com.fastasyncworldedit.core.internal.exception.FaweException;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -47,58 +48,66 @@ import net.md_5.bungee.api.ChatColor;
 
 public class CommandListener implements TabExecutor {
 	
-	private final HashMap<UUID,Long> playerSeeds;
+	private final HashMap<UUID,Long> playerSeeds = new HashMap<>();
 	private CaveGenContext currentCaveGen;
 	
-	public CommandListener() {
-		this.playerSeeds = new HashMap<UUID,Long>();
+	private static Player requirePlayer(CommandSender sender) {
+		if(!(sender instanceof Player)) {
+			sender.sendMessage(ChatColor.DARK_RED + "Sender must be a player");
+			return null;
+		}
+		return (Player) sender;
 	}
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (!(sender instanceof Player)) {
-			sender.sendMessage(ChatColor.DARK_RED + "Sender must be a player");
-			return true;
-		}
-
-		Player p = (Player) sender;
+		Player p;
 		
 		if(args.length == 0) {
-			caveMenu(p,args);
+			if ((p = requirePlayer(sender)) != null) {
+				caveMenu(p,args);
+			}
 			return true;
 		}
 
 		switch (args[0]) {
 			case "delete":
-				delete(p, args);
+				delete(sender, args);
 				break;
 			case "generate":
-				generate(p, args);
+				generate(sender, args);
 				break;
 			case "cancel":
-				cancel(p, args);
+				cancel(sender, args);
 				break;
 			case "debug":
-				debug(p,args);
+				if ((p = requirePlayer(sender)) != null) {
+					debug(p,args);
+				}
+				break;
 			case "join":
-				join(p, args);
+				join(sender, args);
 				break;
 			case "leave":
-				leave(p, args);
+				leave(sender, args);
 				break;
 			case "list":
-				list(p);
+				list(sender);
 				break;
 			case "reload":
 				DescentIntoDarkness.instance.reload();
-				p.sendMessage(ChatColor.GREEN + "Reloaded DID config");
+				sender.sendMessage(ChatColor.GREEN + "Reloaded DID config");
 				break;
 			case "reroll":
-				Random rand = new Random();
-				long seed = rand.nextLong();
-				playerSeeds.put(p.getUniqueId(), seed);
+				if ((p = requirePlayer(sender)) != null) {
+					Random rand = new Random();
+					long seed = rand.nextLong();
+					playerSeeds.put(p.getUniqueId(), seed);
+				}
 				break;
 			case "select":
-				select(p,args);
+				if ((p = requirePlayer(sender)) != null) {
+					select(p,args);
+				}
 				break;
 		}
 
@@ -106,7 +115,6 @@ public class CommandListener implements TabExecutor {
 	}
 	
 	private void debug(Player p, String[] args) {
-		// TODO Auto-generated method stub
 		CaveTrackerManager ctm = DescentIntoDarkness.instance.getCaveTrackerManager();
 		for(CaveTracker ct : ctm.getCaves()) {
 			if(ct.getPlayers().contains(p.getUniqueId())) {
@@ -206,12 +214,12 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
-	private void delete(Player p, String[] args) {
+	private void delete(CommandSender p, String[] args) {
 		if (args.length == 1) {
 			return;
 		}
 		OptionalInt caveId = parseInt(p, args[1]);
-		if (!caveId.isPresent()) return;
+		if (caveId.isEmpty()) return;
 
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
 
@@ -225,19 +233,46 @@ public class CommandListener implements TabExecutor {
 		p.sendMessage(ChatColor.GREEN + "Deleted cave " + caveId.getAsInt());
 	}
 
-	private void generate(Player p, String[] args) {
+	private void generate(CommandSender p, String[] args) {
 		if (args.length == 1) {
 			return;
 		}
 
+		Location pos;
+
+		if (args.length >= 5) {
+			boolean xRelative = args[2].startsWith("~");
+			OptionalInt xOpt = xRelative ? parseInt(p, args[2].substring(1)) : parseInt(p, args[2]);
+			if (xOpt.isEmpty()) return;
+			boolean yRelative = args[3].startsWith("~");
+			OptionalInt yOpt = yRelative ? parseInt(p, args[3].substring(1)) : parseInt(p, args[3]);
+			if (yOpt.isEmpty()) return;
+			boolean zRelative = args[4].startsWith("~");
+			OptionalInt zOpt = zRelative ? parseInt(p, args[4].substring(1)) : parseInt(p, args[4]);
+			if (zOpt.isEmpty()) return;
+			int x = xOpt.getAsInt(), y = yOpt.getAsInt(), z = zOpt.getAsInt();
+			if (xRelative || yRelative || zRelative) {
+				Player player = requirePlayer(p);
+				if (player == null) return;
+				if (xRelative) x += player.getLocation().getBlockX();
+				if (yRelative) y += player.getLocation().getBlockY();
+				if (zRelative) z += player.getLocation().getBlockZ();
+			}
+			pos = new Location(p instanceof Player ? ((Player) p).getWorld() : Bukkit.getWorlds().get(0), x, y, z);
+		} else {
+			Player player = requirePlayer(p);
+			if (player == null) return;
+			pos = player.getLocation();
+		}
+
 		if (args[1].equals("cave")) {
-			generateCave(p, args);
+			generateCave(p, pos, args);
 		} else if (args[1].equals("blank")) {
-			generateBlank(p, args);
+			generateBlank(p, pos, args);
 		}
 	}
 
-	private void cancel(Player p, String[] args) {
+	private void cancel(CommandSender p, String[] args) {
 		if (currentCaveGen != null) {
 			currentCaveGen.cancel();
 		} else {
@@ -245,22 +280,30 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
-	public static void join(Player p, String[] args) {
+	public static void join(CommandSender p, String[] args) {
+		if (args.length == 1) {
+			return;
+		}
+
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
-		CompletableFuture<CaveTracker> cave;
 
-		if (args.length > 1) {
+		CaveTracker c;
+		try {
+			DyeColor color = DyeColor.valueOf(args[1].toUpperCase(Locale.ROOT));
+			c = caveTrackerManager.findFreeCave(color);
+			if (c == null) {
+				p.sendMessage(ChatColor.RED + "No free caves of that color");
+				return;
+			}
+		} catch (IllegalArgumentException e) {
 			OptionalInt caveId = parseInt(p, args[1]);
-			if (!caveId.isPresent()) return;
+			if (caveId.isEmpty()) return;
 
-			CaveTracker c = caveTrackerManager.getCaveById(caveId.getAsInt());
+			c = caveTrackerManager.getCaveById(caveId.getAsInt());
 			if (c == null) {
 				p.sendMessage(ChatColor.RED + "Cave " + caveId.getAsInt() + " not found");
 				return;
 			}
-			cave = CompletableFuture.completedFuture(c);
-		} else {
-			cave = caveTrackerManager.findFreeCave().caveFuture;
 		}
 
 		Player target;
@@ -271,25 +314,18 @@ public class CommandListener implements TabExecutor {
 				return;
 			}
 		} else {
-			target = p;
+			target = requirePlayer(p);
+			if (target == null) return;
 		}
 
-		cave.whenComplete((c, throwable) -> {
-			if (throwable != null) {
-				p.sendMessage(ChatColor.RED + "Could not find free cave");
-			} else {
-				DescentIntoDarkness.instance.runSyncLater(() -> {
-					if (caveTrackerManager.teleportPlayerTo(target, c)) {
-						p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
-					} else {
-						p.sendMessage(ChatColor.RED + "Failed to teleport player");
-					}
-				});
-			}
-		});
+		if (caveTrackerManager.teleportPlayerTo(target, c)) {
+			p.sendMessage(ChatColor.GREEN + "Teleported player successfully");
+		} else {
+			p.sendMessage(ChatColor.RED + "Failed to teleport player");
+		}
 	}
 
-	private void leave(Player p, String[] args) {
+	private void leave(CommandSender p, String[] args) {
 		Player target;
 		if (args.length > 1) {
 			target = Bukkit.getPlayer(args[1]);
@@ -298,7 +334,8 @@ public class CommandListener implements TabExecutor {
 				return;
 			}
 		} else {
-			target = p;
+			target = requirePlayer(p);
+			if (target == null) return;
 		}
 
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
@@ -314,7 +351,7 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
-	private void list(Player p) {
+	private void list(CommandSender p) {
 		List<CaveTracker> caves = DescentIntoDarkness.instance.getCaveTrackerManager().getCaves();
 		if (caves.isEmpty()) {
 			p.sendMessage(ChatColor.RED + "0 active caves");
@@ -327,18 +364,17 @@ public class CommandListener implements TabExecutor {
 
 	}
 
-	private void generateBlank(Player p, String[] args) {
+	private void generateBlank(CommandSender p, Location pos, String[] args) {
 		BlockStateHolder<?> base = args.length <= 2 ? Util.requireDefaultState(BlockTypes.STONE) : ConfigUtil.parseBlock(args[2]);
 		OptionalInt radius = args.length <= 3 ? OptionalInt.of(200) : parseInt(p, args[3]);
-		if (!radius.isPresent()) return;
+		if (radius.isEmpty()) return;
 		OptionalInt yRadius = args.length <= 4 ? OptionalInt.of(120) : parseInt(p, args[4]);
-		if (!yRadius.isPresent()) return;
+		if (yRadius.isEmpty()) return;
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating...");
 
-		Location pos = p.getLocation();
 		DescentIntoDarkness.instance.runAsync(() -> {
-			try (EditSession session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(p.getWorld()))) {
+			try (EditSession session = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(pos.getWorld()))) {
 				CaveGenerator.generateBlank(session, base, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ(), radius.getAsInt(), yRadius.getAsInt());
 			}
 		}).whenComplete((v, throwable) -> {
@@ -351,12 +387,12 @@ public class CommandListener implements TabExecutor {
 		});
 	}
 
-	private void generateCave(Player p, String[] args) {
+	private void generateCave(CommandSender p, Location pos, String[] args) {
 		String styleName = args.length <= 2 ? "default" : args[2];
 		OptionalInt size = args.length <= 3 ? OptionalInt.of(7) : parseInt(p, args[3]);
-		if (!size.isPresent()) return;
+		if (size.isEmpty()) return;
 		OptionalLong seed = args.length <= 4 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[4]);
-		if (!seed.isPresent()) return;
+		if (seed.isEmpty()) return;
 		boolean debug = args.length > 5 && Boolean.parseBoolean(args[5]);
 
 		if (currentCaveGen != null) {
@@ -380,9 +416,9 @@ public class CommandListener implements TabExecutor {
 			Bukkit.getServer().getLogger().info("CaveTracker found, ID: " + t.getId() + " " + t.getJoinTime());
 		}
 		DescentIntoDarkness.instance.supplyAsync(() -> {
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(p.getWorld()), style, seed.getAsLong()).setDebug(debug)) {
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(pos.getWorld()), style, seed.getAsLong()).setDebug(debug)) {
 				currentCaveGen = ctx;
-				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(p.getLocation()), size.getAsInt());
+				return CaveGenerator.generateCave(ctx, BukkitAdapter.asVector(pos), size.getAsInt());
 			}
 		}).whenComplete((s, throwable) -> {
 			currentCaveGen = null;
@@ -416,24 +452,37 @@ public class CommandListener implements TabExecutor {
 					if (args.length == 2) {
 						return StringUtil.copyPartialMatches(args[1], Arrays.asList("cave", "blank"), new ArrayList<>());
 					} else {
+						if (args.length < 6) {
+							return args[args.length - 1].isEmpty() ? Collections.singletonList("~") : Collections.emptyList();
+						}
 						if (args[1].equals("cave")) {
-							if (args.length == 3) {
+							if (args.length == 6) {
 								return StringUtil.copyPartialMatches(
-										args[2],
+										args[5],
 										DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().entrySet().stream().filter(entry -> !entry.getValue().isAbstract()).map(Map.Entry::getKey).collect(Collectors.toList()),
 										new ArrayList<>()
 								);
-							} else if (args.length == 6) {
-								return StringUtil.copyPartialMatches(args[5], Arrays.asList("false", "true"), new ArrayList<>());
+							} else if (args.length == 9) {
+								return StringUtil.copyPartialMatches(args[8], Arrays.asList("false", "true"), new ArrayList<>());
 							}
 						} else if (args[1].equals("blank")) {
-							if (args.length == 3) {
-								return StringUtil.copyPartialMatches(args[2], Arrays.stream(Material.values()).map(material -> material.getKey().getKey()).collect(Collectors.toList()), new ArrayList<>());
+							if (args.length == 6) {
+								return StringUtil.copyPartialMatches(args[5], Arrays.stream(Material.values()).map(material -> material.getKey().getKey()).collect(Collectors.toList()), new ArrayList<>());
 							}
 						}
 					}
 					break;
 				case "join":
+					if (args.length == 2) {
+						return StringUtil.copyPartialMatches(
+								args[1],
+								DescentIntoDarkness.instance.getCaveStyles().getGroups().keySet().stream()
+									.filter(it -> !DescentIntoDarkness.instance.getCaveStyles().getGroups().get(it).getCaveWeights().isEmpty())
+									.map(it -> it.name().toLowerCase(Locale.ROOT))
+									.collect(Collectors.toList()),
+								new ArrayList<>()
+						);
+					}
 					if (args.length == 3) {
 						return StringUtil.copyPartialMatches(args[2], Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), new ArrayList<>());
 					}
@@ -449,7 +498,7 @@ public class CommandListener implements TabExecutor {
 		return Collections.emptyList();
 	}
 
-	private static OptionalInt parseInt(Player p, String arg) {
+	private static OptionalInt parseInt(CommandSender p, String arg) {
 		try {
 			return OptionalInt.of(Integer.parseInt(arg));
 		} catch (NumberFormatException e) {
@@ -458,7 +507,7 @@ public class CommandListener implements TabExecutor {
 		}
 	}
 
-	private static OptionalLong parseLong(Player p, String arg) {
+	private static OptionalLong parseLong(CommandSender p, String arg) {
 		try {
 			return OptionalLong.of(Long.parseLong(arg));
 		} catch (NumberFormatException e) {

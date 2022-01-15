@@ -23,6 +23,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -287,6 +288,34 @@ public class Util {
 				centroidsInOut.add(centroidSupplier.apply(startPos.add(segment.multiply(i))));
 			}
 		}
+	}
+
+	@Nullable
+	public static Integer tryCastInt(Object o) {
+		if (o instanceof Integer) {
+			return (Integer) o;
+		} else if (o instanceof Number) {
+			return ((Number) o).intValue();
+		}
+		return null;
+	}
+
+	@Nullable
+	public static Long tryCastLong(Object o) {
+		if (o instanceof Long) {
+			return (Long) o;
+		} else if (o instanceof Number) {
+			return ((Number) o).longValue();
+		}
+		return null;
+	}
+
+	@Nullable
+	public static <T> T tryCast(Object obj, Class<T> clazz) {
+		if (clazz.isInstance(obj)) {
+			return clazz.cast(obj);
+		}
+		return null;
 	}
 
 }

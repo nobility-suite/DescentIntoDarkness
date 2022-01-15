@@ -9,6 +9,7 @@ import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
 import com.gmail.sharpcastle33.did.listeners.CaveEntranceListener;
 import com.gmail.sharpcastle33.did.listeners.CommandListener;
+import com.gmail.sharpcastle33.did.listeners.HiddenOre;
 import com.gmail.sharpcastle33.did.listeners.MobSpawnManager;
 import com.gmail.sharpcastle33.did.listeners.OreListener;
 import com.gmail.sharpcastle33.did.listeners.PacketListener;
@@ -120,16 +121,20 @@ public class DescentIntoDarkness extends JavaPlugin {
 		Bukkit.getPluginManager().registerEvents(new CaveEntranceListener(), instance);
 		Bukkit.getPluginManager().registerEvents(new OreListener(), instance);
 		Bukkit.getPluginManager().registerEvents(new PlayerListener(), instance);
+		Bukkit.getPluginManager().registerEvents(new HiddenOre(), instance);
 		mobSpawnManager = new MobSpawnManager();
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, mobSpawnManager, 0, 1);
 		Bukkit.getPluginManager().registerEvents(mobSpawnManager, instance);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, caveTrackerManager::update, 0, 20);
 
 		PacketListener.register();
+
+		HiddenOre.loadHiddenOreData();
 	}
 
 	@Override
 	public void onDisable() {
+		HiddenOre.saveHiddenOreData();
 		caveTrackerManager.destroy();
 	}
 

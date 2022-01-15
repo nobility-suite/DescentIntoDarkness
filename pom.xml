@@ -28,6 +28,10 @@
 			<url>https://mvn.lumine.io/repository/maven-public/</url>
 		</repository>
 		<repository>
+			<id>civclassics-artifacts</id>
+			<url>https://raw.githubusercontent.com/CivClassic/artifacts/master/</url>
+		</repository>
+		<repository>
 			<id>devoted-repo</id>
 			<url>https://build.devotedmc.com/plugin/repository/everything/</url>
 		</repository>
@@ -72,6 +76,11 @@
 			<groupId>com.comphenix.protocol</groupId>
 			<artifactId>ProtocolLib</artifactId>
 			<version>4.5.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.devotedmc</groupId>
+			<artifactId>hiddenore</artifactId>
+			<version>1.7.2</version>
 		</dependency>
 	</dependencies>
 
