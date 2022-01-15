@@ -116,13 +116,10 @@ public class CaveTrackerManager {
 
 	@Nullable
 	private DyeColor getMostAppropriateColor() {
-		int totalWeight = DescentIntoDarkness.instance.getCaveStyles().getGroups().values().stream()
-				.filter(value -> !value.getCaveWeights().isEmpty())
-				.mapToInt(CaveStyleGroup::getGroupWeight)
-				.sum();
 		return DescentIntoDarkness.instance.getCaveStyles().getGroups().entrySet().stream()
 				.filter(entry -> !entry.getValue().getCaveWeights().isEmpty())
-				.min(Comparator.comparingInt(entry -> unexploredCavesByGroup.get(entry.getKey()).size() * totalWeight / entry.getValue().getGroupWeight()))
+				.min(Comparator.<Map.Entry<DyeColor, CaveStyleGroup>>comparingDouble(entry -> (double) unexploredCavesByGroup.get(entry.getKey()).size() / entry.getValue().getGroupWeight())
+						.thenComparingInt(entry -> -entry.getValue().getGroupWeight()))
 				.map(Map.Entry::getKey)
 				.orElse(null);
 	}
