@@ -109,9 +109,6 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 		setupConfig();
 
-		if (caveTrackerManager != null) {
-			caveTrackerManager.destroy();
-		}
 		int instanceLimit = config.getInt("instanceLimit", 8);
 		if (instanceLimit <= 0) {
 			instanceLimit = 8;
@@ -126,6 +123,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, mobSpawnManager, 0, 1);
 		Bukkit.getPluginManager().registerEvents(mobSpawnManager, instance);
 		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, caveTrackerManager::update, 0, 20);
+		Bukkit.getScheduler().scheduleSyncRepeatingTask(instance, caveTrackerManager::save, 900, 900);
 
 		PacketListener.register();
 
@@ -135,7 +133,9 @@ public class DescentIntoDarkness extends JavaPlugin {
 	@Override
 	public void onDisable() {
 		HiddenOre.saveHiddenOreData();
-		caveTrackerManager.destroy();
+		if (caveTrackerManager != null) {
+			caveTrackerManager.save();
+		}
 	}
 
 	private <T extends CommandExecutor & TabCompleter> void registerCommand(String name, T executor) {

@@ -11,7 +11,7 @@ public class CaveStyleGroup {
 		ConfigurationSection caves = section.getConfigurationSection("caves");
 		if (caves != null) {
 			for (String key : caves.getKeys(false)) {
-				int value = section.getInt(key);
+				int value = caves.getInt(key);
 				if (value < 1) {
 					throw new InvalidConfigException("Invalid weight for " + key);
 				}

@@ -1,11 +1,13 @@
 package com.gmail.sharpcastle33.did.instancing;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
@@ -37,6 +39,10 @@ import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.WorldType;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -70,6 +76,7 @@ public class CaveTrackerManager {
 		if (theWorld == null) {
 			throw new RuntimeException("Failed to create world");
 		}
+		load();
 		tempClaimedIDs = new ArrayList<>();
 	}
 
@@ -105,7 +112,7 @@ public class CaveTrackerManager {
 			generatingCave.set(false);
 			return;
 		}
-		createCave(style).caveFuture.whenComplete((cave, throwable) -> {
+		createCave(color, style).caveFuture.whenComplete((cave, throwable) -> {
 			if (throwable != null) {
 				Bukkit.getLogger().log(Level.SEVERE, "Failed to create cave", throwable);
 			}
@@ -149,7 +156,7 @@ public class CaveTrackerManager {
 		return caves.isEmpty() ? null : caves.get(0);
 	}
 
-	public CaveCreationHandle createCave(CaveStyle style) {
+	public CaveCreationHandle createCave(DyeColor color, CaveStyle style) {
 		int oldInstanceId = nextInstanceId;
 		Bukkit.getServer().getLogger().info("NextInstanceID: " + nextInstanceId + " Instance Limit: " + instanceLimit);
 		while (getCaveById(nextInstanceId) != null || tempClaimedIDs.contains(nextInstanceId)) {
@@ -191,8 +198,10 @@ public class CaveTrackerManager {
 			return DescentIntoDarkness.instance.supplySyncNow(() -> {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
+				unexploredCavesByGroup.computeIfAbsent(color, k -> new ArrayList<>()).add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
 				tempClaimedIDs.remove(id);
+				save();
 				return caveTracker;
 			});
 		}));
@@ -227,13 +236,7 @@ public class CaveTrackerManager {
 
 		caveTracker.getTeam().unregister();
 		caveTrackers.remove(caveTracker);
-	}
-
-	public void destroy() {
-		Bukkit.getLogger().log(Level.INFO, "Deleting " + caveTrackers.size() + " cave instances");
-		while (!caveTrackers.isEmpty()) {
-			deleteCave(caveTrackers.get(0));
-		}
+		save();
 	}
 
 	public boolean isInCave(Player p) {
@@ -385,6 +388,95 @@ public class CaveTrackerManager {
 			case 3: return BlockVector2.at(-radius, radius - d).multiply(INSTANCE_WIDTH_CHUNKS);
 			default: throw new ArithmeticException("Earth is bad at math!");
 		}
+	}
+
+	public void load() {
+		this.overworldPlayerLocations.clear();
+		this.caveTrackers.clear();
+		this.unexploredCavesByGroup.clear();
+
+		File runtimeFolder = new File(DescentIntoDarkness.instance.getDataFolder(), "runtime");
+		File caveTrackerFile = new File(runtimeFolder, "cave_trackers.yml");
+		if (!caveTrackerFile.exists()) {
+			return;
+		}
+		FileConfiguration config = YamlConfiguration.loadConfiguration(caveTrackerFile);
+
+		ConfigurationSection overworldPlayerLocations = config.getConfigurationSection("overworldPlayerLocations");
+		if (overworldPlayerLocations != null) {
+			for (String uuidStr : overworldPlayerLocations.getKeys(false)) {
+				UUID uuid;
+				try {
+					uuid = UUID.fromString(uuidStr);
+				} catch (IllegalArgumentException e) {
+					continue;
+				}
+				ConfigurationSection value = overworldPlayerLocations.getConfigurationSection(uuidStr);
+				if (value == null) {
+					continue;
+				}
+				this.overworldPlayerLocations.put(uuid, new Location(null, value.getDouble("x", 0), value.getDouble("y", 0), value.getDouble("z", 0)));
+			}
+		}
+
+		List<Map<?, ?>> caveTrackers = config.getMapList("caveTrackers");
+		for (Map<?, ?> caveTracker : caveTrackers) {
+			this.caveTrackers.add(new CaveTracker(theWorld, ConfigUtil.asConfigurationSection(caveTracker)));
+		}
+
+		ConfigurationSection unexploredCavesByGroup = config.getConfigurationSection("unexploredCavesByGroup");
+		if (unexploredCavesByGroup != null) {
+			for (String group : unexploredCavesByGroup.getKeys(false)) {
+				DyeColor color = ConfigUtil.tryParseEnum(DyeColor.class, group);
+				if (color == null) {
+					continue;
+				}
+				List<?> value = unexploredCavesByGroup.getList(group);
+				if (value == null) {
+					continue;
+				}
+				for (Object obj : value) {
+					Integer caveId = Util.tryCastInt(obj);
+					if (caveId == null) {
+						continue;
+					}
+					this.unexploredCavesByGroup.computeIfAbsent(color, k -> new ArrayList<>()).add(getCaveById(caveId));
+				}
+			}
+		}
+	}
+
+	public void save() {
+		File runtimeFolder = new File(DescentIntoDarkness.instance.getDataFolder(), "runtime");
+		if (!runtimeFolder.exists() && !runtimeFolder.mkdirs()) {
+			return;
+		}
+		FileConfiguration config = new YamlConfiguration();
+
+		overworldPlayerLocations.forEach((uuid, location) -> {
+			ConfigurationSection section = config.createSection("overworldPlayerLocations." + uuid.toString());
+			section.set("x", location.getX());
+			section.set("y", location.getY());
+			section.set("z", location.getZ());
+		});
+
+		List<ConfigurationSection> caveTrackerConfig = new ArrayList<>();
+		for (CaveTracker caveTracker : caveTrackers) {
+			ConfigurationSection section = new MemoryConfiguration();
+			caveTracker.serialize(section);
+			caveTrackerConfig.add(section);
+		}
+		config.set("caveTrackers", caveTrackerConfig);
+
+		unexploredCavesByGroup.forEach((group, caves) -> {
+			List<Integer> caveIds = new ArrayList<>();
+			for (CaveTracker cave : caves) {
+				caveIds.add(cave.getId());
+			}
+			config.set("unexploredCavesByGroup." + group.name().toLowerCase(Locale.ROOT), caveIds);
+		});
+
+		Util.saveSafely(new File(runtimeFolder, "cave_trackers.yml"), config::save);
 	}
 
 	public static class CaveCreationHandle {

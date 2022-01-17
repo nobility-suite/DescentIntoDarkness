@@ -20,13 +20,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Level;
 
 public class HiddenOre implements Listener {
 	private static final Map<Location, HiddenOreData> hiddenOreData = new HashMap<>();
@@ -109,9 +107,6 @@ public class HiddenOre implements Listener {
 			Bukkit.getLogger().warning("Could not create runtime folder");
 			return;
 		}
-		File hiddenOreFile = new File(runtimeFolder, "hiddenOre.yml");
-		File hiddenOreSwap = new File(runtimeFolder, "hiddenOre.yml.swp");
-		File hiddenOreBackup = new File(runtimeFolder, "hiddenOre.yml.bak");
 
 		FileConfiguration config = new YamlConfiguration();
 		List<Map<?, ?>> datas = new ArrayList<>(hiddenOreData.size());
@@ -129,33 +124,7 @@ public class HiddenOre implements Listener {
 		});
 		config.set("hiddenOre", datas);
 
-		try {
-			config.save(hiddenOreSwap);
-		} catch (IOException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not save hiddenOre.yml", e);
-		}
-
-		if (hiddenOreFile.exists()) {
-			if (hiddenOreBackup.exists()) {
-				if (!hiddenOreBackup.delete()) {
-					Bukkit.getLogger().warning("Could not delete old hiddenOre.yml.bak");
-					return;
-				}
-			}
-			if (!hiddenOreFile.renameTo(hiddenOreBackup)) {
-				Bukkit.getLogger().warning("Could not rename hiddenOre.yml to hiddenOre.yml.bak");
-				return;
-			}
-		}
-		if (!hiddenOreSwap.renameTo(hiddenOreFile)) {
-			Bukkit.getLogger().warning("Could not rename hiddenOre.yml.swp to hiddenOre.yml");
-			return;
-		}
-		if (hiddenOreBackup.exists()) {
-			if (!hiddenOreBackup.delete()) {
-				Bukkit.getLogger().warning("Could not delete hiddenOre.yml.bak");
-			}
-		}
+		Util.saveSafely(new File(runtimeFolder, "hiddenOre.yml"), config::save);
 	}
 
 	public static void loadHiddenOreData() {

@@ -10,12 +10,16 @@ import java.util.UUID;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
 import com.gmail.sharpcastle33.did.config.CaveStyle;
+import com.gmail.sharpcastle33.did.config.ConfigUtil;
+import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Team;
 
@@ -33,6 +37,80 @@ public class CaveTracker {
 	private final Team team;
 	private int spawnCooldown;
 	private final Map<BlockVector3, Integer> blockBreakCounts = new HashMap<>();
+
+	public CaveTracker(World world, ConfigurationSection map) {
+		this(map.getInt("id"), world, parseStart(world, map), parseCaveStyle(map));
+		this.hasBeenJoined = map.getBoolean("hasBeenJoined");
+		this.joinTime = map.getLong("joinTime");
+		this.totalPollution = map.getInt("totalPollution");
+		this.spawnCooldown = map.getInt("spawnCooldown");
+		for (String player : map.getStringList("players")) {
+			try {
+				this.players.add(UUID.fromString(player));
+			} catch (IllegalArgumentException ignore) {
+			}
+		}
+		ConfigurationSection mobEntries = map.getConfigurationSection("mobEntries");
+		if (mobEntries != null) {
+			for (String mobSpawnEntry : mobEntries.getKeys(false)) {
+				MobSpawnEntry spawnEntry = style.getSpawnEntries().stream().filter(it -> it.getName().equals(mobSpawnEntry)).findAny().orElse(null);
+				if (spawnEntry == null) {
+					continue;
+				}
+				ConfigurationSection mobEntry = mobEntries.getConfigurationSection(mobSpawnEntry);
+				if (mobEntry != null) {
+					MobEntry entry = new MobEntry(spawnEntry, mobEntry);
+					this.mobEntries.put(spawnEntry, entry);
+				}
+			}
+		}
+		List<Map<?, ?>> blockBreakCounts = map.getMapList("blockBreakCounts");
+		for (Map<?, ?> entry : blockBreakCounts) {
+			ConfigurationSection entrySection = ConfigUtil.asConfigurationSection(entry);
+			BlockVector3 pos = BlockVector3.at(entrySection.getInt("x"), entrySection.getInt("y"), entrySection.getInt("z"));
+			this.blockBreakCounts.put(pos, entrySection.getInt("count"));
+		}
+	}
+
+	private static Location parseStart(World world, ConfigurationSection map) {
+		ConfigurationSection start = ConfigUtil.asConfigurationSection(ConfigUtil.require(map, "start"));
+		return new Location(world, start.getDouble("x"), start.getDouble("y"), start.getDouble("z"));
+	}
+
+	private static CaveStyle parseCaveStyle(ConfigurationSection map) {
+		CaveStyle style = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().get(ConfigUtil.requireString(map, "style"));
+		if (style == null) {
+			throw new InvalidConfigException("Invalid cave style: " + map.getString("style"));
+		}
+		return style;
+	}
+
+	public void serialize(ConfigurationSection map) {
+		map.set("id", id);
+		map.set("hasBeenJoined", hasBeenJoined);
+		map.set("joinTime", joinTime);
+		map.set("start.x", start.getX());
+		map.set("start.y", start.getY());
+		map.set("start.z", start.getZ());
+		map.set("style", style.getName());
+		map.set("totalPollution", totalPollution);
+		map.set("spawnCooldown", spawnCooldown);
+		map.set("players", players.stream().map(UUID::toString).toArray(String[]::new));
+		mobEntries.forEach((spawnEntry, entry) -> {
+			ConfigurationSection mobEntry = map.createSection("mobEntries." + spawnEntry.getName());
+			entry.serialize(mobEntry);
+		});
+		List<ConfigurationSection> blockBreakCounts = new ArrayList<>();
+		this.blockBreakCounts.forEach((pos, count) -> {
+			ConfigurationSection section = new MemoryConfiguration();
+			section.set("x", pos.getBlockX());
+			section.set("y", pos.getBlockY());
+			section.set("z", pos.getBlockZ());
+			section.set("count", count);
+			blockBreakCounts.add(section);
+		});
+		map.set("blockBreakCounts", blockBreakCounts);
+	}
 
 	public CaveTracker(int id, World world, Location start, CaveStyle style) {
 		this.id = id;
@@ -145,10 +223,34 @@ public class CaveTracker {
 		private int packSpawnThreshold;
 		private boolean spawningPack;
 
+		public MobEntry(MobSpawnEntry spawnEntry, ConfigurationSection map) {
+			this.spawnEntry = spawnEntry;
+			this.totalPollution = map.getInt("totalPollution");
+			this.packSpawnThreshold = map.getInt("packSpawnThreshold");
+			this.spawningPack = map.getBoolean("spawningPack");
+			ConfigurationSection playerPollutions = map.getConfigurationSection("playerPollutions");
+			if (playerPollutions != null) {
+				for (String key : playerPollutions.getKeys(false)) {
+					try {
+						this.playerPollutions.put(UUID.fromString(key), playerPollutions.getInt(key));
+					} catch (IllegalArgumentException ignore) {
+					}
+				}
+			}
+		}
+
 		public MobEntry(MobSpawnEntry spawnEntry) {
 			this.spawnEntry = spawnEntry;
 			Random rand = new Random();
 			packSpawnThreshold = spawnEntry.getMinPackCost() + rand.nextInt(spawnEntry.getMaxPackCost() - spawnEntry.getMinPackCost() + 1);
+		}
+
+		public void serialize(ConfigurationSection map) {
+			map.set("totalPollution", totalPollution);
+			map.set("packSpawnThreshold", packSpawnThreshold);
+			map.set("spawningPack", spawningPack);
+			ConfigurationSection playerPollutions = map.createSection("playerPollutions");
+			this.playerPollutions.forEach((key, value) -> playerPollutions.set(key.toString(), value));
 		}
 
 		public MobSpawnEntry getSpawnEntry() {

@@ -20,13 +20,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
 import org.bukkit.util.StringUtil;
 
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
@@ -37,7 +34,6 @@ import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager;
-import com.gmail.sharpcastle33.did.instancing.CaveTrackerManager.CaveCreationHandle;
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -104,11 +100,6 @@ public class CommandListener implements TabExecutor {
 					playerSeeds.put(p.getUniqueId(), seed);
 				}
 				break;
-			case "select":
-				if ((p = requirePlayer(sender)) != null) {
-					select(p,args);
-				}
-				break;
 		}
 
 		return true;
@@ -122,59 +113,6 @@ public class CommandListener implements TabExecutor {
 			}
 		}
 		
-	}
-
-	private void select(Player p, String[] args) {
-		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
-		
-		long seed;
-		if(playerSeeds.containsKey(p.getUniqueId())) {
-			 seed = playerSeeds.get(p.getUniqueId());
-		}else {
-			p.sendMessage(ChatColor.RED + "No options to select. Type /descent");
-			return;
-		}
-		
-		Random rand = new Random(seed);
-		
-		int selected = -1;
-		try {
-			selected = Integer.parseInt(args[1]);
-		}catch(Exception e) {
-			p.sendMessage(ChatColor.DARK_RED + "Selected cave must be a number!");
-			return;
-		}
-		
-		int options = 5;
-		ArrayList<Integer> indexes = new ArrayList<Integer>();
-		
-		for(int i = 0; i < options; i++) {
-			indexes.add(rand.nextInt(DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName().size()));
-		}
-		NavigableMap<String,CaveStyle> nm = DescentIntoDarkness.instance.getCaveStyles().getCaveStylesByName();
-		ArrayList<CaveStyle> styles = new ArrayList<>(nm.values());
-		
-		CaveStyle style =  styles.get(indexes.get(selected));
-
-		int id = -1;
-		
-		CaveCreationHandle cch = caveTrackerManager.createCave(style);
-		p.sendMessage(ChatColor.GREEN + "Creating cave... Cave ID: " + ChatColor.WHITE + cch.caveId);
-		
-		World world = p.getWorld();
-		Villager v = (Villager) world.spawnEntity(p.getLocation(), EntityType.VILLAGER);
-		v.setAdult();
-		v.setAI(false);
-		v.setPersistent(true);
-		v.setCustomName(ChatColor.BLUE + "Cave: " + ChatColor.WHITE + style.getName() + " [" + cch.caveId + "]");
-		
-		//TODO despawn villager
-		
-		//TODO implement portal
-		
-		//TODO subtitle message
-		
-		//TODO prevent villager trading
 	}
 	
 	private void caveMenu(Player p, String[] args) {

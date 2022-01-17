@@ -217,14 +217,8 @@ public class Util {
 				DoubleBinaryTag.of(destination.getY()),
 				DoubleBinaryTag.of(destination.getZ()))));
 
-		try {
-			BinaryTagIO.writer().write(playerTag, playerFile.toPath(), BinaryTagIO.Compression.GZIP);
-		} catch (IOException e) {
-			Bukkit.getLogger().log(Level.SEVERE, "Could not teleport offline player", e);
-			return false;
-		}
-
-		return true;
+		CompoundBinaryTag playerTag_f = playerTag;
+		return Util.saveSafely(playerFile, file -> BinaryTagIO.writer().write(playerTag_f, file.toPath(), BinaryTagIO.Compression.GZIP));
 	}
 
 	// because Bukkit is stupid and doesn't allow you to remove a single score from a player
@@ -290,6 +284,43 @@ public class Util {
 		}
 	}
 
+	public static boolean saveSafely(File file, FileSaver saver) {
+		File swapFile = new File(file.getParentFile(), file.getName() + ".swp");
+		File backupFile = new File(file.getParentFile(), file.getName() + ".bak");
+
+		try {
+			saver.save(swapFile);
+		} catch (IOException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Could not save " + file.getName(), e);
+			return false;
+		}
+
+		if (file.exists()) {
+			if (backupFile.exists()) {
+				if (!backupFile.delete()) {
+					Bukkit.getLogger().warning("Could not delete old " + backupFile.getName());
+					return false;
+				}
+			}
+			if (!file.renameTo(backupFile)) {
+				Bukkit.getLogger().warning("Could not rename " + file.getName() + " to " + backupFile.getName());
+				return false;
+			}
+		}
+		if (!swapFile.renameTo(file)) {
+			Bukkit.getLogger().warning("Could not rename " + swapFile.getName() + " to " + file.getName());
+			return false;
+		}
+		if (backupFile.exists()) {
+			if (!backupFile.delete()) {
+				Bukkit.getLogger().warning("Could not delete " + backupFile.getName());
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	@Nullable
 	public static Integer tryCastInt(Object o) {
 		if (o instanceof Integer) {
@@ -316,6 +347,11 @@ public class Util {
 			return clazz.cast(obj);
 		}
 		return null;
+	}
+
+	@FunctionalInterface
+	public interface FileSaver {
+		void save(File file) throws IOException;
 	}
 
 }
