@@ -154,7 +154,7 @@ public final class MobSpawnEntry {
 		double ySize = map.getDouble("ySize", 0);
 		double zSize = map.getDouble("zSize",0);
 		BlockPredicate canSpawnOn = map.contains("canSpawnOn") ? ConfigUtil.parseBlockPredicate(map.get("canSpawnOn")) : block -> block.getMaterial().isSolid();
-		BlockPredicate canSpawnIn = map.contains("canSpawnIn") ? ConfigUtil.parseBlockPredicate(map.get("canSpawnIn")) : block -> !block.getMaterial().isMovementBlocker() && block.getMaterial().isLiquid();
+		BlockPredicate canSpawnIn = map.contains("canSpawnIn") ? ConfigUtil.parseBlockPredicate(map.get("canSpawnIn")) : block -> !block.getMaterial().isMovementBlocker() && !block.getMaterial().isLiquid();
 		boolean centeredSpawn = map.getBoolean("centeredSpawn", false);
 		boolean randomRotation = map.getBoolean("randomRotation", true);
 		return new MobSpawnEntry(name, mob, singleMobCost, minPackCost, maxPackCost, weight, minDistance, maxDistance, cooldown, despawnRange, xSize, ySize, zSize, canSpawnOn, canSpawnIn, centeredSpawn, randomRotation);
