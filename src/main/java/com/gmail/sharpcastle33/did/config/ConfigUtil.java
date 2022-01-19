@@ -225,17 +225,36 @@ public class ConfigUtil {
 		return val instanceof ConfigurationSection || val instanceof Map;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ConfigurationSection asConfigurationSection(Object val) {
 		if (val instanceof ConfigurationSection) {
 			return (ConfigurationSection) val;
 		} else if (val instanceof Map) {
 			MemoryConfiguration config = new MemoryConfiguration();
 			for (Map.Entry<?, ?> entry : ((Map<?, ?>) val).entrySet()) {
-				config.set(entry.getKey().toString(), entry.getValue());
+				if (isConfigurationSection(entry.getValue())) {
+					config.set(entry.getKey().toString(), asConfigurationSection(entry.getValue()));
+				} else if (entry.getValue() instanceof List) {
+					config.set(entry.getKey().toString(), asConfigurationSectionInList((List<Object>) entry.getValue()));
+				} else {
+					config.set(entry.getKey().toString(), entry.getValue());
+				}
 			}
 			return config;
 		}
 		throw new InvalidConfigException("Not a ConfigurationSection: " + val);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<Object> asConfigurationSectionInList(List<Object> val) {
+		for (int i = 0; i < val.size(); i++) {
+			if (isConfigurationSection(val.get(i))) {
+				val.set(i, asConfigurationSection(val.get(i)));
+			} else if (val.get(i) instanceof List) {
+				val.set(i, asConfigurationSectionInList((List<Object>) val.get(i)));
+			}
+		}
+		return val;
 	}
 
 	public static <T extends Enum<T>> T parseEnum(Class<T> type, String val) {

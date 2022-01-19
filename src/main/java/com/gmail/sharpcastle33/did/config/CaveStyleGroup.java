@@ -8,15 +8,13 @@ public class CaveStyleGroup {
 
 	public CaveStyleGroup(ConfigurationSection section) {
 		this.groupWeight = section.getInt("weight", 1);
-		ConfigurationSection caves = section.getConfigurationSection("caves");
-		if (caves != null) {
-			for (String key : caves.getKeys(false)) {
-				int value = caves.getInt(key);
-				if (value < 1) {
-					throw new InvalidConfigException("Invalid weight for " + key);
-				}
-				caveWeights.put(key, value);
+		ConfigurationSection caves = ConfigUtil.asConfigurationSection(ConfigUtil.require(section, "caves"));
+		for (String key : caves.getKeys(false)) {
+			int value = caves.getInt(key);
+			if (value < 1) {
+				throw new InvalidConfigException("Invalid weight for " + key);
 			}
+			caveWeights.put(key, value);
 		}
 	}
 

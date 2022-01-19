@@ -62,7 +62,7 @@ public class CaveTrackerManager {
 	private int nextInstanceId;
 	private Objective pollutionObjective;
 	private final AtomicBoolean generatingCave = new AtomicBoolean(false);
-	private final ThreadLocal<Boolean> isLeavingCave = new ThreadLocal<>();
+	private final ThreadLocal<Boolean> isLeavingCave = ThreadLocal.withInitial(() -> false);
 
 	public CaveTrackerManager(int instanceLimit) {
 		this.instanceLimit = instanceLimit;
@@ -415,7 +415,12 @@ public class CaveTrackerManager {
 				if (value == null) {
 					continue;
 				}
-				this.overworldPlayerLocations.put(uuid, new Location(null, value.getDouble("x", 0), value.getDouble("y", 0), value.getDouble("z", 0)));
+				Location location = new Location(null, value.getDouble("x", 0), value.getDouble("y", 0), value.getDouble("z", 0));
+				String world = value.getString("world");
+				if (world != null) {
+					location.setWorld(Bukkit.getWorld(world));
+				}
+				this.overworldPlayerLocations.put(uuid, location);
 			}
 		}
 
@@ -455,6 +460,10 @@ public class CaveTrackerManager {
 
 		overworldPlayerLocations.forEach((uuid, location) -> {
 			ConfigurationSection section = config.createSection("overworldPlayerLocations." + uuid.toString());
+			World world = location.getWorld();
+			if (world != null) {
+				section.set("world", world.getName());
+			}
 			section.set("x", location.getX());
 			section.set("y", location.getY());
 			section.set("z", location.getZ());
@@ -471,7 +480,9 @@ public class CaveTrackerManager {
 		unexploredCavesByGroup.forEach((group, caves) -> {
 			List<Integer> caveIds = new ArrayList<>();
 			for (CaveTracker cave : caves) {
-				caveIds.add(cave.getId());
+				if (cave != null) {
+					caveIds.add(cave.getId());
+				}
 			}
 			config.set("unexploredCavesByGroup." + group.name().toLowerCase(Locale.ROOT), caveIds);
 		});

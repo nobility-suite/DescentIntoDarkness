@@ -166,7 +166,11 @@ public class DescentIntoDarkness extends JavaPlugin {
 		DataPacks.reload();
 		Biomes.reload();
 
-		caveStyles.reload(config);
+		try {
+			caveStyles.reload(config);
+		} catch (InvalidConfigException e) {
+			Bukkit.getLogger().log(Level.SEVERE, "Failed to load cave styles", e);
+		}
 
 		Bukkit.getLogger().info("Reloaded DescentIntoDarkness config");
 	}
