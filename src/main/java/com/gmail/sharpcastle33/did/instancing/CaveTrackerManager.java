@@ -201,7 +201,7 @@ public class CaveTrackerManager {
 				caveTrackers.add(caveTracker);
 				unexploredCavesByGroup.get(color).add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
-				tempClaimedIDs.remove(id);
+				tempClaimedIDs.remove(Integer.valueOf(id));
 				save();
 				return caveTracker;
 			});
