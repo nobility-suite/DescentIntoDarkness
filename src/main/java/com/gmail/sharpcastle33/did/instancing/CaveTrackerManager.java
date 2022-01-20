@@ -199,7 +199,7 @@ public class CaveTrackerManager {
 			return DescentIntoDarkness.instance.supplySyncNow(() -> {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
 				caveTrackers.add(caveTracker);
-				unexploredCavesByGroup.computeIfAbsent(color, k -> new ArrayList<>()).add(caveTracker);
+				unexploredCavesByGroup.get(color).add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
 				tempClaimedIDs.remove(id);
 				save();
@@ -397,6 +397,9 @@ public class CaveTrackerManager {
 		this.overworldPlayerLocations.clear();
 		this.caveTrackers.clear();
 		this.unexploredCavesByGroup.clear();
+		for (DyeColor color : DyeColor.values()) {
+			unexploredCavesByGroup.put(color, new ArrayList<>());
+		}
 
 		File runtimeFolder = new File(DescentIntoDarkness.instance.getDataFolder(), "runtime");
 		File caveTrackerFile = new File(runtimeFolder, "cave_trackers.yml");
@@ -448,7 +451,7 @@ public class CaveTrackerManager {
 					if (caveId == null) {
 						continue;
 					}
-					this.unexploredCavesByGroup.computeIfAbsent(color, k -> new ArrayList<>()).add(getCaveById(caveId));
+					this.unexploredCavesByGroup.get(color).add(getCaveById(caveId));
 				}
 			}
 		}

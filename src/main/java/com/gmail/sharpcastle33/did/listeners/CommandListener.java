@@ -221,13 +221,13 @@ public class CommandListener implements TabExecutor {
 
 		if (args.length >= 5) {
 			boolean xRelative = args[2].startsWith("~");
-			OptionalInt xOpt = xRelative ? parseInt(p, args[2].substring(1)) : parseInt(p, args[2]);
+			OptionalInt xOpt = xRelative ? (args[2].equals("~") ? OptionalInt.of(0) : parseInt(p, args[2].substring(1))) : parseInt(p, args[2]);
 			if (xOpt.isEmpty()) return;
 			boolean yRelative = args[3].startsWith("~");
-			OptionalInt yOpt = yRelative ? parseInt(p, args[3].substring(1)) : parseInt(p, args[3]);
+			OptionalInt yOpt = yRelative ? (args[3].equals("~") ? OptionalInt.of(0) : parseInt(p, args[3].substring(1))) : parseInt(p, args[3]);
 			if (yOpt.isEmpty()) return;
 			boolean zRelative = args[4].startsWith("~");
-			OptionalInt zOpt = zRelative ? parseInt(p, args[4].substring(1)) : parseInt(p, args[4]);
+			OptionalInt zOpt = zRelative ? (args[4].equals("~") ? OptionalInt.of(0) : parseInt(p, args[4].substring(1))) : parseInt(p, args[4]);
 			if (zOpt.isEmpty()) return;
 			int x = xOpt.getAsInt(), y = yOpt.getAsInt(), z = zOpt.getAsInt();
 			if (xRelative || yRelative || zRelative) {
@@ -344,10 +344,10 @@ public class CommandListener implements TabExecutor {
 	}
 
 	private void generateBlank(CommandSender p, Location pos, String[] args) {
-		BlockStateHolder<?> base = args.length <= 2 ? Util.requireDefaultState(BlockTypes.STONE) : ConfigUtil.parseBlock(args[2]);
-		OptionalInt radius = args.length <= 3 ? OptionalInt.of(200) : parseInt(p, args[3]);
+		BlockStateHolder<?> base = args.length <= 5 ? Util.requireDefaultState(BlockTypes.STONE) : ConfigUtil.parseBlock(args[5]);
+		OptionalInt radius = args.length <= 6 ? OptionalInt.of(200) : parseInt(p, args[6]);
 		if (radius.isEmpty()) return;
-		OptionalInt yRadius = args.length <= 4 ? OptionalInt.of(120) : parseInt(p, args[4]);
+		OptionalInt yRadius = args.length <= 7 ? OptionalInt.of(120) : parseInt(p, args[7]);
 		if (yRadius.isEmpty()) return;
 
 		p.sendMessage(ChatColor.DARK_RED + "Generating...");
@@ -367,12 +367,12 @@ public class CommandListener implements TabExecutor {
 	}
 
 	private void generateCave(CommandSender p, Location pos, String[] args) {
-		String styleName = args.length <= 2 ? "default" : args[2];
-		OptionalInt size = args.length <= 3 ? OptionalInt.of(7) : parseInt(p, args[3]);
+		String styleName = args.length <= 5 ? "default" : args[5];
+		OptionalInt size = args.length <= 6 ? OptionalInt.of(7) : parseInt(p, args[6]);
 		if (size.isEmpty()) return;
-		OptionalLong seed = args.length <= 4 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[4]);
+		OptionalLong seed = args.length <= 7 ? OptionalLong.of(new Random().nextLong()) : parseLong(p, args[7]);
 		if (seed.isEmpty()) return;
-		boolean debug = args.length > 5 && Boolean.parseBoolean(args[5]);
+		boolean debug = args.length > 8 && Boolean.parseBoolean(args[8]);
 
 		if (currentCaveGen != null) {
 			p.sendMessage(ChatColor.DARK_RED + "Already generating cave");
