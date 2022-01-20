@@ -22,6 +22,7 @@ import com.gmail.sharpcastle33.did.config.CaveStyleGroup;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.generator.CaveGenContext;
 import com.gmail.sharpcastle33.did.generator.CaveGenerator;
+import com.gmail.sharpcastle33.did.listeners.HiddenOre;
 import com.onarandombox.MultiverseCore.api.MVDestination;
 import com.onarandombox.MultiverseCore.api.MVWorldManager;
 import com.onarandombox.MultiverseCore.api.MultiverseWorld;
@@ -92,7 +93,7 @@ public class CaveTrackerManager {
 		for (CaveTracker cave : caveTrackers) {
 			if (cave.hasBeenJoined()) {
 				long aliveTime = cave.getWorld().getFullTime() - cave.getJoinTime();
-				if (aliveTime > DescentIntoDarkness.instance.getCaveTimeLimit()) {
+				if (aliveTime > cave.getStyle().getLifetime()) {
 					deleteCave(cave);
 					break;
 				}
@@ -210,6 +211,8 @@ public class CaveTrackerManager {
 	public void deleteCave(CaveTracker caveTracker) {
 		Bukkit.getLogger().log(Level.INFO, "Deleting cave " + caveTracker.getId());
 
+		HiddenOre.onDeleteCave(caveTracker.getId());
+
 		List<UUID> members = caveTracker.getPlayers();
 		for (int i = members.size() - 1; i >= 0; i--) {
 			UUID player = members.get(i);
@@ -251,9 +254,9 @@ public class CaveTrackerManager {
 		}
 
 		existingCave.removePlayer(p.getUniqueId());
-		if (existingCave.getPlayers().isEmpty()) {
-			deleteCave(existingCave);
-		}
+//		if (existingCave.getPlayers().isEmpty()) {
+//			deleteCave(existingCave);
+//		}
 
 		Location newLocation = overworldPlayerLocations.remove(p.getUniqueId());
 		if (newLocation == null) {
@@ -290,9 +293,9 @@ public class CaveTrackerManager {
 			overworldPlayerLocations.put(p.getUniqueId(), p.getLocation());
 		} else {
 			existingCave.removePlayer(p.getUniqueId());
-			if (existingCave.getPlayers().isEmpty()) {
-				deleteCave(existingCave);
-			}
+//			if (existingCave.getPlayers().isEmpty()) {
+//				deleteCave(existingCave);
+//			}
 		}
 
 		Location start = newCave.getStart();

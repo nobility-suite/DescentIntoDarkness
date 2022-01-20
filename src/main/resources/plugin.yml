@@ -9,8 +9,13 @@ depend:
    - MythicMobs
 softdepend:
    - NobilityItems
+   - HiddenOre
 commands:
    did:
       description: Descent Into Darkness main command
       usage: /did <argument> [other stuff]
       aliases: [ descent ]
+permissions:
+   did.command:
+      description: Allows the user to use the main command
+      default: op

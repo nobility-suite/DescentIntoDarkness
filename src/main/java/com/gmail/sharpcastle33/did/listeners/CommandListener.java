@@ -12,6 +12,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Random;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,20 @@ public class CommandListener implements TabExecutor {
 	
 	private final HashMap<UUID,Long> playerSeeds = new HashMap<>();
 	private CaveGenContext currentCaveGen;
+	private static final WeakHashMap<Player, ConfirmAction> confirmActions = new WeakHashMap<>();
+
+	private static class ConfirmAction {
+		private final Runnable action;
+		private final long expiry;
+
+		public ConfirmAction(Runnable action, long expiry) {
+			this.action = action;
+			this.expiry = expiry;
+		}
+	}
+	public static void setConfirmAction(Player p, long timeout, Runnable r) {
+		confirmActions.put(p, new ConfirmAction(r, Bukkit.getWorlds().get(0).getFullTime() + timeout));
+	}
 	
 	private static Player requirePlayer(CommandSender sender) {
 		if(!(sender instanceof Player)) {
@@ -57,6 +72,20 @@ public class CommandListener implements TabExecutor {
 
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		Player p;
+
+		if (args.length == 1 && args[0].equals("confirm")) {
+			p = requirePlayer(sender);
+			if (p == null) {
+				return true;
+			}
+			confirm(p);
+			return true;
+		}
+
+		if (!sender.hasPermission("did.command")) {
+			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use this command");
+			return true;
+		}
 		
 		if(args.length == 0) {
 			if ((p = requirePlayer(sender)) != null) {
@@ -103,6 +132,18 @@ public class CommandListener implements TabExecutor {
 		}
 
 		return true;
+	}
+
+	private static void confirm(Player p) {
+		ConfirmAction action = confirmActions.remove(p);
+		if (action == null) {
+			return;
+		}
+		if (action.expiry < Bukkit.getWorlds().get(0).getFullTime()) {
+			p.sendMessage(ChatColor.DARK_RED + "Confirmation timed out");
+			return;
+		}
+		action.action.run();
 	}
 	
 	private void debug(Player p, String[] args) {

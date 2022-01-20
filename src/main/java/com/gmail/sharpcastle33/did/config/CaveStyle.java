@@ -22,6 +22,7 @@ public class CaveStyle {
 	// meta properties
 	private final String name;
 	private boolean isAbstract;
+	private long lifetime;
 
 	// block properties
 	private BlockTypeRange<Integer> airBlock;
@@ -67,6 +68,8 @@ public class CaveStyle {
 		CaveStyle style = new CaveStyle(name);
 
 		style.isAbstract = map.getBoolean("abstract", false);
+
+		style.lifetime = map.getLong("lifetime", 120) * 60 * 20;
 
 		Object airBlock = map.get("airBlock");
 		if (airBlock != null) {
@@ -228,6 +231,10 @@ public class CaveStyle {
 
 	public boolean isAbstract() {
 		return isAbstract;
+	}
+
+	public long getLifetime() {
+		return lifetime;
 	}
 
 	public BlockProvider getAirBlock(int y, Centroid currentCentroid, int minRoomY, int maxRoomY) {

@@ -149,9 +149,8 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	private void setupConfig() {
 		config.addDefault("instanceLimit", 8);
-		config.addDefault("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
-		if (!config.contains("caveStyles")) {
-			config.addDefault("caveStyles.default", 10);
+		if (!config.contains("caveStyleGroups")) {
+			config.addDefault("caveStyleGroups.white.caves.default", 1);
 		}
 		config.addDefault("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
 		config.options().copyDefaults(true);
@@ -202,10 +201,6 @@ public class DescentIntoDarkness extends JavaPlugin {
 			reloadConfig();
 		}
 		return config;
-	}
-
-	public int getCaveTimeLimit() {
-		return config.getInt("caveTimeLimit", 20 * 60 * 60 * 2); // 2 hours
 	}
 
 	public int getCustomBiomeIdStart() {

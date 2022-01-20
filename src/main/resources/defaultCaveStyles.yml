@@ -23,6 +23,8 @@ default:
   centroidVaryMinY: -1
   centroidVaryMaxY: 0
 
+  lifetime: 120  # minutes
+
   nether: false
 
 # If you want individual traits of the default cave type to override other things you inherit, you can also explicitly inherit these
