@@ -1,8 +1,8 @@
 package com.gmail.sharpcastle33.did.config;
 
+import com.gmail.sharpcastle33.did.Pair;
 import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.configuration.ConfigurationSection;
 import org.jetbrains.annotations.Nullable;
 

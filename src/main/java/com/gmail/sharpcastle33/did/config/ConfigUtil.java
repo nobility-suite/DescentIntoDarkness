@@ -10,7 +10,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
-import org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
@@ -109,7 +108,8 @@ public class ConfigUtil {
 					providers.add(provider);
 					weights.add(weight);
 				}
-				return new BlockProvider.RoomWeighted(providers.toArray(new BlockProvider[0]), ArrayUtils.toPrimitive(weights.toArray(new Integer[0])));
+				int[] weightsArray = weights.stream().mapToInt(Integer::intValue).toArray();
+				return new BlockProvider.RoomWeighted(providers.toArray(new BlockProvider[0]), weightsArray);
 			} else {
 				throw new InvalidConfigException("Unknown block provider type: " + type);
 			}
@@ -139,7 +139,8 @@ public class ConfigUtil {
 				weights.add(weight);
 			}
 		}
-		return new BlockProvider.Weighted(blocks.toArray(new BlockStateHolder[0]), ArrayUtils.toPrimitive(weights.toArray(new Integer[0])));
+		int[] weightsArray = weights.stream().mapToInt(Integer::intValue).toArray();
+		return new BlockProvider.Weighted(blocks.toArray(new BlockStateHolder[0]), weightsArray);
 	}
 
 	public static BlockStateHolder<?> parseBlock(String val) {

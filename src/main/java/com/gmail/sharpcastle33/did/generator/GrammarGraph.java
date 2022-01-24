@@ -1,7 +1,7 @@
 package com.gmail.sharpcastle33.did.generator;
 
+import com.gmail.sharpcastle33.did.Pair;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
-import org.apache.commons.lang3.tuple.Pair;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
