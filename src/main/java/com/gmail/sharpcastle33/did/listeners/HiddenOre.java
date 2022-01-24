@@ -116,7 +116,7 @@ public class HiddenOre implements Listener {
 		} else {
 			CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveById(caveId);
 			assert cave != null;
-			long remainingTime = cave.getJoinTime() + cave.getStyle().getLifetime() - Bukkit.getWorlds().get(0).getFullTime();
+			long remainingTime = cave.getJoinTime() + cave.getStyle().getLifetime() - cave.getWorld().getFullTime();
 			if (remainingTime <= 0) {
 				return;
 			}
@@ -192,7 +192,7 @@ public class HiddenOre implements Listener {
 				return null;
 			}
 
-			if (cave.getJoinTime() + cave.getStyle().getLifetime() < Bukkit.getWorlds().get(0).getFullTime()) {
+			if (cave.getJoinTime() + cave.getStyle().getLifetime() < cave.getWorld().getFullTime()) {
 				hiddenOreData.remove(location);
 				return null;
 			}

@@ -29,6 +29,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.generator.ChunkGenerator;
@@ -44,15 +45,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
 public class DescentIntoDarkness extends JavaPlugin {
+	private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
 	private CaveTrackerManager caveTrackerManager;
 	private MobSpawnManager mobSpawnManager;
@@ -109,11 +113,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 		setupConfig();
 
-		int instanceLimit = config.getInt("instanceLimit", 8);
-		if (instanceLimit <= 0) {
-			instanceLimit = 8;
-		}
-		caveTrackerManager = new CaveTrackerManager(instanceLimit);
+		caveTrackerManager = new CaveTrackerManager();
 		registerCommand("did", new CommandListener());
 		Bukkit.getPluginManager().registerEvents(new CaveEntranceListener(), instance);
 		Bukkit.getPluginManager().registerEvents(new OreListener(), instance);
@@ -201,6 +201,38 @@ public class DescentIntoDarkness extends JavaPlugin {
 			reloadConfig();
 		}
 		return config;
+	}
+
+	public int getInstanceCapacity() {
+		int capacity = config.getInt("instanceLimit", 8);
+		for (Map<?, ?> map : config.getMapList("instanceLimitsByHour")) {
+			ConfigurationSection section = ConfigUtil.asConfigurationSection(map);
+			int limit = section.getInt("limit", 8);
+			capacity = Math.max(capacity, limit <= 0 ? 8 : limit);
+		}
+		return capacity;
+	}
+
+	public int getInstanceLimit() {
+		int hourOfDay = Calendar.getInstance(GMT).get(Calendar.HOUR_OF_DAY);
+		for (Map<?, ?> map : config.getMapList("instanceLimitsByHour")) {
+			ConfigurationSection section = ConfigUtil.asConfigurationSection(map);
+			int from = section.getInt("from", 0);
+			int until = section.getInt("until", 24);
+			if (from <= hourOfDay && hourOfDay < until) {
+				int limit = section.getInt("limit", 8);
+				if (limit <= 0) {
+					limit = 8;
+				}
+				return limit;
+			}
+		}
+
+		int limit = config.getInt("instanceLimit", 8);
+		if (limit <= 0) {
+			limit = 8;
+		}
+		return limit;
 	}
 
 	public int getCustomBiomeIdStart() {

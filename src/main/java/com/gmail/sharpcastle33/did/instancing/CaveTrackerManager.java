@@ -54,7 +54,6 @@ public class CaveTrackerManager {
 	private static final int INSTANCE_WIDTH_CHUNKS = 625;
 
 	private boolean hasInitialized = false;
-	private final int instanceLimit;
 	private World theWorld;
 	private final ArrayList<CaveTracker> caveTrackers = new ArrayList<>();
 	private final EnumMap<DyeColor, ArrayList<CaveTracker>> unexploredCavesByGroup = new EnumMap<>(DyeColor.class);
@@ -65,8 +64,7 @@ public class CaveTrackerManager {
 	private final AtomicBoolean generatingCave = new AtomicBoolean(false);
 	private final ThreadLocal<Boolean> isLeavingCave = ThreadLocal.withInitial(() -> false);
 
-	public CaveTrackerManager(int instanceLimit) {
-		this.instanceLimit = instanceLimit;
+	public CaveTrackerManager() {
 		for (DyeColor group : DyeColor.values()) {
 			unexploredCavesByGroup.put(group, new ArrayList<>());
 		}
@@ -99,7 +97,7 @@ public class CaveTrackerManager {
 				}
 			}
 		}
-		if (caveTrackers.size() >= instanceLimit) {
+		if (caveTrackers.size() >= DescentIntoDarkness.instance.getInstanceLimit()) {
 			generatingCave.set(false);
 			return;
 		}
@@ -158,10 +156,11 @@ public class CaveTrackerManager {
 	}
 
 	public CaveCreationHandle createCave(DyeColor color, CaveStyle style) {
+		int instanceCapacity = DescentIntoDarkness.instance.getInstanceCapacity();
 		int oldInstanceId = nextInstanceId;
-		Bukkit.getServer().getLogger().info("NextInstanceID: " + nextInstanceId + " Instance Limit: " + instanceLimit);
+		Bukkit.getServer().getLogger().info("NextInstanceID: " + nextInstanceId + " Instance Capacity: " + instanceCapacity);
 		while (getCaveById(nextInstanceId) != null || tempClaimedIDs.contains(nextInstanceId)) {
-			nextInstanceId = (nextInstanceId + 1) % instanceLimit;
+			nextInstanceId = (nextInstanceId + 1) % instanceCapacity;
 			if (nextInstanceId == oldInstanceId) {
 				return CaveCreationHandle.createExceptionally(new RuntimeException("Could not create cave instances: no free caves left"));
 			}
