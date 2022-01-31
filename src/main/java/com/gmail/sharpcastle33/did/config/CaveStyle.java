@@ -8,9 +8,11 @@ import com.gmail.sharpcastle33.did.generator.structure.Structure;
 import com.gmail.sharpcastle33.did.provider.BlockPredicate;
 import com.gmail.sharpcastle33.did.provider.BlockProvider;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,6 +32,7 @@ public class CaveStyle {
 	private final Map<String, BlockTypeRange<Double>> tagAirBlocks = new LinkedHashMap<>();
 	private BlockStateHolder<?> baseBlock;
 	private BlockPredicate transparentBlocks = block -> false;
+	private final Set<Material> cannotPlace = new HashSet<>();
 
 	// spawning properties
 	private final List<Ore> ores = new ArrayList<>();
@@ -103,6 +106,12 @@ public class CaveStyle {
 		Object transparentBlocks = map.get("transparentBlocks");
 		if (transparentBlocks != null) {
 			style.transparentBlocks = ConfigUtil.parseBlockPredicate(transparentBlocks);
+		}
+		List<?> cannotPlaceList = map.getList("cannotPlace");
+		if (cannotPlaceList != null) {
+			for (Object cannotPlace : cannotPlaceList) {
+				style.cannotPlace.add(ConfigUtil.parseItem(cannotPlace).getType());
+			}
 		}
 		ConfigurationSection oresSection = map.getConfigurationSection("ores");
 		if (oresSection != null) {
@@ -370,5 +379,9 @@ public class CaveStyle {
 
 	public List<Structure> getPortals() {
 		return portals;
+	}
+
+	public Set<Material> getCannotPlace() {
+		return cannotPlace;
 	}
 }

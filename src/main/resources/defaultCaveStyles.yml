@@ -41,6 +41,10 @@ defaultBlockTypes:
   tagAirBlocks: {}
   baseBlock: minecraft:stone
 
+  cannotPlace:
+    - minecraft:water_bucket
+    - minecraft:lava_bucket
+
 defaultGrammar:
   __builtin_no_default_inherit: true
   abstract: true
