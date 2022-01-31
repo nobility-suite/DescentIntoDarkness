@@ -23,6 +23,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,6 +58,13 @@ public class HiddenOre implements Listener {
 		SHULKER_BOX_COLORS.put(Material.GREEN_SHULKER_BOX, DyeColor.GREEN);
 		SHULKER_BOX_COLORS.put(Material.RED_SHULKER_BOX, DyeColor.RED);
 		SHULKER_BOX_COLORS.put(Material.BLACK_SHULKER_BOX, DyeColor.BLACK);
+	}
+
+	@EventHandler
+	public void onBlockBreak(BlockBreakEvent event) {
+		if (SHULKER_BOX_COLORS.containsKey(event.getBlock().getType())) {
+			event.setCancelled(true);
+		}
 	}
 
 	@EventHandler

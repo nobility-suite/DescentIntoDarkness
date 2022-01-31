@@ -44,6 +44,23 @@ defaultBlockTypes:
   cannotPlace:
     - minecraft:water_bucket
     - minecraft:lava_bucket
+    - minecraft:shulker_box
+    - minecraft:white_shulker_box
+    - minecraft:orange_shulker_box
+    - minecraft:magenta_shulker_box
+    - minecraft:light_blue_shulker_box
+    - minecraft:yellow_shulker_box
+    - minecraft:lime_shulker_box
+    - minecraft:pink_shulker_box
+    - minecraft:gray_shulker_box
+    - minecraft:light_gray_shulker_box
+    - minecraft:cyan_shulker_box
+    - minecraft:purple_shulker_box
+    - minecraft:blue_shulker_box
+    - minecraft:brown_shulker_box
+    - minecraft:green_shulker_box
+    - minecraft:red_shulker_box
+    - minecraft:black_shulker_box
 
 defaultGrammar:
   __builtin_no_default_inherit: true
@@ -288,6 +305,30 @@ defaultMobSpawning:
     emerald_ore:
       block: minecraft:emerald_ore
       pollution: 15
+      breakAmount: 5
+    redstone_ore:
+      block: minecraft:redstone_ore
+      pollution: 5
+      breakAmount: 5
+    lapis_ore:
+      block: minecraft:lapis_ore
+      pollution: 5
+      breakAmount: 5
+    gold_ore:
+      block: minecraft:gold_ore
+      pollution: 5
+      breakAmount: 5
+    iron_ore:
+      block: minecraft:iron_ore
+      pollution: 5
+      breakAmount: 5
+    nether_quartz_ore:
+      block: minecraft:nether_quartz_ore
+      pollution: 5
+      breakAmount: 5
+    nether_gold_ore:
+      block: minecraft:nether_gold_ore
+      pollution: 5
       breakAmount: 5
 
   naturalPollutionIncrease: 0.1
