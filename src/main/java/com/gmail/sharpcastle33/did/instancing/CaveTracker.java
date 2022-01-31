@@ -13,6 +13,7 @@ import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.config.InvalidConfigException;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
+import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -37,9 +38,10 @@ public class CaveTracker {
 	private final Team team;
 	private int spawnCooldown;
 	private final Map<BlockVector3, Integer> blockBreakCounts = new HashMap<>();
+	private final List<BlockVector2> chunkPositions;
 
 	public CaveTracker(World world, ConfigurationSection map) {
-		this(map.getInt("id"), world, parseStart(world, map), parseCaveStyle(map));
+		this(map.getInt("id"), world, parseStart(world, map), parseCaveStyle(map), parseChunkPositions(map));
 		this.hasBeenJoined = map.getBoolean("hasBeenJoined");
 		this.joinTime = map.getLong("joinTime");
 		this.totalPollution = map.getInt("totalPollution");
@@ -85,6 +87,16 @@ public class CaveTracker {
 		return style;
 	}
 
+	private static List<BlockVector2> parseChunkPositions(ConfigurationSection map) {
+		List<Map<?, ?>> chunkPositions = map.getMapList("chunkPositions");
+		List<BlockVector2> result = new ArrayList<>();
+		for (Map<?, ?> entry : chunkPositions) {
+			ConfigurationSection entrySection = ConfigUtil.asConfigurationSection(entry);
+			result.add(BlockVector2.at(entrySection.getInt("x"), entrySection.getInt("z")));
+		}
+		return result;
+	}
+
 	public void serialize(ConfigurationSection map) {
 		map.set("id", id);
 		map.set("hasBeenJoined", hasBeenJoined);
@@ -110,13 +122,22 @@ public class CaveTracker {
 			blockBreakCounts.add(section);
 		});
 		map.set("blockBreakCounts", blockBreakCounts);
+		List<ConfigurationSection> chunkPositions = new ArrayList<>();
+		this.chunkPositions.forEach(pos -> {
+			ConfigurationSection section = new MemoryConfiguration();
+			section.set("x", pos.getBlockX());
+			section.set("z", pos.getBlockZ());
+			chunkPositions.add(section);
+		});
+		map.set("chunkPositions", chunkPositions);
 	}
 
-	public CaveTracker(int id, World world, Location start, CaveStyle style) {
+	public CaveTracker(int id, World world, Location start, CaveStyle style, List<BlockVector2> chunkPositions) {
 		this.id = id;
 		this.world = world;
 		this.start = start;
 		this.style = style;
+		this.chunkPositions = chunkPositions;
 
 		Team team = DescentIntoDarkness.instance.getScoreboard().getTeam("cave_" + id);
 		if (team == null) {
@@ -171,6 +192,10 @@ public class CaveTracker {
 			team.removeEntry(getPollutionScore(player, spawnEntry).getEntry());
 			Util.resetScore(getPollutionScore(player, spawnEntry));
 		}
+	}
+
+	public List<BlockVector2> getChunkPositions() {
+		return chunkPositions;
 	}
 
 	public MobEntry getMobEntry(MobSpawnEntry spawnEntry) {

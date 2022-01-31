@@ -6,10 +6,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +36,7 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.DyeColor;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
@@ -44,6 +47,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -185,7 +189,8 @@ public class CaveTrackerManager {
 					spawnPos.multiply(1, 0, 1).subtract(8 * INSTANCE_WIDTH_CHUNKS - 32, 0, 8 * INSTANCE_WIDTH_CHUNKS - 32),
 					spawnPos.multiply(1, 0, 1).add(8 * INSTANCE_WIDTH_CHUNKS - 32, 255, 8 * INSTANCE_WIDTH_CHUNKS - 32)
 			);
-			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, seed).limit(limit)) {
+			Set<BlockVector2> accessedChunks = new HashSet<>();
+			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, seed).limit(limit).outputAccessedChunksTo(accessedChunks)) {
 				CaveGenerator.generateCave(ctx, spawnPos.toVector3());
 			} catch (WorldEditException e) {
 				throw new RuntimeException("Could not generate cave", e);
@@ -196,7 +201,7 @@ public class CaveTrackerManager {
 			}
 			spawnPoint.add(0, 1, 0);
 			return DescentIntoDarkness.instance.supplySyncNow(() -> {
-				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style);
+				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style, new ArrayList<>(accessedChunks));
 				caveTrackers.add(caveTracker);
 				unexploredCavesByGroup.get(color).add(caveTracker);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
@@ -234,6 +239,19 @@ public class CaveTrackerManager {
 			}
 
 			caveTracker.removePlayer(player);
+		}
+
+		// remove all entities in the cave
+		for (BlockVector2 chunkCoords : caveTracker.getChunkPositions()) {
+			Chunk chunk = caveTracker.getWorld().getChunkAt(chunkCoords.getBlockX(), chunkCoords.getBlockZ());
+			if (!chunk.isLoaded()) {
+				chunk.load();
+			}
+			for (Entity entity : chunk.getEntities()) {
+				if (!(entity instanceof Player)) {
+					entity.remove();
+				}
+			}
 		}
 
 		caveTracker.getTeam().unregister();

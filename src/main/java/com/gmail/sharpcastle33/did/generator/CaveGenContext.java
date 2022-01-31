@@ -36,7 +36,7 @@ public class CaveGenContext implements AutoCloseable {
 	public final long caveSeed;
 	private boolean debug;
 	private final PackedBlockStorage blockStorage;
-	private final Set<BlockVector2> accessedChunks = new HashSet<>();
+	private Set<BlockVector2> accessedChunks = new HashSet<>();
 	private final Deque<Transform> blockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> inverseBlockTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private final Deque<Transform> locationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
@@ -50,6 +50,11 @@ public class CaveGenContext implements AutoCloseable {
 		this.rand = new Random(caveSeed);
 		this.caveSeed = caveSeed;
 		this.blockStorage = new PackedBlockStorage(style.getBaseBlock().toImmutableState());
+	}
+
+	public CaveGenContext outputAccessedChunksTo(Set<BlockVector2> chunks) {
+		this.accessedChunks = chunks;
+		return this;
 	}
 
 	public CaveGenContext setDebug(boolean debug) {
