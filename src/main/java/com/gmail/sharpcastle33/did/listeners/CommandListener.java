@@ -70,27 +70,48 @@ public class CommandListener implements TabExecutor {
 		return (Player) sender;
 	}
 
+	private static boolean checkElevatedPermission(CommandSender sender) {
+		if (!hasElevatedPermission(sender)) {
+			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use this command");
+			return false;
+		}
+		return true;
+	}
+
+	private static boolean hasElevatedPermission(CommandSender sender) {
+		return sender.hasPermission("did.command");
+	}
+
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		Player p;
 
-		if (args.length == 1 && args[0].equals("confirm")) {
-			p = requirePlayer(sender);
-			if (p == null) {
+		if (args.length == 0) {
+			if (!checkElevatedPermission(sender)) {
 				return true;
 			}
-			confirm(p);
-			return true;
-		}
-
-		if (!sender.hasPermission("did.command")) {
-			sender.sendMessage(ChatColor.DARK_RED + "You do not have permission to use this command");
-			return true;
-		}
-		
-		if(args.length == 0) {
 			if ((p = requirePlayer(sender)) != null) {
 				caveMenu(p,args);
 			}
+			return true;
+		}
+
+		// non-elevated-permission commands
+		switch (args[0]) {
+			case "confirm": {
+				p = requirePlayer(sender);
+				if (p == null) {
+					return true;
+				}
+				confirm(p);
+				return true;
+			}
+			case "leave": {
+				leave(sender, args);
+				return true;
+			}
+		}
+
+		if (!checkElevatedPermission(sender)) {
 			return true;
 		}
 
@@ -111,9 +132,6 @@ public class CommandListener implements TabExecutor {
 				break;
 			case "join":
 				join(sender, args);
-				break;
-			case "leave":
-				leave(sender, args);
 				break;
 			case "list":
 				list(sender);
@@ -307,6 +325,7 @@ public class CommandListener implements TabExecutor {
 	private void leave(CommandSender p, String[] args) {
 		Player target;
 		if (args.length > 1) {
+			if (!checkElevatedPermission(p)) return;
 			target = Bukkit.getPlayer(args[1]);
 			if (target == null) {
 				p.sendMessage(ChatColor.RED + "Player not found");
@@ -318,9 +337,21 @@ public class CommandListener implements TabExecutor {
 		}
 
 		CaveTrackerManager caveTrackerManager = DescentIntoDarkness.instance.getCaveTrackerManager();
-		if (!caveTrackerManager.isInCave(target)) {
+		CaveTracker cave = caveTrackerManager.getCaveForPlayer(target);
+		if (cave == null) {
 			p.sendMessage(ChatColor.RED + "Player is not in a cave");
 			return;
+		}
+		if (!hasElevatedPermission(p)) {
+			OptionalLong lastLeaveTime = cave.getLastLeaveTime(target.getUniqueId());
+			if (lastLeaveTime.isPresent()) {
+				long time = cave.getWorld().getFullTime() - lastLeaveTime.getAsLong();
+				int maxTime = 15 * 60 * 20;
+				if (time < maxTime) {
+					p.sendMessage(ChatColor.RED + "You can only use this command every 15 minutes. You have " + Util.formatTime(maxTime - time) + " remaining.");
+					return;
+				}
+			}
 		}
 
 		if (caveTrackerManager.teleportPlayerTo(target, null)) {
@@ -421,6 +452,12 @@ public class CommandListener implements TabExecutor {
 
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+		if (!hasElevatedPermission(sender)) {
+			if (args.length == 1) {
+				return StringUtil.copyPartialMatches(args[0], List.of("leave"), new ArrayList<>());
+			}
+			return Collections.emptyList();
+		}
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {

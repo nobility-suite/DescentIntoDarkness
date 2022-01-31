@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.Random;
 import java.util.UUID;
 
@@ -33,6 +34,7 @@ public class CaveTracker {
 	private final Location start;
 	private final CaveStyle style;
 	private final List<UUID> players = new ArrayList<>();
+	private final Map<UUID, Long> lastLeaveTime = new HashMap<>();
 	private int totalPollution;
 	private final Map<MobSpawnEntry, MobEntry> mobEntries = new HashMap<>();
 	private final Team team;
@@ -50,6 +52,15 @@ public class CaveTracker {
 			try {
 				this.players.add(UUID.fromString(player));
 			} catch (IllegalArgumentException ignore) {
+			}
+		}
+		ConfigurationSection playerLeaveTimes = map.getConfigurationSection("playerLeaveTimes");
+		if (playerLeaveTimes != null) {
+			for (String player : playerLeaveTimes.getKeys(false)) {
+				try {
+					this.lastLeaveTime.put(UUID.fromString(player), playerLeaveTimes.getLong(player));
+				} catch (IllegalArgumentException ignore) {
+				}
 			}
 		}
 		ConfigurationSection mobEntries = map.getConfigurationSection("mobEntries");
@@ -108,6 +119,8 @@ public class CaveTracker {
 		map.set("totalPollution", totalPollution);
 		map.set("spawnCooldown", spawnCooldown);
 		map.set("players", players.stream().map(UUID::toString).toArray(String[]::new));
+		ConfigurationSection playerLeaveTimes = map.createSection("playerLeaveTimes");
+		lastLeaveTime.forEach((key, value) -> playerLeaveTimes.set(key.toString(), value));
 		mobEntries.forEach((spawnEntry, entry) -> {
 			ConfigurationSection mobEntry = map.createSection("mobEntries." + spawnEntry.getName());
 			entry.serialize(mobEntry);
@@ -191,6 +204,16 @@ public class CaveTracker {
 		for (MobSpawnEntry spawnEntry : style.getSpawnEntries()) {
 			team.removeEntry(getPollutionScore(player, spawnEntry).getEntry());
 			Util.resetScore(getPollutionScore(player, spawnEntry));
+		}
+		lastLeaveTime.put(player, world.getFullTime());
+	}
+
+	public OptionalLong getLastLeaveTime(UUID player) {
+		Long lastLeaveTime = this.lastLeaveTime.get(player);
+		if (lastLeaveTime == null) {
+			return OptionalLong.empty();
+		} else {
+			return OptionalLong.of(lastLeaveTime);
 		}
 	}
 

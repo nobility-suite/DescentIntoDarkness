@@ -348,6 +348,20 @@ public class Util {
 		return null;
 	}
 
+	public static String formatTime(long ticks) {
+		long remainingTime = (ticks + 19) / 20;
+		String remainingTimeString = (remainingTime % 60) + "s";
+		remainingTime /= 60;
+		if (remainingTime > 0) {
+			remainingTimeString = (remainingTime % 60) + "m " + remainingTimeString;
+			remainingTime /= 60;
+			if (remainingTime > 0) {
+				remainingTimeString = remainingTime + "h " + remainingTimeString;
+			}
+		}
+		return remainingTimeString;
+	}
+
 	@FunctionalInterface
 	public interface FileSaver {
 		void save(File file) throws IOException;
