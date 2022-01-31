@@ -153,6 +153,7 @@ public class DescentIntoDarkness extends JavaPlugin {
 			config.addDefault("caveStyleGroups.white.caves.default", 1);
 		}
 		config.addDefault("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
+		config.addDefault("showDebugPollution", false);
 		config.options().copyDefaults(true);
 		saveConfig();
 		reload();
@@ -237,6 +238,10 @@ public class DescentIntoDarkness extends JavaPlugin {
 
 	public int getCustomBiomeIdStart() {
 		return config.getInt("customBiomeIdStart", Biomes.DEFAULT_CUSTOM_BIOME_ID_START);
+	}
+
+	public boolean showDebugPollution() {
+		return config.getBoolean("showDebugPollution", false);
 	}
 
 	public CaveStyles getCaveStyles() {

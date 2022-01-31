@@ -369,8 +369,9 @@ public class CaveTrackerManager {
 			if (pollutionObjective == null) {
 				pollutionObjective = DescentIntoDarkness.instance.getScoreboard().registerNewObjective("pollution", "dummy", "Pollution");
 			}
-			// Temporary, for debug
-			pollutionObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+			if (DescentIntoDarkness.instance.showDebugPollution()) {
+				pollutionObjective.setDisplaySlot(DisplaySlot.SIDEBAR);
+			}
 		}
 		return pollutionObjective;
 	}
