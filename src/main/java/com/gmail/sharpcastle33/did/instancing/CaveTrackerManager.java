@@ -477,7 +477,11 @@ public class CaveTrackerManager {
 					if (caveId == null) {
 						continue;
 					}
-					this.unexploredCavesByGroup.get(color).add(getCaveById(caveId));
+					CaveTracker cave = getCaveById(caveId);
+					if (cave != null) {
+						this.unexploredCavesByGroup.get(color).add(cave);
+						cave.setColor(color);
+					}
 				}
 			}
 		}
