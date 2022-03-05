@@ -204,6 +204,7 @@ public class CaveTrackerManager {
 				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style, new ArrayList<>(accessedChunks));
 				caveTrackers.add(caveTracker);
 				unexploredCavesByGroup.get(color).add(caveTracker);
+				caveTracker.setColor(color);
 				Bukkit.getServer().getLogger().info("Returning new CaveTracker of ID: " + id);
 				tempClaimedIDs.remove(Integer.valueOf(id));
 				save();
@@ -313,6 +314,13 @@ public class CaveTrackerManager {
 //			if (existingCave.getPlayers().isEmpty()) {
 //				deleteCave(existingCave);
 //			}
+		}
+
+		if (!newCave.hasBeenJoined()) {
+			DyeColor color = newCave.getColor();
+			if (color != null) {
+				unexploredCavesByGroup.get(color).remove(newCave);
+			}
 		}
 
 		Location start = newCave.getStart();

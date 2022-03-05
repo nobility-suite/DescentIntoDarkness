@@ -17,6 +17,7 @@ import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.sk89q.worldedit.math.BlockVector2;
 import com.sk89q.worldedit.math.BlockVector3;
 import org.bukkit.Bukkit;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -24,10 +25,13 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.Nullable;
 
 public class CaveTracker {
 
 	private final int id;
+	@Nullable
+	private DyeColor color;
 	private boolean hasBeenJoined;
 	private long joinTime;
 	private final World world;
@@ -161,6 +165,15 @@ public class CaveTracker {
 
 	public int getId() {
 		return id;
+	}
+
+	@Nullable
+	public DyeColor getColor() {
+		return color;
+	}
+
+	public void setColor(DyeColor color) {
+		this.color = color;
 	}
 
 	public boolean hasBeenJoined() {
