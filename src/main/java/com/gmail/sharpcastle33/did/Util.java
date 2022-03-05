@@ -161,7 +161,7 @@ public class Util {
 
 			return block;
 		}
-		return BlockTransformExtent.transform((T) block, transform);
+		return toRealImmutable(BlockTransformExtent.transform((T) block, transform));
 	}
 
 	public static <T> CompletableFuture<T> completeExceptionally(Throwable t) {
