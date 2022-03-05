@@ -214,7 +214,7 @@ defaultPainterSteps:
 defaultStructures:
   __builtin_no_default_inherit: true
   abstract: true
-  structures: []
+  structures: {}
 
 defaultPortals:
   __builtin_no_default_inherit: true
@@ -258,7 +258,7 @@ defaultMobSpawning:
       cooldown: 20
       despawnRange: 48
 
-  ores: []
+  ores: {}
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
