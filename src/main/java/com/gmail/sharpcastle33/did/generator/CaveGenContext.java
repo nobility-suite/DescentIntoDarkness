@@ -20,6 +20,7 @@ import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Deque;
@@ -43,6 +44,8 @@ public class CaveGenContext implements AutoCloseable {
 	private final Deque<Transform> inverseLocationTransformStack = new LinkedList<>(Collections.singletonList(new Identity()));
 	private Region limit = null;
 	private boolean canceled = false;
+	@Nullable
+	private BlockVector3 spawnPos;
 
 	private CaveGenContext(EditSession session, CaveStyle style, long caveSeed) {
 		this.session = session;
@@ -214,6 +217,15 @@ public class CaveGenContext implements AutoCloseable {
 		canceled = true;
 		session.cancel();
 		return true;
+	}
+
+	@Nullable
+	public BlockVector3 getSpawnPos() {
+		return spawnPos;
+	}
+
+	public void setSpawnPos(@Nullable BlockVector3 spawnPos) {
+		this.spawnPos = spawnPos;
 	}
 
 	@Override

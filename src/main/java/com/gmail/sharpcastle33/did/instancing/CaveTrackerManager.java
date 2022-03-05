@@ -193,6 +193,9 @@ public class CaveTrackerManager {
 			Set<BlockVector2> accessedChunks = new HashSet<>();
 			try (CaveGenContext ctx = CaveGenContext.create(BukkitAdapter.adapt(theWorld), style, seed).limit(limit).outputAccessedChunksTo(accessedChunks)) {
 				CaveGenerator.generateCave(ctx, spawnPos.toVector3());
+				if (ctx.getSpawnPos() != null) {
+					spawnPos = ctx.getSpawnPos();
+				}
 			} catch (WorldEditException e) {
 				throw new RuntimeException("Could not generate cave", e);
 			}

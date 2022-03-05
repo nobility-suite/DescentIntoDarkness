@@ -48,7 +48,7 @@ public class CommandListener implements TabExecutor {
 	
 	private final HashMap<UUID,Long> playerSeeds = new HashMap<>();
 	private CaveGenContext currentCaveGen;
-	private static final WeakHashMap<Player, ConfirmAction> confirmActions = new WeakHashMap<>();
+	private static final WeakHashMap<Player, Map<UUID, ConfirmAction>> confirmActions = new WeakHashMap<>();
 
 	private static class ConfirmAction {
 		private final Runnable action;
@@ -59,8 +59,10 @@ public class CommandListener implements TabExecutor {
 			this.expiry = expiry;
 		}
 	}
-	public static void setConfirmAction(Player p, long timeout, Runnable r) {
-		confirmActions.put(p, new ConfirmAction(r, Bukkit.getWorlds().get(0).getFullTime() + timeout));
+	public static UUID setConfirmAction(Player p, long timeout, Runnable r) {
+		UUID uuid = UUID.randomUUID();
+		confirmActions.computeIfAbsent(p, k -> new HashMap<>()).put(uuid, new ConfirmAction(r, Bukkit.getWorlds().get(0).getFullTime() + timeout));
+		return uuid;
 	}
 	
 	private static Player requirePlayer(CommandSender sender) {
@@ -103,7 +105,7 @@ public class CommandListener implements TabExecutor {
 				if (p == null) {
 					return true;
 				}
-				confirm(p);
+				confirm(p, args);
 				return true;
 			}
 			case "leave": {
@@ -156,11 +158,26 @@ public class CommandListener implements TabExecutor {
 		return true;
 	}
 
-	private static void confirm(Player p) {
-		ConfirmAction action = confirmActions.remove(p);
-		if (action == null) {
+	private static void confirm(Player p, String[] args) {
+		if (args.length < 2) {
 			return;
 		}
+		UUID uuid;
+		try {
+			uuid = UUID.fromString(args[1]);
+		} catch (IllegalArgumentException e) {
+			return;
+		}
+		var actions = confirmActions.get(p);
+		if (actions == null) {
+			return;
+		}
+		ConfirmAction action = actions.remove(uuid);
+		if (action == null) {
+			p.sendMessage(ChatColor.DARK_RED + "Confirmation timed out");
+			return;
+		}
+		actions.values().removeIf(a -> a.expiry < Bukkit.getWorlds().get(0).getFullTime());
 		if (action.expiry < Bukkit.getWorlds().get(0).getFullTime()) {
 			p.sendMessage(ChatColor.DARK_RED + "Confirmation timed out");
 			return;

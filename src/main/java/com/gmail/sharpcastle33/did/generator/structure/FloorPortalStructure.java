@@ -22,6 +22,8 @@ public class FloorPortalStructure extends Structure {
 	private final BlockProvider portalBlock;
 	@Nullable
 	private final BlockProvider frameBlock;
+	@Nullable
+	private final BlockProvider floorBlock;
 
 	protected FloorPortalStructure(String name, ConfigurationSection map) {
 		super(name, StructureType.FLOOR_PORTAL, map);
@@ -37,6 +39,7 @@ public class FloorPortalStructure extends Structure {
 		}
 		portalBlock = map.contains("portalBlock") ? ConfigUtil.parseBlockProvider(map.get("portalBlock")) : BlockProvider.NETHER_PORTAL;
 		frameBlock = map.contains("frameBlock") ? ConfigUtil.parseBlockProvider(map.get("frameBlock")) : null;
+		floorBlock = map.contains("floorBlock") ? ConfigUtil.parseBlockProvider(map.get("floorBlock")) : frameBlock;
 	}
 
 	@Override
@@ -82,6 +85,36 @@ public class FloorPortalStructure extends Structure {
 					ctx.setBlock(BlockVector3.at(x + i, pos.getBlockY() + j, pos.getBlockZ()), frameBlock);
 				} else {
 					ctx.setBlock(BlockVector3.at(x + i, pos.getBlockY() + j, pos.getBlockZ()), portalBlock.get(ctx, centroid));
+				}
+			}
+			for (int j : new int[]{-1, 1}) {
+				BlockVector3 floorPos = BlockVector3.at(x + i, pos.getBlockY(), pos.getBlockZ() + j);
+				if (ctx.style.isTransparentBlock(ctx.getBlock(floorPos))) {
+					BlockStateHolder<?> floorBlock = this.floorBlock != null ? this.floorBlock.get(ctx, centroid) : ctx.style.getBaseBlock();
+					ctx.setBlock(floorPos, floorBlock);
+				}
+			}
+		}
+
+		boolean escapeExists = false;
+		escapeSearchLoop:
+		for (int dx = 0; dx < width; dx++) {
+			for (int dz : new int[]{-1, 1}) {
+				BlockVector3 wallPos = BlockVector3.at(x + dx, pos.getBlockY() + 1, pos.getBlockZ() + dz);
+				BlockVector3 posAbove = wallPos.add(0, 1, 0);
+				if (ctx.style.isTransparentBlock(ctx.getBlock(wallPos)) && ctx.style.isTransparentBlock(ctx.getBlock(posAbove))) {
+					escapeExists = true;
+					break escapeSearchLoop;
+				}
+			}
+		}
+
+		if (!escapeExists) {
+			for (int dx = 0; dx < width; dx++) {
+				for (int dy = 1; dy <= height; dy++) {
+					for (int dz : new int[]{-1, 1}) {
+						ctx.setBlock(pos.add(dx, dy, dz), ctx.style.getAirBlock(pos.getBlockY() + dy, centroid, 0, 256).get(ctx, centroid));
+					}
 				}
 			}
 		}

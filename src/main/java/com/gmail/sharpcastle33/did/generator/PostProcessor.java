@@ -10,6 +10,7 @@ import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.util.Direction;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import org.bukkit.Bukkit;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -173,10 +174,11 @@ public class PostProcessor {
 		}
 	}
 
-	private static boolean placeStructure(CaveGenContext ctx, Structure structure, Centroid centroid, boolean force) {
+	@Nullable
+	private static BlockVector3 placeStructure(CaveGenContext ctx, Structure structure, Centroid centroid, boolean force) {
 		List<Direction> validDirections = structure.getValidDirections();
 		if (validDirections.isEmpty()) {
-			return true;
+			return null;
 		}
 
 		Vector3 vector;
@@ -206,14 +208,14 @@ public class PostProcessor {
 		}
 
 		if (!force && !structure.canPlaceOn(ctx, ctx.getBlock(pos))) {
-			return false;
+			return null;
 		}
 
 		int randomYRotation = ctx.rand.nextInt(4) * 90;
 		ctx.pushTransform(structure.getBlockTransform(randomYRotation, pos, dir), structure.getPositionTransform(randomYRotation, pos, dir));
 		boolean placed = structure.place(ctx, pos, centroid, force);
 		ctx.popTransform();
-		return placed;
+		return placed ? pos : null;
 	}
 
 	private static void generatePortal(CaveGenContext ctx, Centroid firstCentroid) {
@@ -223,13 +225,42 @@ public class PostProcessor {
 		// 100 attempts to place a portal without force (in a nice location)
 		for (int i = 0; i < 100; i++) {
 			Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
-			if (placeStructure(ctx, portal, firstCentroid, false)) {
+			BlockVector3 portalPos = placeStructure(ctx, portal, firstCentroid, false);
+			if (portalPos != null) {
+				ctx.setSpawnPos(findSpawnPos(ctx, portalPos));
 				return;
 			}
 		}
 		// if we can't place a portal, try again with force
 		Structure portal = ctx.style.getPortals().get(ctx.rand.nextInt(ctx.style.getPortals().size()));
-		placeStructure(ctx, portal, firstCentroid, true);
+		BlockVector3 portalPos = placeStructure(ctx, portal, firstCentroid, true);
+		ctx.setSpawnPos(findSpawnPos(ctx, portalPos));
+	}
+
+	private static BlockVector3 findSpawnPos(CaveGenContext ctx, BlockVector3 startPos) {
+		List<BlockVector3> appropriateSpawnPositions = new ArrayList<>();
+		for (int dx = -5; dx <= 5; dx++) {
+			for (int dy = -5; dy <= 5; dy++) {
+				for (int dz = -5; dz <= 5; dz++) {
+					BlockVector3 pos = startPos.add(dx, dy, dz);
+					if (!ctx.style.isTransparentBlock(ctx.getBlock(pos.add(0, -1, 0)))
+							&& ctx.style.isTransparentBlock(ctx.getBlock(pos))
+							&& ctx.style.isTransparentBlock(ctx.getBlock(pos.add(0, 1, 0)))) {
+						appropriateSpawnPositions.add(pos);
+					}
+				}
+			}
+		}
+		if (appropriateSpawnPositions.isEmpty()) {
+			return startPos;
+		}
+		int minYDistance = Integer.MAX_VALUE;
+		for (BlockVector3 spawnPos : appropriateSpawnPositions) {
+			minYDistance = Math.min(minYDistance, Math.abs(spawnPos.getBlockY() - startPos.getBlockY()));
+		}
+		int minYDistance_f = minYDistance;
+		appropriateSpawnPositions.removeIf(spawnPos -> Math.abs(spawnPos.getBlockY() - startPos.getBlockY()) > minYDistance_f);
+		return appropriateSpawnPositions.get(ctx.rand.nextInt(appropriateSpawnPositions.size()));
 	}
 
 	public static void generateWaterfalls(CaveGenContext ctx, List<Centroid> centroids, Vector3 loc, int caveRadius, int amount, int rarity, int placeRadius) {

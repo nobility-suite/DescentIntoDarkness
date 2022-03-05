@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 public class HiddenOre implements Listener {
 	private static final Map<Location, HiddenOreData> hiddenOreData = new HashMap<>();
@@ -138,13 +139,13 @@ public class HiddenOre implements Listener {
 						"No " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) +
 						" caves are currently available. Please try again later.");
 			} else {
-				CommandListener.setConfirmAction(
+				UUID actionId = CommandListener.setConfirmAction(
 						event.getPlayer(),
 						600,
 						() -> joinCave(event.getPlayer(), clickedBlock.getLocation()));
 				BaseComponent message = new TextComponent(ChatColor.DARK_GREEN + "You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! ");
 				TextComponent button = new TextComponent(ChatColor.DARK_GREEN + "Click to enter.");
-				button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm"));
+				button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm " + actionId));
 				button.setUnderlined(true);
 				message.addExtra(button);
 				event.getPlayer().spigot().sendMessage(message);
@@ -157,7 +158,7 @@ public class HiddenOre implements Listener {
 				return;
 			}
 			String remainingTimeString = Util.formatTime(remainingTime);
-			CommandListener.setConfirmAction(
+			UUID actionId = CommandListener.setConfirmAction(
 					event.getPlayer(),
 					600,
 					() -> joinCave(event.getPlayer(), clickedBlock.getLocation())
@@ -165,7 +166,7 @@ public class HiddenOre implements Listener {
 			BaseComponent message = new TextComponent(ChatColor.DARK_GREEN + "You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! " +
 					ChatColor.DARK_GREEN + "It will close in " + remainingTimeString + ". ");
 			TextComponent button = new TextComponent(ChatColor.DARK_GREEN + "Click to enter.");
-			button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm"));
+			button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm " + actionId));
 			button.setUnderlined(true);
 			message.addExtra(button);
 			event.getPlayer().spigot().sendMessage(message);
