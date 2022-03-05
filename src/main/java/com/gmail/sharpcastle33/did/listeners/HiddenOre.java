@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -40,6 +41,7 @@ public class HiddenOre implements Listener {
 	private static final Map<Integer, Location> hiddenOreLocationsByCaveId = new HashMap<>();
 
 	private static final Map<Material, DyeColor> SHULKER_BOX_COLORS = new HashMap<>();
+	private static final EnumMap<DyeColor, Material> SHULKER_BOXES_BY_COLOR = new EnumMap<>(DyeColor.class);
 	static {
 		// i fucking hate spigot
 		SHULKER_BOX_COLORS.put(Material.WHITE_SHULKER_BOX, DyeColor.WHITE);
@@ -58,6 +60,23 @@ public class HiddenOre implements Listener {
 		SHULKER_BOX_COLORS.put(Material.GREEN_SHULKER_BOX, DyeColor.GREEN);
 		SHULKER_BOX_COLORS.put(Material.RED_SHULKER_BOX, DyeColor.RED);
 		SHULKER_BOX_COLORS.put(Material.BLACK_SHULKER_BOX, DyeColor.BLACK);
+
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.WHITE, Material.WHITE_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.ORANGE, Material.ORANGE_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.MAGENTA, Material.MAGENTA_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.LIGHT_BLUE, Material.LIGHT_BLUE_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.YELLOW, Material.YELLOW_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.LIME, Material.LIME_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.PINK, Material.PINK_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.GRAY, Material.GRAY_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.LIGHT_GRAY, Material.LIGHT_GRAY_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.CYAN, Material.CYAN_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.PURPLE, Material.PURPLE_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.BLUE, Material.BLUE_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.BROWN, Material.BROWN_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.GREEN, Material.GREEN_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.RED, Material.RED_SHULKER_BOX);
+		SHULKER_BOXES_BY_COLOR.put(DyeColor.BLACK, Material.BLACK_SHULKER_BOX);
 	}
 
 	@EventHandler
@@ -65,6 +84,22 @@ public class HiddenOre implements Listener {
 		if (SHULKER_BOX_COLORS.containsKey(event.getBlock().getType())) {
 			event.setCancelled(true);
 		}
+	}
+
+	public static void placeHiddenOre(Location pos, DyeColor color) {
+		World world = pos.getWorld();
+		if (world == null) {
+			return;
+		}
+		Material material = SHULKER_BOXES_BY_COLOR.get(color);
+		Block block = pos.getBlock();
+		if (block.getType() != material) {
+			block.setType(material);
+		}
+
+		HiddenOreData data = new HiddenOreData(null, 0, color);
+		hiddenOreData.put(new Location(world, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()), data);
+		saveHiddenOreData();
 	}
 
 	@EventHandler
@@ -77,14 +112,7 @@ public class HiddenOre implements Listener {
 		}
 
 		Location pos = event.getBlock().getLocation();
-		World world = pos.getWorld();
-		if (world == null) {
-			return;
-		}
-
-		HiddenOreData data = new HiddenOreData(null, 0, color);
-		hiddenOreData.put(new Location(world, pos.getBlockX(), pos.getBlockY(), pos.getBlockZ()), data);
-		saveHiddenOreData();
+		placeHiddenOre(pos, color);
 	}
 
 	@EventHandler

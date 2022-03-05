@@ -42,6 +42,7 @@ import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 
 import net.md_5.bungee.api.ChatColor;
+import org.jetbrains.annotations.Nullable;
 
 public class CommandListener implements TabExecutor {
 	
@@ -147,6 +148,9 @@ public class CommandListener implements TabExecutor {
 					playerSeeds.put(p.getUniqueId(), seed);
 				}
 				break;
+			case "spawnOre":
+				spawnOre(sender, args);
+				break;
 		}
 
 		return true;
@@ -237,20 +241,33 @@ public class CommandListener implements TabExecutor {
 
 		Location pos;
 
-		if (args.length >= 5) {
-			boolean xRelative = args[2].startsWith("~");
-			OptionalInt xOpt = xRelative ? (args[2].equals("~") ? OptionalInt.of(0) : parseInt(p, args[2].substring(1))) : parseInt(p, args[2]);
-			if (xOpt.isEmpty()) return;
-			boolean yRelative = args[3].startsWith("~");
-			OptionalInt yOpt = yRelative ? (args[3].equals("~") ? OptionalInt.of(0) : parseInt(p, args[3].substring(1))) : parseInt(p, args[3]);
-			if (yOpt.isEmpty()) return;
-			boolean zRelative = args[4].startsWith("~");
-			OptionalInt zOpt = zRelative ? (args[4].equals("~") ? OptionalInt.of(0) : parseInt(p, args[4].substring(1))) : parseInt(p, args[4]);
-			if (zOpt.isEmpty()) return;
+		pos = parseLocation(p, args, 2);
+		if (pos == null) return;
+
+		if (args[1].equals("cave")) {
+			generateCave(p, pos, args);
+		} else if (args[1].equals("blank")) {
+			generateBlank(p, pos, args);
+		}
+	}
+
+	@Nullable
+	private static Location parseLocation(CommandSender p, String[] args, int index) {
+		Location pos;
+		if (args.length >= index + 3) {
+			boolean xRelative = args[index].startsWith("~");
+			OptionalInt xOpt = xRelative ? (args[index].equals("~") ? OptionalInt.of(0) : parseInt(p, args[index].substring(1))) : parseInt(p, args[2]);
+			if (xOpt.isEmpty()) return null;
+			boolean yRelative = args[index + 1].startsWith("~");
+			OptionalInt yOpt = yRelative ? (args[index + 1].equals("~") ? OptionalInt.of(0) : parseInt(p, args[index + 1].substring(1))) : parseInt(p, args[3]);
+			if (yOpt.isEmpty()) return null;
+			boolean zRelative = args[index + 2].startsWith("~");
+			OptionalInt zOpt = zRelative ? (args[index + 2].equals("~") ? OptionalInt.of(0) : parseInt(p, args[index + 2].substring(1))) : parseInt(p, args[4]);
+			if (zOpt.isEmpty()) return null;
 			int x = xOpt.getAsInt(), y = yOpt.getAsInt(), z = zOpt.getAsInt();
 			if (xRelative || yRelative || zRelative) {
 				Player player = requirePlayer(p);
-				if (player == null) return;
+				if (player == null) return null;
 				if (xRelative) x += player.getLocation().getBlockX();
 				if (yRelative) y += player.getLocation().getBlockY();
 				if (zRelative) z += player.getLocation().getBlockZ();
@@ -258,15 +275,10 @@ public class CommandListener implements TabExecutor {
 			pos = new Location(p instanceof Player ? ((Player) p).getWorld() : Bukkit.getWorlds().get(0), x, y, z);
 		} else {
 			Player player = requirePlayer(p);
-			if (player == null) return;
+			if (player == null) return null;
 			pos = player.getLocation();
 		}
-
-		if (args[1].equals("cave")) {
-			generateCave(p, pos, args);
-		} else if (args[1].equals("blank")) {
-			generateBlank(p, pos, args);
-		}
+		return pos;
 	}
 
 	private void cancel(CommandSender p, String[] args) {
@@ -450,6 +462,21 @@ public class CommandListener implements TabExecutor {
 		});
 	}
 
+	private static void spawnOre(CommandSender sender, String[] args) {
+		if (args.length < 2) {
+			return;
+		}
+		DyeColor color = Arrays.stream(DyeColor.values()).filter(it -> it.name().toLowerCase(Locale.ROOT).equals(args[1])).findAny().orElse(null);
+		if (color == null) {
+			sender.sendMessage(ChatColor.RED + "Unknown color " + args[0]);
+			return;
+		}
+		Location location = parseLocation(sender, args, 2);
+		if (location == null) return;
+
+		HiddenOre.placeHiddenOre(location, color);
+	}
+
 	@Override
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
 		if (!hasElevatedPermission(sender)) {
@@ -461,7 +488,7 @@ public class CommandListener implements TabExecutor {
 		if (args.length == 0) {
 			return Collections.emptyList();
 		} else if (args.length == 1) {
-			return StringUtil.copyPartialMatches(args[0], Arrays.asList("delete", "generate", "cancel", "join", "leave", "list", "reload"), new ArrayList<>());
+			return StringUtil.copyPartialMatches(args[0], Arrays.asList("delete", "generate", "cancel", "join", "leave", "list", "reload", "spawnOre"), new ArrayList<>());
 		} else {
 			switch (args[0]) {
 				case "generate":
@@ -506,6 +533,13 @@ public class CommandListener implements TabExecutor {
 				case "leave":
 					if (args.length == 2) {
 						return StringUtil.copyPartialMatches(args[1], Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()), new ArrayList<>());
+					}
+					break;
+				case "spawnOre":
+					if (args.length == 2) {
+						return StringUtil.copyPartialMatches(args[1], Arrays.stream(DyeColor.values()).map(it -> it.name().toLowerCase(Locale.ROOT)).collect(Collectors.toList()), new ArrayList<>());
+					} else if (args.length < 6) {
+						return args[args.length - 1].isEmpty() ? Collections.singletonList("~") : Collections.emptyList();
 					}
 					break;
 			}

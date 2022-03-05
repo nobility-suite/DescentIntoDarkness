@@ -89,9 +89,6 @@ public class CaveTrackerManager {
 			hasInitialized = true;
 		}
 
-		if (!generatingCave.compareAndSet(false, true)) {
-			return;
-		}
 		for (CaveTracker cave : caveTrackers) {
 			if (cave.hasBeenJoined()) {
 				long aliveTime = cave.getWorld().getFullTime() - cave.getJoinTime();
@@ -100,6 +97,10 @@ public class CaveTrackerManager {
 					break;
 				}
 			}
+		}
+
+		if (!generatingCave.compareAndSet(false, true)) {
+			return;
 		}
 		if (caveTrackers.size() >= DescentIntoDarkness.instance.getInstanceLimit()) {
 			generatingCave.set(false);
