@@ -214,34 +214,7 @@ defaultPainterSteps:
 defaultStructures:
   __builtin_no_default_inherit: true
   abstract: true
-  structures:
-    coal_ore:
-      type: vein
-      edges:
-        - floor
-        - ceiling
-        - wall
-      chance: 0.01
-      ore: minecraft:coal_ore
-      radius: 4
-    diamond_ore:
-      type: vein
-      edges:
-        - floor
-        - ceiling
-        - wall
-      chance: 0.01
-      ore: minecraft:diamond_ore
-      radius: 4
-    emerald_ore:
-      type: vein
-      edges:
-        - floor
-        - ceiling
-        - wall
-      chance: 0.01
-      ore: minecraft:emerald_ore
-      radius: 3
+  structures: []
 
 defaultPortals:
   __builtin_no_default_inherit: true
@@ -285,51 +258,7 @@ defaultMobSpawning:
       cooldown: 20
       despawnRange: 48
 
-  ores:
-    coal_ore:
-      block: minecraft:coal_ore
-      dropTable:
-        drop1: minecraft:coal_block
-        drop2:
-          item: minecraft:coal
-          weight: 10
-        drop3:
-          item: minecraft:charcoal
-          weight: 10
-      pollution: 5
-      breakAmount: 5
-    diamond_ore:
-      block: minecraft:diamond_ore
-      pollution: 15
-      breakAmount: 5
-    emerald_ore:
-      block: minecraft:emerald_ore
-      pollution: 15
-      breakAmount: 5
-    redstone_ore:
-      block: minecraft:redstone_ore
-      pollution: 5
-      breakAmount: 5
-    lapis_ore:
-      block: minecraft:lapis_ore
-      pollution: 5
-      breakAmount: 5
-    gold_ore:
-      block: minecraft:gold_ore
-      pollution: 5
-      breakAmount: 5
-    iron_ore:
-      block: minecraft:iron_ore
-      pollution: 5
-      breakAmount: 5
-    nether_quartz_ore:
-      block: minecraft:nether_quartz_ore
-      pollution: 5
-      breakAmount: 5
-    nether_gold_ore:
-      block: minecraft:nether_gold_ore
-      pollution: 5
-      breakAmount: 5
+  ores: []
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
