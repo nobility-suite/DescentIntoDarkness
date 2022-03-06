@@ -106,7 +106,7 @@ public class Ore {
 				}
 				int minAmount = map.getInt("minAmount", 1);
 				int maxAmount = map.getInt("maxAmount", 1);
-				if (minAmount < 1 || maxAmount < minAmount || maxAmount > item.getMaxStackSize()) {
+				if (minAmount < 0 || maxAmount < minAmount || maxAmount > item.getMaxStackSize()) {
 					throw new InvalidConfigException("Invalid drop amount range");
 				}
 				return new Drop(item, weight, minAmount, maxAmount);

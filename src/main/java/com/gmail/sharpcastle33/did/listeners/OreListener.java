@@ -69,9 +69,12 @@ public class OreListener implements Listener {
 						}
 					}
 					assert drop != null;
-					ItemStack toDrop = new ItemStack(drop.getItem());
-					toDrop.setAmount(drop.getMinAmount() + rand.nextInt(drop.getMaxAmount() - drop.getMinAmount() + 1));
-					player.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
+					int amount = drop.getMinAmount() + rand.nextInt(drop.getMaxAmount() - drop.getMinAmount() + 1);
+					if (amount > 0) {
+						ItemStack toDrop = new ItemStack(drop.getItem());
+						toDrop.setAmount(amount);
+						player.getWorld().dropItemNaturally(event.getBlock().getLocation(), toDrop);
+					}
 					event.setDropItems(false);
 					event.setExpToDrop(0);
 				} else if (blockBreakCount < ore.getBreakAmount()) {

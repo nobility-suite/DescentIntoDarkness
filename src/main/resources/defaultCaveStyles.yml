@@ -258,7 +258,92 @@ defaultMobSpawning:
       cooldown: 20
       despawnRange: 48
 
-  ores: {}
+  ores:
+    coal_ore:
+      block: minecraft:coal_ore
+      dropTable:
+        drop1: minecraft:coal_block
+        drop2:
+          item: minecraft:coal
+          weight: 10
+        drop3:
+          item: minecraft:charcoal
+          weight: 10
+        drop4:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+      pollution: 20
+      breakAmount: 5
+    diamond_ore:
+      block: minecraft:diamond_ore
+      pollution: 50
+      dropTable:
+        drop1: minecraft:diamond_ore
+        drop2: minecraft:diamond
+        drop3:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+          weight: 18
+      breakAmount: 5
+    emerald_ore:
+      block: minecraft:emerald_ore
+      pollution: 50
+      breakAmount: 3
+      dropTable:
+        drop1: minecraft:emerald
+        drop2:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+          weight: 8
+    redstone_ore:
+      block: minecraft:redstone_ore
+      pollution: 25
+      breakAmount: 2
+    lapis_ore:
+      block: minecraft:lapis_ore
+      pollution: 25
+      breakAmount: 2
+    gold_ore:
+      block: minecraft:gold_ore
+      pollution: 20
+      dropTable:
+        drop1: minecraft:gold_ore
+        drop2:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+          weight: 2
+      breakAmount: 3
+    iron_ore:
+      block: minecraft:iron_ore
+      pollution: 20
+      breakAmount: 3
+      dropTable:
+        drop1: minecraft:iron_ore
+        drop2:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+          weight: 2
+    nether_quartz_ore:
+      block: minecraft:nether_quartz_ore
+      pollution: 20
+      breakAmount: 6
+      dropTable:
+        drop1:
+          item: minecraft:gold_nugget
+          weight: 5
+        drop2:
+          item: minecraft:stone
+          minAmount: 0
+          maxAmount: 0
+    nether_gold_ore:
+      block: minecraft:nether_gold_ore
+      pollution: 30
+      breakAmount: 1
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
