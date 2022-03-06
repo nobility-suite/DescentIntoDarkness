@@ -97,6 +97,10 @@ public class CaveStyles {
 			}
 
 			for (String styleName : caveStylesConfig.getKeys(false)) {
+				inlineDefaultInheritance(styleName);
+			}
+
+			for (String styleName : caveStylesConfig.getKeys(false)) {
 				try {
 					ConfigurationSection value = caveStylesConfig.getConfigurationSection(styleName);
 					if (value == null) {
@@ -130,6 +134,7 @@ public class CaveStyles {
 			final String name;
 			final Set<String> mergeTop = new HashSet<>();
 			final Set<String> mergeBottom = new HashSet<>();
+			final Set<String> mergeSkip = new HashSet<>();
 
 			InheritanceData(String name) {
 				this.name = name;
@@ -151,8 +156,10 @@ public class CaveStyles {
 								data.mergeTop.add(key);
 							} else if ("bottom".equals(val)) {
 								data.mergeBottom.add(key);
+							} else if ("skip".equals(val)) {
+								data.mergeSkip.add(key);
 							} else {
-								throw new InvalidConfigException("Complex inherit merge must be either \"top\" or \"bottom\"");
+								throw new InvalidConfigException("Complex inherit merge must be either \"top\", \"bottom\" or \"skip\"");
 							}
 						}
 					}
@@ -163,17 +170,16 @@ public class CaveStyles {
 			}
 		}
 
-		if (!caveStyle.contains("__builtin_no_default_inherit") && parents.stream().noneMatch(it -> it.name.equals("default"))) {
-			parents.add(new InheritanceData("default"));
-		}
+		Map<String, String> alreadyMerged = new HashMap<>();
+
 		for (InheritanceData parent : parents) {
 			inlineCaveStyleInheritance(parent.name, styleStack, processedStyles);
 			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent.name);
 			assert parentStyle != null;
 			parentStyle.getValues(false).forEach((key, val) -> {
-				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key)) {
+				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key) && !parent.mergeSkip.contains(key)) {
 					if (caveStyle.contains(key)) {
-						if (parent.mergeTop.contains(key)) {
+						if (parent.mergeBottom.contains(key)) {
 							Object ourVal = caveStyle.get(key);
 							if (val instanceof List) {
 								if (!(ourVal instanceof List)) {
@@ -199,7 +205,7 @@ public class CaveStyles {
 							} else {
 								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
 							}
-						} else if (parent.mergeBottom.contains(key)) {
+						} else if (parent.mergeTop.contains(key)) {
 							Object ourVal = caveStyle.get(key);
 							if (val instanceof List) {
 								if (!(ourVal instanceof List)) {
@@ -225,6 +231,8 @@ public class CaveStyles {
 							} else {
 								throw new InvalidConfigException("Cannot merge type under section \"" + key + "\"");
 							}
+						} else if (alreadyMerged.containsKey(key)) {
+							throw new InvalidConfigException(styleName + ": Cannot replace \"" + key + "\" from \"" + parent.name + "\", already inherited that key from \"" + alreadyMerged.get(key) + "\".");
 						}
 					} else {
 						// copy if necessary
@@ -238,11 +246,38 @@ public class CaveStyles {
 							caveStyle.set(key, val);
 						}
 					}
+					alreadyMerged.putIfAbsent(key, parent.name);
 				}
 			});
 		}
 
 		styleStack.remove(styleName);
+	}
+
+	private void inlineDefaultInheritance(String styleName) {
+		ConfigurationSection style = caveStylesConfig.getConfigurationSection(styleName);
+		assert style != null;
+		if (style.contains("__builtin_no_default_inherit")) {
+			return;
+		}
+
+		ConfigurationSection defaultStyle = caveStylesConfig.getConfigurationSection("default");
+		assert defaultStyle != null;
+		for (String key : defaultStyle.getKeys(false)) {
+			if (!style.contains(key)) {
+				Object val = defaultStyle.get(key);
+				// copy if necessary
+				if (val instanceof List) {
+					style.set(key, new ArrayList<>((List<?>) val));
+				} else if (val instanceof Map) {
+					style.createSection(key, (Map<?, ?>) val);
+				} else if (val instanceof ConfigurationSection) {
+					style.createSection(key, ((ConfigurationSection) val).getValues(false));
+				} else {
+					style.set(key, val);
+				}
+			}
+		}
 	}
 
 	public static class Weights {

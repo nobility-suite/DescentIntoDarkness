@@ -214,7 +214,34 @@ defaultPainterSteps:
 defaultStructures:
   __builtin_no_default_inherit: true
   abstract: true
-  structures: {}
+  structures:
+    coal_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:coal_ore
+      radius: 4
+    diamond_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:diamond_ore
+      radius: 4
+    emerald_ore:
+      type: vein
+      edges:
+        - floor
+        - ceiling
+        - wall
+      chance: 0.01
+      ore: minecraft:emerald_ore
+      radius: 3
 
 defaultPortals:
   __builtin_no_default_inherit: true
@@ -269,81 +296,40 @@ defaultMobSpawning:
         drop3:
           item: minecraft:charcoal
           weight: 10
-        drop4:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
-      pollution: 20
+      pollution: 5
       breakAmount: 5
     diamond_ore:
       block: minecraft:diamond_ore
-      pollution: 50
-      dropTable:
-        drop1: minecraft:diamond_ore
-        drop2: minecraft:diamond
-        drop3:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
-          weight: 18
+      pollution: 15
       breakAmount: 5
     emerald_ore:
       block: minecraft:emerald_ore
-      pollution: 50
-      breakAmount: 3
-      dropTable:
-        drop1: minecraft:emerald
-        drop2:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
-          weight: 8
+      pollution: 15
+      breakAmount: 5
     redstone_ore:
       block: minecraft:redstone_ore
-      pollution: 25
-      breakAmount: 2
+      pollution: 5
+      breakAmount: 5
     lapis_ore:
       block: minecraft:lapis_ore
-      pollution: 25
-      breakAmount: 2
+      pollution: 5
+      breakAmount: 5
     gold_ore:
       block: minecraft:gold_ore
-      pollution: 20
-      dropTable:
-        drop1: minecraft:gold_ore
-        drop2:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
-          weight: 2
-      breakAmount: 3
+      pollution: 5
+      breakAmount: 5
     iron_ore:
       block: minecraft:iron_ore
-      pollution: 20
-      breakAmount: 3
-      dropTable:
-        drop1: minecraft:iron_ore
-        drop2:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
-          weight: 2
+      pollution: 5
+      breakAmount: 5
     nether_quartz_ore:
       block: minecraft:nether_quartz_ore
-      pollution: 20
-      breakAmount: 6
-      dropTable:
-        drop1:
-          item: minecraft:gold_nugget
-          weight: 5
-        drop2:
-          item: minecraft:stone
-          minAmount: 0
-          maxAmount: 0
+      pollution: 5
+      breakAmount: 5
     nether_gold_ore:
       block: minecraft:nether_gold_ore
-      pollution: 30
-      breakAmount: 1
+      pollution: 5
+      breakAmount: 5
 
   naturalPollutionIncrease: 0.1
   spawnAttemptsPerTick: 10
