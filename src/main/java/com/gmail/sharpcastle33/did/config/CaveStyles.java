@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -141,7 +142,8 @@ public class CaveStyles {
 			}
 		}
 		List<InheritanceData> parents = new ArrayList<>();
-		List<?> inheritList = caveStyle.getList("inherit");
+		Object inherit = caveStyle.get("inherit");
+		List<?> inheritList = inherit instanceof List<?> ? (List<?>) inherit : inherit instanceof String ? Collections.singletonList(inherit) : null;
 		if (inheritList != null) {
 			for (Object parent : inheritList) {
 				if (ConfigUtil.isConfigurationSection(parent)) {
