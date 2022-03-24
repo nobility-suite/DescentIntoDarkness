@@ -252,6 +252,15 @@ public class CaveGenContext implements AutoCloseable {
 		// bedrock wall around all generated chunks
 		Bukkit.getLogger().log(Level.INFO, "Creating bedrock walls...");
 		for (BlockVector2 filledChunk : filledChunks) {
+			fill(new CuboidRegion(
+					BlockVector3.at(filledChunk.getX() * 16, 0, filledChunk.getZ() * 16),
+					BlockVector3.at(filledChunk.getX() * 16 + 15, 0, filledChunk.getZ() * 16 + 15)
+			), Util.requireDefaultState(BlockTypes.BEDROCK));
+			fill(new CuboidRegion(
+					BlockVector3.at(filledChunk.getX() * 16, 255, filledChunk.getZ() * 16),
+					BlockVector3.at(filledChunk.getX() * 16 + 15, 255, filledChunk.getZ() * 16 + 15)
+			), Util.requireDefaultState(BlockTypes.BEDROCK));
+
 			BlockVector2 north = filledChunk.add(0, -1);
 			if (!filledChunks.contains(north)) {
 				fill(new CuboidRegion(
