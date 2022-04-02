@@ -13,6 +13,8 @@ default:
     - defaultPortals
     - defaultMobSpawning
 
+  displayName: Default
+
   maxLength: 90
   minLength: 90
   maxSize: 9
@@ -340,6 +342,8 @@ defaultMobSpawning:
 
 # The debug cave type
 debug:
+  displayName: Debug
+
   painterSteps:
     - type: replace_all
       old: minecraft:stone

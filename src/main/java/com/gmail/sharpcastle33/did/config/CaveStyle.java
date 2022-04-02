@@ -17,12 +17,15 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CaveStyle {
 	// meta properties
 	private final String name;
+	private String displayName;
+	private List<String> lore;
 	private boolean isAbstract;
 	private long lifetime;
 
@@ -69,6 +72,12 @@ public class CaveStyle {
 
 	public static CaveStyle deserialize(String name, ConfigurationSection map) {
 		CaveStyle style = new CaveStyle(name);
+
+		style.displayName = Objects.requireNonNull(map.getString("displayName", name)).replace('&', '\u00a7');
+		style.lore = map.getStringList("lore");
+		for (int i = 0; i < style.lore.size(); i++) {
+			style.lore.set(i, style.lore.get(i).replace('&', '\u00a7'));
+		}
 
 		style.isAbstract = map.getBoolean("abstract", false);
 
@@ -236,6 +245,14 @@ public class CaveStyle {
 
 	public String getName() {
 		return name;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public List<String> getLore() {
+		return lore;
 	}
 
 	public boolean isAbstract() {

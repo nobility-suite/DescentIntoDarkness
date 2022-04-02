@@ -179,7 +179,7 @@ public class CaveStyles {
 			ConfigurationSection parentStyle = caveStylesConfig.getConfigurationSection(parent.name);
 			assert parentStyle != null;
 			parentStyle.getValues(false).forEach((key, val) -> {
-				if (!"inherit".equals(key) && !"abstract".equals(key) && !"__builtin_no_default_inherit".equals(key) && !parent.mergeSkip.contains(key)) {
+				if (!"inherit".equals(key) && !"abstract".equals(key) && !"displayName".equals(key) && !"__builtin_no_default_inherit".equals(key) && !parent.mergeSkip.contains(key)) {
 					if (caveStyle.contains(key)) {
 						if (parent.mergeBottom.contains(key)) {
 							Object ourVal = caveStyle.get(key);

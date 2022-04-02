@@ -3,11 +3,13 @@ package com.gmail.sharpcastle33.did.listeners;
 import com.github.devotedmc.hiddenore.events.HiddenOreGenerateEvent;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.Util;
+import com.gmail.sharpcastle33.did.config.CaveStyle;
 import com.gmail.sharpcastle33.did.config.ConfigUtil;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.DyeColor;
@@ -139,16 +141,8 @@ public class HiddenOre implements Listener {
 						"No " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) +
 						" caves are currently available. Please try again later.");
 			} else {
-				UUID actionId = CommandListener.setConfirmAction(
-						event.getPlayer(),
-						600,
-						() -> joinCave(event.getPlayer(), clickedBlock.getLocation()));
-				BaseComponent message = new TextComponent(ChatColor.DARK_GREEN + "You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! ");
-				TextComponent button = new TextComponent(ChatColor.DARK_GREEN + "Click to enter.");
-				button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm " + actionId));
-				button.setUnderlined(true);
-				message.addExtra(button);
-				event.getPlayer().spigot().sendMessage(message);
+				sendEnterCaveMessage(event.getPlayer(), clickedBlock.getLocation(), cave.getStyle(),
+						"You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! ");
 			}
 		} else {
 			CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveById(caveId);
@@ -158,19 +152,36 @@ public class HiddenOre implements Listener {
 				return;
 			}
 			String remainingTimeString = Util.formatTime(remainingTime);
-			UUID actionId = CommandListener.setConfirmAction(
-					event.getPlayer(),
-					600,
-					() -> joinCave(event.getPlayer(), clickedBlock.getLocation())
-			);
-			BaseComponent message = new TextComponent(ChatColor.DARK_GREEN + "You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! " +
-					ChatColor.DARK_GREEN + "It will close in " + remainingTimeString + ". ");
-			TextComponent button = new TextComponent(ChatColor.DARK_GREEN + "Click to enter.");
-			button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm " + actionId));
-			button.setUnderlined(true);
-			message.addExtra(button);
-			event.getPlayer().spigot().sendMessage(message);
+			sendEnterCaveMessage(event.getPlayer(), clickedBlock.getLocation(), cave.getStyle(),
+					"You have found a " + hiddenOreData.color.name().toLowerCase(Locale.ROOT) + " cave! " +
+					"It will close in " + remainingTimeString + ". ");
 		}
+	}
+
+	private static void sendEnterCaveMessage(Player player, Location oreLocation, CaveStyle style, String messageStr) {
+		UUID actionId = CommandListener.setConfirmAction(
+				player,
+				600,
+				() -> joinCave(player, oreLocation)
+		);
+		BaseComponent message = new TextComponent(messageStr);
+		message.setColor(ChatColor.DARK_GREEN);
+		TextComponent button = new TextComponent("[Click to enter]");
+		button.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/did confirm " + actionId));
+		List<BaseComponent> hoverText = new ArrayList<>(style.getLore().size() + 1);
+		hoverText.add(new TextComponent(style.getDisplayName()));
+		for (String line : style.getLore()) {
+			hoverText.add(new TextComponent("\n> " + line));
+		}
+		button.setHoverEvent(new HoverEvent(
+				HoverEvent.Action.SHOW_TEXT,
+				hoverText.toArray(new BaseComponent[0])
+		));
+		button.setColor(ChatColor.GOLD);
+		button.setUnderlined(true);
+		button.setBold(true);
+		message.addExtra(button);
+		player.spigot().sendMessage(message);
 	}
 
 	private static void joinCave(Player player, Location oreLocation) {
