@@ -171,7 +171,7 @@ public class HiddenOre implements Listener {
 		List<BaseComponent> hoverText = new ArrayList<>(style.getLore().size() + 1);
 		hoverText.add(new TextComponent(style.getDisplayName()));
 		for (String line : style.getLore()) {
-			hoverText.add(new TextComponent("\n> " + line));
+			hoverText.add(new TextComponent("\n\u2022 " + line));
 		}
 		button.setHoverEvent(new HoverEvent(
 				HoverEvent.Action.SHOW_TEXT,
