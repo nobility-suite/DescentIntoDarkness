@@ -36,6 +36,7 @@ public class CaveTracker {
 	private long joinTime;
 	private final World world;
 	private final Location start;
+	private final long seed;
 	private final CaveStyle style;
 	private final List<UUID> players = new ArrayList<>();
 	private final Map<UUID, Long> lastLeaveTime = new HashMap<>();
@@ -47,7 +48,7 @@ public class CaveTracker {
 	private final List<BlockVector2> chunkPositions;
 
 	public CaveTracker(World world, ConfigurationSection map) {
-		this(map.getInt("id"), world, parseStart(world, map), parseCaveStyle(map), parseChunkPositions(map));
+		this(map.getInt("id"), world, parseStart(world, map), map.getLong("seed"), parseCaveStyle(map), parseChunkPositions(map));
 		this.hasBeenJoined = map.getBoolean("hasBeenJoined");
 		this.joinTime = map.getLong("joinTime");
 		this.totalPollution = map.getInt("totalPollution");
@@ -119,6 +120,7 @@ public class CaveTracker {
 		map.set("start.x", start.getX());
 		map.set("start.y", start.getY());
 		map.set("start.z", start.getZ());
+		map.set("seed", seed);
 		map.set("style", style.getName());
 		map.set("totalPollution", totalPollution);
 		map.set("spawnCooldown", spawnCooldown);
@@ -149,10 +151,11 @@ public class CaveTracker {
 		map.set("chunkPositions", chunkPositions);
 	}
 
-	public CaveTracker(int id, World world, Location start, CaveStyle style, List<BlockVector2> chunkPositions) {
+	public CaveTracker(int id, World world, Location start, long seed, CaveStyle style, List<BlockVector2> chunkPositions) {
 		this.id = id;
 		this.world = world;
 		this.start = start;
+		this.seed = seed;
 		this.style = style;
 		this.chunkPositions = chunkPositions;
 

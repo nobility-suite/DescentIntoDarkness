@@ -205,7 +205,7 @@ public class CaveTrackerManager {
 			}
 			spawnPoint.add(0, 1, 0);
 			return DescentIntoDarkness.instance.supplySyncNow(() -> {
-				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, style, new ArrayList<>(accessedChunks));
+				CaveTracker caveTracker = new CaveTracker(id, theWorld, spawnPoint, seed, style, new ArrayList<>(accessedChunks));
 				caveTrackers.add(caveTracker);
 				unexploredCavesByGroup.get(color).add(caveTracker);
 				caveTracker.setColor(color);
