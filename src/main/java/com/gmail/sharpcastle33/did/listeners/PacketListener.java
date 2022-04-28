@@ -38,7 +38,7 @@ public class PacketListener {
 	private static final Object END_DIMENSION;
 
 	static {
-		DYNAMIC_REGISTRY_MANAGER_IMPL = MinecraftReflection.getMinecraftClass("IRegistryCustom$Dimension");
+		DYNAMIC_REGISTRY_MANAGER_IMPL = MinecraftReflection.getMinecraftClass("core.IRegistryCustom$Dimension");
 		Field registryManagerNetworkCodecField = FuzzyReflection.fromClass(DYNAMIC_REGISTRY_MANAGER_IMPL).getFieldByType("[.\\w$]*com\\.mojang\\.serialization\\.Codec");
 		Class<?> codecClass = registryManagerNetworkCodecField.getType();
 		REGISTRY_MANAGER_NETWORK_CODEC = Accessors.getFieldAccessor(registryManagerNetworkCodecField).get(null);
@@ -66,9 +66,9 @@ public class PacketListener {
 		DATA_RESULT_ERROR = Accessors.getMethodAccessor(FuzzyReflection.fromClass(dataResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("error").returnTypeExact(Optional.class).parameterCount(0).build()));
 		PARTIAL_RESULT_MESSAGE = Accessors.getMethodAccessor(FuzzyReflection.fromClass(partialResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("message").returnTypeExact(String.class).parameterCount(0).build()));
 
-		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("DimensionManager");
-		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_NETHER_IMPL"), true).get(null);
-		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_END_IMPL"), true).get(null);
+		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("world.level.dimension.DimensionManager");
+		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("q"), true).get(null);
+		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("r"), true).get(null);
 	}
 
 	private static JsonObject registryManagerToJson(Object registryManager) {
