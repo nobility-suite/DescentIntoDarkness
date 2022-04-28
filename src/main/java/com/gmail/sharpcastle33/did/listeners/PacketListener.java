@@ -12,13 +12,10 @@ import com.comphenix.protocol.reflect.fuzzy.FuzzyMethodContract;
 import com.comphenix.protocol.utility.MinecraftReflection;
 import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.Biomes;
-import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -124,40 +121,6 @@ public class PacketListener {
 						}
 					}
 					return jsonToRegistryManager(json);
-				});
-			}
-		});
-
-		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.MAP_CHUNK)) {
-			@Override
-			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getIntegerArrays().modify(0, biomes -> {
-					if (biomes == null) {
-						return null;
-					}
-					if (!Biomes.isPlayerNotified(event.getPlayer().getUniqueId())) {
-						return biomes;
-					}
-					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
-					if (cave == null) {
-						return biomes;
-					}
-					Arrays.fill(biomes, Biomes.getRawId(cave.getStyle().getBiome()));
-					return biomes;
-				});
-			}
-		});
-
-		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
-			@Override
-			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getModifier().withType(DIMENSION_TYPE).modify(0, dim -> {
-					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
-					if (cave != null) {
-						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
-					} else {
-						return dim;
-					}
 				});
 			}
 		});
