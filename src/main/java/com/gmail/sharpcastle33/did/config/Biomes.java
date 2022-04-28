@@ -36,7 +36,7 @@ public class Biomes {
 	private static final MethodAccessor REGISTRY_GET_RAW_ID;
 	private static final MethodAccessor REGISTRY_GET;
 	static {
-		FuzzyReflection builtinRegistries = FuzzyReflection.fromClass(MinecraftReflection.getMinecraftClass("RegistryGeneration"));
+		FuzzyReflection builtinRegistries = FuzzyReflection.fromClass(MinecraftReflection.getMinecraftClass("BuiltinRegistries"));
 		BUILTIN_BIOME_REGISTRY = Accessors.getFieldAccessor(builtinRegistries.getFieldByName("WORLDGEN_BIOME")).get(null);
 		FuzzyReflection registry = FuzzyReflection.fromClass(MinecraftReflection.getMinecraftClass("IRegistry"));
 		REGISTRY_GET_RAW_ID = Accessors.getMethodAccessor(registry.getMethod(FuzzyMethodContract.newBuilder()
