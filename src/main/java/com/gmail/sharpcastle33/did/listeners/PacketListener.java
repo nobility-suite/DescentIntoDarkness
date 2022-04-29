@@ -151,7 +151,7 @@ public class PacketListener {
 		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getModifier().withType(DIMENSION_TYPE).modify(0, dim -> {
+				event.getPacket().getModifier().withType(MinecraftReflection.getMinecraftClass("core.Holder")).modify(0, dim -> {
 					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
 					if (cave != null) {
 						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
