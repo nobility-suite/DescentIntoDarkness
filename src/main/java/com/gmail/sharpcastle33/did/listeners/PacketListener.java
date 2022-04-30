@@ -67,8 +67,8 @@ public class PacketListener {
 		PARTIAL_RESULT_MESSAGE = Accessors.getMethodAccessor(FuzzyReflection.fromClass(partialResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("message").returnTypeExact(String.class).parameterCount(0).build()));
 
 		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("world.level.dimension.DimensionManager");
-		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("q"), true).get(null);
-		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("r"), true).get(null);
+		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("n"), true).get(null);
+		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("o"), true).get(null);
 	}
 
 	private static JsonObject registryManagerToJson(Object registryManager) {
@@ -152,7 +152,7 @@ public class PacketListener {
 		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getModifier().withType(MinecraftReflection.getMinecraftClass("core.Holder")).modify(0, dim -> {
+				event.getPacket().getModifier().withType(MinecraftReflection.getMinecraftClass("resources.ResourceKey")).modify(0, dim -> {
 					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
 					if (cave != null) {
 						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
