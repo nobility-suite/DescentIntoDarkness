@@ -4,10 +4,12 @@ import com.gmail.sharpcastle33.did.DescentIntoDarkness;
 import com.gmail.sharpcastle33.did.config.MobSpawnEntry;
 import com.gmail.sharpcastle33.did.instancing.CaveTracker;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
-import io.lumine.xikage.mythicmobs.MythicMobs;
-import io.lumine.xikage.mythicmobs.adapters.bukkit.BukkitAdapter;
-import io.lumine.xikage.mythicmobs.api.bukkit.events.MythicMobSpawnEvent;
-import io.lumine.xikage.mythicmobs.mobs.ActiveMob;
+
+import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.bukkit.BukkitAdapter;
+import io.lumine.mythic.bukkit.events.MythicMobSpawnEvent;
+import io.lumine.mythic.core.mobs.ActiveMob;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -93,7 +95,6 @@ public class MobSpawnManager implements Runnable, Listener {
 			}
 		}
 
-
 		// Pick a random distance between minDistance and maxDistance, then a random point on the sphere with that radius.
 		// Makes distances uniformly likely, as opposed to
 		Vector spawnLocation = new Vector(rand.nextGaussian(), rand.nextGaussian(), rand.nextGaussian())
@@ -108,15 +109,29 @@ public class MobSpawnManager implements Runnable, Listener {
 
 		// quick exit for the blocks the mob will definitely intersect, and respect custom hitbox
 		if (spawnEntry.getXSize() > 0 && spawnEntry.getYSize() > 0 && spawnEntry.getZSize() > 0) {
-			if (!canSpawnMob(cave.getWorld(), spawnEntry,
-					spawnLocation.getX() - spawnEntry.getXSize() / 2, spawnLocation.getY(), spawnLocation.getZ() - spawnEntry.getZSize() / 2,
-					spawnLocation.getX() + spawnEntry.getXSize() / 2, spawnLocation.getY() + spawnEntry.getYSize(), spawnLocation.getZ() + spawnEntry.getZSize() / 2)) {
+			if (!canSpawnMob(
+				cave.getWorld(),
+				spawnEntry,
+				spawnLocation.getX() - spawnEntry.getXSize() / 2,
+				spawnLocation.getY(),
+				spawnLocation.getZ() - spawnEntry.getZSize() / 2,
+				spawnLocation.getX() + spawnEntry.getXSize() / 2,
+				spawnLocation.getY() + spawnEntry.getYSize(),
+				spawnLocation.getZ() + spawnEntry.getZSize() / 2
+			)) {
 				return false;
 			}
 		} else {
-			if (!canSpawnMob(cave.getWorld(), spawnEntry,
-					spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(),
-					spawnLocation.getX() + 0.001, spawnLocation.getY() + 2, spawnLocation.getZ() + 0.001)) {
+			if (!canSpawnMob(
+				cave.getWorld(),
+				spawnEntry,
+				spawnLocation.getX(),
+				spawnLocation.getY(),
+				spawnLocation.getZ(),
+				spawnLocation.getX() + 0.001,
+				spawnLocation.getY() + 2,
+				spawnLocation.getZ() + 0.001
+			)) {
 				return false;
 			}
 		}
@@ -132,6 +147,7 @@ public class MobSpawnManager implements Runnable, Listener {
 				.map(OfflinePlayer::getPlayer)
 				.filter(player -> player != null && player.getWorld() == cave.getWorld())
 				.anyMatch(player -> player.getLocation().toVector().distanceSquared(spawnLocation) < spawnEntry.getMinDistance() * spawnEntry.getMinDistance())) {
+
 			return false;
 		}
 
@@ -146,7 +162,6 @@ public class MobSpawnManager implements Runnable, Listener {
 		Bukkit.getServer().getLogger().info("[Descent Mob Spawner]: Spawning " + spawnEntry.getName() + " for Player " + chosenPlayer.getName() + " in cave " + cave.getId());
 		
 		for(MobSpawnEntry t : cave.getStyle().getSpawnEntries()) {
-			
 			Bukkit.getServer().getLogger().info("Found MobSpawnEntry: " + t.getName() + " for cave style " + cave.getStyle().getName());
 		}
 
@@ -154,7 +169,7 @@ public class MobSpawnManager implements Runnable, Listener {
 	}
 
 	private boolean doSpawn(CaveTracker cave, MobSpawnEntry spawnEntry, UUID spawnedPlayer, Vector spawnLocation) {
-		boolean isMythicMob = MythicMobs.inst().getMobManager().getMythicMob(spawnEntry.getMob()) != null;
+		boolean isMythicMob = MythicBukkit.inst().getMobManager().getMythicMob(spawnEntry.getMob()).isPresent();
 		Location loc = spawnLocation.toLocation(cave.getWorld());
 
 		// spawn mob and check its hitbox doesn't intersect anything
@@ -165,7 +180,7 @@ public class MobSpawnManager implements Runnable, Listener {
 			currentSpawnEntry = spawnEntry;
 			ActiveMob activeMob;
 			try {
-				activeMob = MythicMobs.inst().getMobManager().spawnMob(spawnEntry.getMob(), loc);
+				activeMob = MythicBukkit.inst().getMobManager().spawnMob(spawnEntry.getMob(), loc);
 			} finally {
 				spawningMob = false;
 				currentSpawnEntry = null;
