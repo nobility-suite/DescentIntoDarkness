@@ -1,6 +1,6 @@
 # Descent: Into Darkness
  
-Descent is an experimental procedural cave generation system made for Minecraft 1.14. Descent generates caves using a shape grammar system optimized for generating "interesting" caves for maximum replayability. Inspired by Deep Rock Galactic's cave generation as well as Path of Exile's philosophy on maximizing replayability with limited assets.
+Descent is an experimental procedural cave generation system made for Minecraft 1.14 - 1.16. Descent generates caves using a shape grammar system optimized for generating "interesting" caves for maximum replayability. Inspired by Deep Rock Galactic's cave generation as well as Path of Exile's philosophy on maximizing replayability with limited assets.
 
 Descent is inteded for use as an instanced system. Cave systems are generated individually, and do not care if they intersect.
 
