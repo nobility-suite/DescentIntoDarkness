@@ -38,7 +38,7 @@ public class PacketListener {
 	private static final Object END_DIMENSION;
 
 	static {
-		DYNAMIC_REGISTRY_MANAGER_IMPL = MinecraftReflection.getMinecraftClass("IRegistryCustom$Dimension");
+		DYNAMIC_REGISTRY_MANAGER_IMPL = MinecraftReflection.getMinecraftClass("core.IRegistryCustom$Dimension");
 		Field registryManagerNetworkCodecField = FuzzyReflection.fromClass(DYNAMIC_REGISTRY_MANAGER_IMPL).getFieldByType("[.\\w$]*com\\.mojang\\.serialization\\.Codec");
 		Class<?> codecClass = registryManagerNetworkCodecField.getType();
 		REGISTRY_MANAGER_NETWORK_CODEC = Accessors.getFieldAccessor(registryManagerNetworkCodecField).get(null);
@@ -66,9 +66,9 @@ public class PacketListener {
 		DATA_RESULT_ERROR = Accessors.getMethodAccessor(FuzzyReflection.fromClass(dataResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("error").returnTypeExact(Optional.class).parameterCount(0).build()));
 		PARTIAL_RESULT_MESSAGE = Accessors.getMethodAccessor(FuzzyReflection.fromClass(partialResultClass).getMethod(FuzzyMethodContract.newBuilder().nameExact("message").returnTypeExact(String.class).parameterCount(0).build()));
 
-		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("DimensionManager");
-		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_NETHER_IMPL"), true).get(null);
-		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("THE_END_IMPL"), true).get(null);
+		DIMENSION_TYPE = MinecraftReflection.getMinecraftClass("world.level.dimension.DimensionManager");
+		NETHER_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("n"), true).get(null);
+		END_DIMENSION = Accessors.getFieldAccessor(FuzzyReflection.fromClass(DIMENSION_TYPE, true).getFieldByName("o"), true).get(null);
 	}
 
 	private static JsonObject registryManagerToJson(Object registryManager) {
@@ -131,27 +131,28 @@ public class PacketListener {
 		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.MAP_CHUNK)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getIntegerArrays().modify(0, biomes -> {
-					if (biomes == null) {
-						return null;
-					}
-					if (!Biomes.isPlayerNotified(event.getPlayer().getUniqueId())) {
-						return biomes;
-					}
-					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
-					if (cave == null) {
-						return biomes;
-					}
-					Arrays.fill(biomes, Biomes.getRawId(cave.getStyle().getBiome()));
-					return biomes;
-				});
+				// TODO: this event is broken by 1.18.2, and results in an error on chunk load. We need to figure out how to convert this into equivalent 1.18.2 code. This is the error we get: com.comphenix.protocol.reflect.FieldAccessException: No field with type [I exists in class ClientboundLevelChunkWithLightPacket.
+				// event.getPacket().getIntegerArrays().modify(0, biomes -> {
+				// 	if (biomes == null) {
+				// 		return null;
+				// 	}
+				// 	if (!Biomes.isPlayerNotified(event.getPlayer().getUniqueId())) {
+				// 		return biomes;
+				// 	}
+				// 	CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
+				// 	if (cave == null) {
+				// 		return biomes;
+				// 	}
+				// 	Arrays.fill(biomes, Biomes.getRawId(cave.getStyle().getBiome()));
+				// 	return biomes;
+				// });
 			}
 		});
 
 		protocolManager.addPacketListener(new PacketAdapter(PacketAdapter.params(DescentIntoDarkness.instance, PacketType.Play.Server.RESPAWN, PacketType.Play.Server.LOGIN)) {
 			@Override
 			public void onPacketSending(PacketEvent event) {
-				event.getPacket().getModifier().withType(DIMENSION_TYPE).modify(0, dim -> {
+				event.getPacket().getModifier().withType(MinecraftReflection.getMinecraftClass("resources.ResourceKey")).modify(0, dim -> {
 					CaveTracker cave = DescentIntoDarkness.instance.getCaveTrackerManager().getCaveForPlayer(event.getPlayer());
 					if (cave != null) {
 						return cave.getStyle().isNether() ? NETHER_DIMENSION : END_DIMENSION;
